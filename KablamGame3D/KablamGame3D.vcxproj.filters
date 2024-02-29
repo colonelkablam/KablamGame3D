@@ -27,4 +27,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="events_log.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
+    <Text Include="Levels\level_1_data.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
+  </ItemGroup>
 </Project>

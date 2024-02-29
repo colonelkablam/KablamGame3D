@@ -60,7 +60,6 @@ protected:
     static std::atomic<bool> bGameThreadRunning;
     static std::atomic<bool> bGracefulExitCompleted;
 
-
     // instance attributes
     short nScreenWidth;  // Console screen width
     short nScreenHeight;  // Console screen height
@@ -101,10 +100,15 @@ protected:
     short newKeyStateArray[256];
     short oldKeyStateArray[256];
 
+    // CONSOLE / WINDOW
     bool bConsoleFocus;
+    bool bFocusPause;
+    bool bGameThreadPaused;
+    bool bFullScreen;
+
 
     COORD mouseCoords;
-    bool bMouseShowing;
+
 
 public:
 
@@ -124,7 +128,7 @@ private:
     int GameThread();
 
 
-public:
+protected:
     // User MUST OVERRIDE THESE!!
     virtual bool OnGameCreate() = 0;       // pure virtual
     virtual bool OnGameUpdate(float fElapsedTime) = 0;  // pure virtual
@@ -132,11 +136,9 @@ public:
     // Optional for clean up 
     //virtual bool OnGameDestroy() { return true; }
 
-protected:
+    int GetConsoleWidth();
 
-    int GetScreenWidth();
-
-    int GetScreenHeight();
+    int GetConsoleHeight();
 
     void WriteStringToBuffer(int x, int y, std::wstring string, short colour = 0x000F);
 
@@ -144,17 +146,31 @@ protected:
 
     void DrawLine(int x0, int y0, int x1, int y1, short colour = FG_WHITE, short glyph = 0x2588);
 
-    void DrawSquare(int x, int y, int sideLength, short colour = FG_WHITE, short glyph = 0x2588);
+    void DrawSquare(int x, int y, int sideLength, short colour = FG_WHITE, short glyph = 0x2588, int lineWidth = 1, bool filled = false);
 
-    void DrawRectangle(int x0, int y0, int x1, int y1, short colour = FG_WHITE, short glyph = 0x2588);
+    void DrawRectangleCoords(int x0, int y0, int x1, int y1, short colour = FG_WHITE, bool filled = false, short glyph = 0x2588, int lineWidth = 1);
+
+    void DrawRectangleEdgeLength(int x, int y, int width, int height, short colour = FG_WHITE, bool filled = false, short glyph = 0x2588, int lineWidth = 1);
+
+    void DrawCircle(int x, int y, int radius, short colour = FG_WHITE, short glyph = 0x2588, bool filled = false);
 
     int DrawTextureToScreen(const Texture* texture, int x, int y, float scale);
 
     void UpdateInputStates();
 
+    void SetConsoleFocusPause(bool state);
+
+    bool GetConsoleFocus();
+
     keyState GetKeyState(short key);
 
     COORD GetMousePosition();
+
+    int SetResizeWindowLock(bool state);
+
+    int SetWindowPosition(int x, int y);
+
+    int SetFullScreen(bool state);
 
     std::wstring GetFormattedDateTime();
 
@@ -162,11 +178,9 @@ protected:
 
     int CleanUp();
 
-    void SetResizeWinowLock(bool state);
-
-    void ToggleMouse();
-
     static void AddToLog(std::wstring message);
+
+private:
 
     static BOOL WINAPI ConsoleControlHandler(DWORD dwCtrlType);
 

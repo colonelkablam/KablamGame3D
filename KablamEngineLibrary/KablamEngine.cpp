@@ -3,8 +3,6 @@
 
 #include "pch.h"
 #include "framework.h"
-
-#include "pch.h"
 #include "KablamEngine.h"
 
 // constructor
@@ -13,7 +11,7 @@ KablamEngine::KablamEngine()
     :nScreenWidth{ 30 }, nScreenHeight{ 10 }, nFontWidth{ 5 }, nFontHeight{ 10 }, hConsoleWindow{ GetConsoleWindow() },
     hOGBuffer{ GetStdHandle(STD_OUTPUT_HANDLE) }, hConsoleInput{ GetStdHandle(STD_INPUT_HANDLE) }, hNewBuffer{ INVALID_HANDLE_VALUE },
     dwPreviousConsoleMode{ 0 }, screen{ nullptr }, windowSize{ 0, 0, 1, 1 }, mouseCoords{ 0,0 }, sConsoleTitle{ L"no_name_given" },
-    bConsoleFocus{ true }, bMouseShowing{ true } {
+    bConsoleFocus{ true }, bGameThreadPaused{ false }, bFocusPause{ false }, bFullScreen{ false } {
 
     // initialise storage of input events - key and mouse
     // use standard library fill
@@ -218,51 +216,72 @@ int KablamEngine::GameThread()
     auto tp2 = std::chrono::system_clock::now();
 
 
-    /////       MAIN GAME LOOP      /////
+        /////       MAIN GAME LOOP      /////
 
     while (bGameThreadRunning == true)
     {
+        // exit app with ESCAPE
+        if (keyArray[VK_ESCAPE].bPressed && bConsoleFocus)
+        {
+            bGameThreadRunning = false;
+        }
 
-        // Start parallel tasks for handling input
-        std::thread UpdateMouseThread(&KablamEngine::UpdateInputStates, this);
+        // toggle FULL SCREEN with F12
+        if (keyArray[VK_F12].bPressed && bConsoleFocus)
+        {
+            bFullScreen = !bFullScreen;
+            SetFullScreen(bFullScreen);
+        }
 
-        // Handle Timing
-        tp2 = std::chrono::system_clock::now();
-        std::chrono::duration<float> elapsedTime = tp2 - tp1;
-        tp1 = tp2;
-        float fElapsedTime = elapsedTime.count();
+        // handling input
+        KablamEngine::UpdateInputStates();
 
-        // Wait for parallel tasks to complete
-        UpdateMouseThread.join();
+        if (!bGameThreadPaused) // Check if the game is not paused
+        {
+            // Handle Timing
+            tp2 = std::chrono::system_clock::now();
+            std::chrono::duration<float> elapsedTime = tp2 - tp1;
+            tp1 = tp2;
+            float fElapsedTime = elapsedTime.count();
 
-        // (user defined) game update
-        if (OnGameUpdate(fElapsedTime) == false)
-            return Error(L"OnUserUpdate not defined in, or returning false from, derived class.");
+            // (user defined) game update
+            if (OnGameUpdate(fElapsedTime) == false)
+                return Error(L"OnUserUpdate not defined in, or returning false from, derived class.");
 
-        // Update Title
-        wchar_t title[256];
-        swprintf_s(title, 256, L"%s - FPS: %3.2f", sConsoleTitle.c_str(), 1.0f / fElapsedTime);
-        SetConsoleTitle(title);
+            // Update Title
+            wchar_t title[256];
+            swprintf_s(title, 256, L"%s - FPS: %3.2f", sConsoleTitle.c_str(), 1.0f / fElapsedTime);
+            SetConsoleTitle(title);
 
-        // Update Console Buffer with screen buffer
-        WriteConsoleOutput(hNewBuffer, screen, { (short)nScreenWidth, (short)nScreenHeight }, { 0,0 }, &windowSize);
+            // Update Console Buffer with screen buffer
+            WriteConsoleOutput(hNewBuffer, screen, { (short)nScreenWidth, (short)nScreenHeight }, { 0,0 }, &windowSize);
+        }
+        else
+        {
+            Sleep(1000); // Sleep briefly to reduce CPU usage
+        }
 
     }
-    /////   END OF MAIN GAME LOOP   /////
+        /////   END OF MAIN GAME LOOP   /////
+
 
     AddToLog(L"Exiting GameThread().");
 
     return 0;
 }
 
-int KablamEngine::GetScreenWidth()
+int KablamEngine::GetConsoleWidth()
 {
     return nScreenWidth;
 }
 
-int KablamEngine::GetScreenHeight()
+int KablamEngine::GetConsoleHeight()
 {
     return nScreenHeight;
+}
+
+void KablamEngine::WriteStringToBuffer(int x, int y, std::wstring string, short colour)
+{
 }
 
 void KablamEngine::DrawPoint(int x, int y, short colour, short glyph)
@@ -292,7 +311,7 @@ void KablamEngine::DrawLine(int x0, int y0, int x1, int y1, short colour, short 
     }
 }
 
-void KablamEngine::DrawSquare(int x, int y, int sideLength, short colour, short glyph)
+void KablamEngine::DrawSquare(int x, int y, int sideLength, short colour, short glyph, int lineWidth, bool filled)
 {
     // Top side
     DrawLine(x, y, x + sideLength, y, colour, glyph);
@@ -304,17 +323,106 @@ void KablamEngine::DrawSquare(int x, int y, int sideLength, short colour, short 
     DrawLine(x, y, x, y + sideLength, colour, glyph);
 }
 
-void KablamEngine::DrawRectangle(int x0, int y0, int x1, int y1, short colour, short glyph)
+// top left and bottom right coords
+void KablamEngine::DrawRectangleCoords(int x0, int y0, int x1, int y1, short colour, bool filled, short glyph, int lineWidth)
 {
-    // Top side
-    DrawLine(x0, y0, x1, y0, colour, glyph);
-    // Right side
-    DrawLine(x1, y0, x1, y1, colour, glyph);
-    // Bottom side
-    DrawLine(x0, y1, x1, y1, colour, glyph);
-    // Left side
-    DrawLine(x0, y0, x0, y1, colour, glyph);
+    if (filled)
+    {
+        for (int i{ 0 }; i <= y1 - y0; i++)
+            DrawLine(x0, y0 + i, x1, y0 + i, colour, glyph);
+    }
+    else
+    {
+        // Top side
+        for (int i{ 0 }; i < lineWidth; i++)
+            DrawLine(x0, y0 + i, x1, y0 + i, colour, glyph);
+       // Right side
+        for (int i{ 0 }; i < lineWidth; i++)
+            DrawLine(x1 - i, y0, x1 - i, y1, colour, glyph);
+        // Bottom side
+        for (int i{ 0 }; i < lineWidth; i++)
+            DrawLine(x0, y1 - i, x1, y1 - i, colour, glyph);
+        // Left side
+        for (int i{ 0 }; i < lineWidth; i++)
+            DrawLine(x0 + i, y0, x0 + i, y1, colour, glyph);
+    }
 }
+
+// top left coords and width and height
+void KablamEngine::DrawRectangleEdgeLength(int x, int y, int width, int height, short colour, bool filled, short glyph, int lineWidth)
+{
+    if (filled)
+    {
+        for (int i{ 0 }; i < height; i++)
+            DrawLine(x, y + i, x + width - 1, y + i, colour, glyph);
+    }
+    else
+    {
+        width -= 1;
+        height -= 1;
+        // Top side
+        for (int i{ 0 }; i < lineWidth; i++)
+            DrawLine(x, y + i, x + width, y + i, colour, glyph);
+        // Right side
+        for (int i{ 0 }; i < lineWidth; i++)
+            DrawLine(x + width - i, y, x + width - i, y + height, colour, glyph);
+        // Bottom side
+        for (int i{ 0 }; i < lineWidth; i++)
+            DrawLine(x, y + height - i, x + width, y + height - i, colour, glyph);
+        // Left side
+        for (int i{ 0 }; i < lineWidth; i++)
+            DrawLine(x + i, y, x + i, y + height, colour, glyph);
+    }
+}
+
+
+// GhatGPT solution to circle drawing
+void KablamEngine::DrawCircle(int xCenter, int yCenter, int radius, short colour, short glyph, bool filled)
+{
+    auto drawPoint = [&](int x, int y) {
+        DrawPoint(x, y, glyph, colour);
+    };
+
+    auto plotCirclePoints = [&](int xc, int yc, int x, int y) {
+        if (filled) {
+            // Draw horizontal lines to fill the circle
+            DrawLine(xc - x, yc + y, xc + x, yc + y, colour, glyph);
+            DrawLine(xc - x, yc - y, xc + x, yc - y, colour, glyph);
+            DrawLine(xc - y, yc + x, xc + y, yc + x, colour, glyph);
+            DrawLine(xc - y, yc - x, xc + y, yc - x, colour, glyph);
+        }
+        else {
+            // Draw only the edge points
+            drawPoint(xc + x, yc + y);
+            drawPoint(xc - x, yc + y);
+            drawPoint(xc + x, yc - y);
+            drawPoint(xc - x, yc - y);
+            drawPoint(xc + y, yc + x);
+            drawPoint(xc - y, yc + x);
+            drawPoint(xc + y, yc - x);
+            drawPoint(xc - y, yc - x);
+        }
+    };
+
+    int x = 0;
+    int y = radius;
+    int p = 1 - radius;
+
+    plotCirclePoints(xCenter, yCenter, x, y);
+
+    while (x < y) {
+        x++;
+        if (p < 0) {
+            p += 2 * x + 1;
+        }
+        else {
+            y--;
+            p += 2 * (x - y) + 1;
+        }
+        plotCirclePoints(xCenter, yCenter, x, y);
+    }
+}
+
 
 int KablamEngine::DrawTextureToScreen(const Texture* texture, int xScreen, int yScreen, float scale)
 {
@@ -382,6 +490,9 @@ void KablamEngine::UpdateInputStates() // mouse location and focus state of wind
 
             case FOCUS_EVENT: {
                 bConsoleFocus = inputBuffer[i].Event.FocusEvent.bSetFocus;
+                
+                if (bFocusPause)
+                    bGameThreadPaused = !bConsoleFocus, AddToLog(L"Game Paused");
                 break;
             }
 
@@ -400,6 +511,16 @@ void KablamEngine::UpdateInputStates() // mouse location and focus state of wind
     }
 }
 
+void KablamEngine::SetConsoleFocusPause(bool state)
+{
+     bFocusPause = state;
+}
+
+bool KablamEngine::GetConsoleFocus()
+{
+    return bConsoleFocus;
+}
+
 KablamEngine::keyState KablamEngine::GetKeyState(short key)
 {
     return keyArray[key];
@@ -410,6 +531,88 @@ COORD KablamEngine::GetMousePosition()
     return mouseCoords;
 }
 
+// stops user being able to resize window
+int KablamEngine::SetResizeWindowLock(bool state)
+{
+    // Get the current window style
+    LONG style = GetWindowLong(hConsoleWindow, GWL_STYLE);
+    if (style == 0)
+        return Error(L"Unable to set window lock; GetWindowLong failed.");
+
+    // Enable resizing
+    if (state == false)
+        style |= WS_THICKFRAME | WS_MAXIMIZEBOX;
+    // Disable resizing
+    else
+        style &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
+
+    AddToLog(L"SetResizeWindowLock set to: " + std::to_wstring(state));
+
+    // Set the updated window style
+    SetLastError(0); // Clear any previous errors
+    LONG prevStyle = SetWindowLong(hConsoleWindow, GWL_STYLE, style);
+
+    // Handle error if SetWindowLong failed
+    if (prevStyle == 0 && GetLastError() != 0)
+        return Error(L"Unable to set window lock; SetWindowLong failed.");
+
+    // Success
+    return 0;
+}
+
+int KablamEngine::SetWindowPosition(int x, int y)
+{
+    if (!SetWindowPos(hConsoleWindow, NULL, x, y, 0, 0, SWP_NOZORDER | SWP_NOSIZE))
+        return Error(L"Unable to set console window position.");
+
+    AddToLog(L"Console window position set to x: " + std::to_wstring(x) + L", y: " + std::to_wstring(x) + L'.');
+
+    return 0;
+}
+
+int KablamEngine::SetFullScreen(bool state)
+{
+    int newFontWidth;
+    int newFontHeight;
+
+    if (state)
+    {
+        // Get the screen width in pixels
+        newFontWidth = GetSystemMetrics(SM_CXSCREEN) / GetConsoleWidth();
+        // Get the screen height in pixels
+        newFontHeight = GetSystemMetrics(SM_CYSCREEN) / GetConsoleHeight();
+        if (!SetWindowPos(hConsoleWindow, NULL, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOSIZE))
+            return Error(L"Failed to set fullscreen mode: Unable to set console window position.");
+    }
+    else
+    {
+        newFontWidth = nFontWidth;
+        newFontHeight = nFontWidth;
+        if (!SetWindowPos(hConsoleWindow, NULL, 100, 100, 0, 0, SWP_NOZORDER | SWP_NOSIZE))
+            return Error(L"Failed to set fullscreen mode: Unable to set console window position.");
+    }
+
+
+    // Initialize the CONSOLE_FONT_INFOEX structure
+    CONSOLE_FONT_INFOEX cfi;
+    cfi.cbSize = sizeof(cfi);
+    cfi.nFont = 0; // Use the default font
+    cfi.dwFontSize.X = newFontWidth; // Width of each character
+    cfi.dwFontSize.Y = newFontHeight; // Height
+    cfi.FontFamily = FF_DONTCARE;
+    cfi.FontWeight = FW_NORMAL;
+
+    wcscpy_s(cfi.FaceName, L"Lucida Console");
+    // set size
+    if (!SetCurrentConsoleFontEx(hNewBuffer, FALSE, &cfi)) {
+        CleanUp();
+        return Error(L"Failed to set fullscreen mode: Unable to SetCurrentConsoleFontEx.");
+    }
+
+    AddToLog(L"Fullscreen mode toggled: Font width: " + std::to_wstring(newFontWidth) + L", font height: " + std::to_wstring(newFontHeight) + L'.');
+
+    return 0;
+}
 
 std::wstring KablamEngine::GetFormattedDateTime() {
 
@@ -464,29 +667,6 @@ int KablamEngine::CleanUp()
     return 0; // if successful 
 }
 
-// stops user being able to resize window (currently will cause issues)
-void KablamEngine::SetResizeWinowLock(bool state)
-{
-    // Get the current window style
-    LONG style = GetWindowLong(hConsoleWindow, GWL_STYLE);
-
-    // Add WS_THICKFRAME and WS_MAXIMIZEBOX to the style to enable resizing and maximizing
-    if (state == false)
-        style |= WS_THICKFRAME | WS_MAXIMIZEBOX;
-    else
-        style &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
-    // Remove WS_THICKFRAME and WS_MAXIMIZEBOX from the style to disable resizing and maximizing
-
-    // Set the updated window style
-    SetWindowLong(hConsoleWindow, GWL_STYLE, style);
-}
-
-void KablamEngine::ToggleMouse()
-{
-    bMouseShowing = !bMouseShowing;
-    ShowCursor(bMouseShowing);
-}
-
 
 // STATIC MEMBERS
 
@@ -517,6 +697,7 @@ BOOL WINAPI KablamEngine::ConsoleControlHandler(DWORD dwCtrlType)
 
         // stop gameloop and wait for it to finish it's tidying up...
         KablamEngine::bGameThreadRunning = false;
+
         std::unique_lock<std::mutex> ul(KablamEngine::shutdownMutex);
         KablamEngine::shutdownCv.wait(ul, [] { return KablamEngine::bGracefulExitCompleted.load(); });
 
@@ -524,10 +705,9 @@ BOOL WINAPI KablamEngine::ConsoleControlHandler(DWORD dwCtrlType)
     }
 
     case CTRL_LOGOFF_EVENT: {
-        KablamEngine::AddToLog(L"CTRL_LOGOFF_EVENT occured.");
-        OutputLogFile();
         // stop gameloop and wait for it to finish it's tidying up...
         KablamEngine::bGameThreadRunning = false;
+
         std::unique_lock<std::mutex> ul(KablamEngine::shutdownMutex);
         KablamEngine::shutdownCv.wait(ul, [] { return KablamEngine::bGracefulExitCompleted.load(); });
 
@@ -535,11 +715,9 @@ BOOL WINAPI KablamEngine::ConsoleControlHandler(DWORD dwCtrlType)
     }
 
     case CTRL_SHUTDOWN_EVENT: {
-        KablamEngine::AddToLog(L"CTRL_SHUTDOWN_EVENT occured.");
-        OutputLogFile();
-
         // stop gameloop and wait for it to finish it's tidying up...
         KablamEngine::bGameThreadRunning = false;
+
         std::unique_lock<std::mutex> ul(KablamEngine::shutdownMutex);
         KablamEngine::shutdownCv.wait(ul, [] { return KablamEngine::bGracefulExitCompleted.load(); });
 
@@ -547,10 +725,11 @@ BOOL WINAPI KablamEngine::ConsoleControlHandler(DWORD dwCtrlType)
     }
 
     default:
-        KablamEngine::AddToLog(L"Unknown EVENT called the ConsoleControlHandler(), not handled. Check outputLog.txt.");
+        KablamEngine::AddToLog(L"Unknown EVENT called the ConsoleControlHandler() and it was not handled. Check outputLog.txt.");
 
         // stop gameloop and wait for it to finish it's tidying up...
         KablamEngine::bGameThreadRunning = false;
+
         std::unique_lock<std::mutex> ul(KablamEngine::shutdownMutex);
         KablamEngine::shutdownCv.wait(ul, [] { return KablamEngine::bGracefulExitCompleted.load(); });
 

@@ -48,19 +48,9 @@ bool KablamGame3D::OnGameCreate()
 
 	AddToLog(L"Textures added...");
 
-
-	RECT r;
-	GetWindowRect(hConsoleWindow, &r);
-
-	// Calculate the center of screen position
-	centerScreenCoords.X = (r.left + r.right) / 2;
-	centerScreenCoords.Y = (r.top + r.bottom) / 2;
-
-	SetCursorPos(centerScreenCoords.X, centerScreenCoords.Y);
-
-	ToggleMouse();
-
-
+	SetResizeWindowLock(true);
+	SetConsoleFocusPause(true);
+	SetWindowPosition(100, 100);
 
 	return true;
 }
@@ -69,18 +59,16 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 {
 
 	HandleKeyPress(fElapsedTime);
-	HandleMouseMovement(fElapsedTime);
-
 
 	//handling player angle wrap-around
 	if (fPlayerA > 2 * PI) fPlayerA -= 2 * PI;
 	if (fPlayerA < 0) fPlayerA += 2 * PI;
 
 	// iterating through screen columns
-	for (int x{ 0 }; x < GetScreenWidth(); x++)
+	for (int x{ 0 }; x < GetConsoleWidth(); x++)
 	{
 		// calculate the ray angle for each iteration
-		float fRayAngle = (fPlayerA - fFOV / 2.0f) + ((fFOV / (float)GetScreenWidth())) * (float)x;
+		float fRayAngle = (fPlayerA - fFOV / 2.0f) + ((fFOV / (float)GetConsoleWidth())) * (float)x;
 		// handling ray angle wrap-around 
 		if (fRayAngle > 2 * PI) fRayAngle -= 2 * PI;
 		if (fRayAngle < 0) fRayAngle += 2 * PI;
@@ -275,10 +263,10 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 		// get ratios of wall to ceiling and floor
 
 		// height of wall calculated as a ratio of ScreenHeight() / distance, * fWallUnit means height of top of wall
-		float fWall{ (GetScreenHeight() / fDistanceToWall) * fWallHUnit };
+		float fWall{ (GetConsoleHeight() / fDistanceToWall) * fWallHUnit };
 
 		// calculate ceiling start according to wall height AND player height
-		float fCeiling{ GetScreenHeight() / 2 - fWall * (fWallHUnit - fPlayerH) - fPlayerTilt };
+		float fCeiling{ GetConsoleHeight() / 2 - fWall * (fWallHUnit - fPlayerH) - fPlayerTilt };
 		// + (fPlayerH - fPlayerHDefault) / 3)  - will look down while jumping
 
 		// simple to calculate floor position 
@@ -302,13 +290,13 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 
 
 		// draw the full column
-		for (int y{ 0 }; y < GetScreenHeight(); y++)
+		for (int y{ 0 }; y < GetConsoleHeight(); y++)
 		{
 			// draw ceiling
 			if (y <= nCeiling)
 			{
 				//calculate difference from mid screen
-				float dy = y - GetScreenHeight() / 2.0f + fPlayerTilt;
+				float dy = y - GetConsoleHeight() / 2.0f + fPlayerTilt;
 
 				// handle dy == 0;
 				if (dy == 0)
@@ -318,8 +306,8 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				float fRayFix = cosf(fRayAngle - fPlayerA);
 
 				// calculate ceiling textile 'hit' x & y - looking up so * fPlayerH - fWallHUnit
-				float fTileHitX = fPlayerX + cosf(fRayAngle) * (GetScreenHeight() * fWallHUnit * (fPlayerH - fWallHUnit)) / dy / fRayFix;
-				float fTileHitY = fPlayerY + sinf(fRayAngle) * (GetScreenHeight() * fWallHUnit * (fPlayerH - fWallHUnit)) / dy / fRayFix;
+				float fTileHitX = fPlayerX + cosf(fRayAngle) * (GetConsoleHeight() * fWallHUnit * (fPlayerH - fWallHUnit)) / dy / fRayFix;
+				float fTileHitY = fPlayerY + sinf(fRayAngle) * (GetConsoleHeight() * fWallHUnit * (fPlayerH - fWallHUnit)) / dy / fRayFix;
 
 				// get index for texture ceiling map
 				int nTileIndexX;
@@ -339,11 +327,11 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				// char to draw 'shade'
 				short nCeilingShadeGlyph;
 
-				if (y < GetScreenHeight() / 6.0f - (int)fPlayerTilt)
+				if (y < GetConsoleHeight() / 6.0f - (int)fPlayerTilt)
 					nCeilingShadeGlyph = PIXEL_SOLID;
-				else if (y < GetScreenHeight() / 4.0f - (int)fPlayerTilt)
+				else if (y < GetConsoleHeight() / 4.0f - (int)fPlayerTilt)
 					nCeilingShadeGlyph = PIXEL_THREEQUARTERS;
-				else if (y < GetScreenHeight() / 3.0f - (int)fPlayerTilt)
+				else if (y < GetConsoleHeight() / 3.0f - (int)fPlayerTilt)
 					nCeilingShadeGlyph = PIXEL_HALF;
 				else
 					nCeilingShadeGlyph = PIXEL_QUARTER;
@@ -357,7 +345,12 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				}
 				else
 				{
-					DrawPoint(x, y, ceilingTextures[nCeilingType - 1]->SampleColour(fTileHitX - nTileIndexX, fTileHitY - nTileIndexY), nCeilingShadeGlyph);
+					short colour = ceilingTextures[nCeilingType - 1]->SampleColour(fTileHitX - nTileIndexX, fTileHitY - nTileIndexY);
+
+					if (ceilingTextures.at(nCeilingType - 1)->IsIlluminated())
+						colour = FG_DARK_BLUE | FOREGROUND_INTENSITY;
+
+					DrawPoint(x, y, colour, PIXEL_SOLID);
 				}
 
 			}
@@ -371,10 +364,10 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				DrawPoint(x, y, wallTextures[nWallType - 1]->SampleColour(fTileHit, fSampleY), nWallShadeGlyph);
 			}
 			// draw a floor character
-			else if (y >= nFloor && y <= GetScreenHeight())
+			else if (y >= nFloor && y <= GetConsoleHeight())
 			{
 				//calculate difference from mid screen
-				float dy = y - GetScreenHeight() / 2 + fPlayerTilt;
+				float dy = y - GetConsoleHeight() / 2 + fPlayerTilt;
 
 				// handle dy == 0;
 				if (dy == 0)
@@ -385,8 +378,8 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 
 
 				// calculate floor tile 'hit' x & y - looking down so * fPlayerH
-				float fTileHitX = fPlayerX + cosf(fRayAngle) * (GetScreenHeight() * fWallHUnit * fPlayerH) / dy / fRayFix;
-				float fTileHitY = fPlayerY + sinf(fRayAngle) * (GetScreenHeight() * fWallHUnit * fPlayerH) / dy / fRayFix;
+				float fTileHitX = fPlayerX + cosf(fRayAngle) * (GetConsoleHeight() * fWallHUnit * fPlayerH) / dy / fRayFix;
+				float fTileHitY = fPlayerY + sinf(fRayAngle) * (GetConsoleHeight() * fWallHUnit * fPlayerH) / dy / fRayFix;
 
 				// get index for texture floor map
 				int nTileIndexX;
@@ -405,11 +398,11 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				// char to draw 'shade'
 				short nFloorShadeGlyph;
 
-				if (y < GetScreenHeight() - GetScreenHeight() / 2.5f - (int)fPlayerTilt)
+				if (y < GetConsoleHeight() - GetConsoleHeight() / 2.5f - (int)fPlayerTilt)
 					nFloorShadeGlyph = PIXEL_QUARTER;
-				else if (y < GetScreenHeight() - GetScreenHeight() / 3.0f - (int)fPlayerTilt)
+				else if (y < GetConsoleHeight() - GetConsoleHeight() / 3.0f - (int)fPlayerTilt)
 					nFloorShadeGlyph = PIXEL_HALF;
-				else if (y < GetScreenHeight() - GetScreenHeight() / 4.5f - (int)fPlayerTilt)
+				else if (y < GetConsoleHeight() - GetConsoleHeight() / 4.5f - (int)fPlayerTilt)
 					nFloorShadeGlyph = PIXEL_THREEQUARTERS;
 				else
 					nFloorShadeGlyph = PIXEL_SOLID;
@@ -428,11 +421,10 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 
 					if (floorTextures.at(nFloorType - 1)->IsIlluminated() == true)
 					{
-						nFloorShadeGlyph = PIXEL_SOLID;
 						colour = colour | FOREGROUND_INTENSITY;
 					}
 
-					DrawPoint(x, y, colour, nFloorShadeGlyph);
+					DrawPoint(x, y, colour, PIXEL_SOLID);
 				}
 			}
 		}
@@ -472,13 +464,16 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				}
 		}
 
-		DrawTextureToScreen(spriteTextures.at(0), 50, 50, 1.0f);
+		//DrawTextureToScreen(spriteTextures.at(0), 50, 50, 1.0f);
+		//DrawRectangleCoords(1, 1, 3, 3, FG_CYAN, true, PIXEL_SOLID);
+		//DrawRectangleEdgeLength(1, 5, 3, 3, FG_DARK_GREY, true, PIXEL_SOLID);
+		//DrawCircle(150, 100, 30, FG_YELLOW, PIXEL_SOLID, true);
 
 
 		// display aiming cross
 		int nCrossSize{ 2 };
-		DrawLine(GetScreenWidth() / 2 - nCrossSize, GetScreenHeight() / 2, GetScreenWidth() / 2 + nCrossSize, GetScreenHeight() / 2, FG_WHITE, PIXEL_HALF);
-		DrawLine(GetScreenWidth() / 2, GetScreenHeight() / 2 - nCrossSize, GetScreenWidth() / 2, GetScreenHeight() / 2 + nCrossSize, FG_WHITE, PIXEL_HALF);
+		DrawLine(GetConsoleWidth() / 2 - nCrossSize, GetConsoleHeight() / 2, GetConsoleWidth() / 2 + nCrossSize, GetConsoleHeight() / 2, FG_WHITE, PIXEL_HALF);
+		DrawLine(GetConsoleWidth() / 2, GetConsoleHeight() / 2 - nCrossSize, GetConsoleWidth() / 2, GetConsoleHeight() / 2 + nCrossSize, FG_WHITE, PIXEL_HALF);
 
 
 	} // end of screen column iteration
@@ -490,26 +485,6 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 // member methods of derived KablamGame class
 
 // key press actions
-
-bool KablamGame3D::HandleMouseMovement(float fElapsedTime)
-{
-	if (bConsoleFocus)
-	{
-		POINT p;
-
-		GetCursorPos(&p);
-
-		mouseVelocity.first = p.x - centerScreenCoords.X;
-		mouseVelocity.second = p.y - centerScreenCoords.Y;
-
-		fPlayerA += ((float)mouseVelocity.first/80.0f) * fElapsedTime;
-		fPlayerTilt += ((float)mouseVelocity.second * 3.0f) * fElapsedTime;
-
-		SetCursorPos(centerScreenCoords.X, centerScreenCoords.Y);
-	}
-
-	return true;
-}
 
 bool KablamGame3D::HandleKeyPress(float fElapsedTime)
 {
@@ -589,11 +564,6 @@ bool KablamGame3D::HandleKeyPress(float fElapsedTime)
 
 	// handle ACTION keys
 
-	if (keyArray[VK_ESCAPE].bPressed)
-	{
-		bConsoleFocus = !bConsoleFocus;
-		ToggleMouse();
-	}
 
 	if (keyArray[VK_SPACE].bHeld && !bPlayerJumping)
 	{
@@ -604,7 +574,6 @@ bool KablamGame3D::HandleKeyPress(float fElapsedTime)
 	// jump mechanics
 	if (bPlayerJumping)
 	{
-
 		fPlayerUpVelocity += fGravity * fElapsedTime;
 
 		fPlayerH += fPlayerUpVelocity * fElapsedTime;

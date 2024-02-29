@@ -83,9 +83,6 @@ private:
 	// handle player inputs
 	bool HandleKeyPress(float fElapsedTime);
 
-	bool HandleMouseMovement(float fElapsedTime);
-
-
 	// get ray length from opposite and adjacent sides of ray vector
 	float rayLength(float px, float py, float rx, float ry) const;
 
