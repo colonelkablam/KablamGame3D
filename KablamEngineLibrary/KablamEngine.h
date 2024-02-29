@@ -96,7 +96,6 @@ protected:
     };
 
     keyState keyArray[256];
-
     short newKeyStateArray[256];
     short oldKeyStateArray[256];
 
@@ -105,8 +104,6 @@ protected:
     bool bFocusPause;
     bool bGameThreadPaused;
     bool bFullScreen;
-
-
     COORD mouseCoords;
 
 
