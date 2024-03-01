@@ -8,23 +8,31 @@ class TexturePainter : public KablamEngine
 {
     // member attributes for KablamEngine
 private:
-    const int nMinDim = 4;
-    const int nMaxDim = 64;
+    static const int MIN_TEXTURE_SIZE = 4;
+    static const int MAX_TEXTURE_SIZE = 64;
 
     const std::wstring sSaveFolderName = L"Textures\\"; // relative path to subDir
     const std::wstring sExtensionName = L".txr";
-    std::wstring sCurrentFileName = L"untitled";
-    std::wstring sCurrentFilePath;
-    Texture* currentTexture = nullptr;
 
     short currentColour = FG_WHITE;
     short currentGlyph = PIXEL_SOLID;
 
-    int nCanvasXpos = 16;  // xy of drawing space
-    int nCanvasYpos = 16;
-    int nCanvasSizeX = 32; // texture sizes
-    int nCanvasSizeY = 32;
+    // display
+    struct Canvas {
+        std::wstring fileName;
+        std::wstring filePath;
+        int illumination;
+        int xPos;
+        int yPos;
+        int width; 
+        int height;
+        Texture* texture;
+    };
 
+    // vector for storing canvases and textures together for editing
+    std::vector<Canvas> canvases;
+
+    int nCurrentCanvas = -1;
 
 
 public:
@@ -36,6 +44,9 @@ public:
 
     // member methods for TexturePainter
 
+    bool GetUserStartInput(); // needed to load up textures
+
+
 protected:
     // virtual methods from KablamEngine to be defined
     virtual bool OnGameCreate();
@@ -46,17 +57,19 @@ protected:
 
 private:
 
-    bool GetUserStartInput();
+    bool InitCanvasExistingTexture(const std::wstring& fileName);
 
-    bool InitialiseExistingSprite(const std::wstring& fileName);
-
-    bool InitialiseNewSprite(int width, int height, bool illuminated, const std::wstring& fileName);
+    bool InitCanvasNewTexture(int width, int height, bool illuminated, const std::wstring& fileName);
 
     // check if within canvas
     bool WithinCanvas(int x, int y);
 
     // only draw if in canvas
-    void DrawPointOnSprite(int mouse_x, int mouse_y, short colour = FG_WHITE, short glyph = 0x2588);
+    void DrawPointOnTexture(int mouse_x, int mouse_y, short colour = FG_WHITE, short glyph = 0x2588);
+
+    bool CheckFolderExist(const std::wstring& folderPath);
+
+    bool CreateFolder(const std::wstring& folderPath);
 
 
 }; // end of TexturePainter class definition

@@ -26,6 +26,9 @@ KablamEngine::KablamEngine()
     
     // grab the ptr to this instance into static instance (needed for handling closing console)
     instance = this;
+
+    // set how to handle a close console event
+    SetConsoleCtrlHandler(KablamEngine::ConsoleControlHandler, TRUE);
 }
 
 // destructor
@@ -163,11 +166,6 @@ int KablamEngine::BuildConsole(int screenWidth, int screenHeight, int fontWidth,
         CleanUp();
         return Error(L"Failed to SetConsoleMode 'ENABLE_EXTENDED_FLAGS | ENABLE_MOUSE_INPUT'");
     }
-
-    // set how to handle a close console event
-    if (!SetConsoleCtrlHandler(KablamEngine::ConsoleControlHandler, TRUE))
-        return Error(L"Failed to SetConsoleCtrlHandler");
-
 
     AddToLog(L"BuildConsole() successful.");
 

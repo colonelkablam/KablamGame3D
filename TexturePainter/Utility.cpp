@@ -128,3 +128,30 @@ void GetDimensionInput(const std::wstring& prompt, int& userInput, int min, int 
         }
     }
 }
+
+bool GetYesNoInput(const std::wstring& prompt) {
+
+    wchar_t userInput{ L' ' };
+    while (true) {
+        std::wcout << prompt;
+        if (std::wcin >> userInput) {
+            userInput = towlower(userInput);
+
+            // Clear the input buffer to remove the leftover newline character
+            std::wcin.ignore(10000, L'\n');
+
+            if (userInput == L'y')
+                return true;
+            else if (userInput == L'n')
+                return false;
+            else {
+                std::wcout << L"Please enter 'y' for yes or 'n' for no.\n";
+            }
+        }
+        else {
+            std::wcin.clear();
+            std::wcin.ignore(10000, L'\n');
+            std::wcout << L"Invalid input, please enter 'y' for yes or 'n' for no.\n";
+        }
+    }
+}

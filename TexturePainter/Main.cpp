@@ -9,18 +9,23 @@ int main()
 
 	TexturePainter texturePainter(L"Texture Painter!");
 
-	// very low 180 x 90
-	// low res 240 x 135
-	// med res 320 x 180
-	// very med 480 x 270
-	// high res 640 x 360
-	// ultra 1280 x 720
+	// dismal res   180 x 90
+	// low res		240 x 135
+	// med res		320 x 180
+	// med-high	res	480 x 270
+	// high res		640 x 360
+	// mega res		1280 x 720
+	// ultra res	1920 x 1080
 
-	texturePainter.BuildConsole(320, 180, 6, 6);
-
-	texturePainter.Start();
+	if (texturePainter.GetUserStartInput())
+	{
+		texturePainter.BuildConsole(320, 180, 3, 3);
+		texturePainter.Start();
+	}
 
 	std::cout << "End of main() reached\n";
+
+	Sleep(3000);
 
 	return 0;
 }

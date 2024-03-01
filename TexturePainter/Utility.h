@@ -13,3 +13,6 @@ bool FileExistInDir(const std::vector <std::wstring>* fileList, const std::wstri
 
 void GetDimensionInput(const std::wstring& prompt, int& userInput, int min, int max);
 
+bool GetYesNoInput(const std::wstring& prompt);
+
+
