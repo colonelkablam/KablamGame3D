@@ -278,8 +278,14 @@ int KablamEngine::GetConsoleHeight()
     return nScreenHeight;
 }
 
+
 void KablamEngine::WriteStringToBuffer(int x, int y, std::wstring string, short colour)
 {
+    for (size_t i = 0; i < string.size(); i++)
+    {
+        screen[y * nScreenWidth + x + i].Char.UnicodeChar = string[i];
+        screen[y * nScreenWidth + x + i].Attributes = colour;
+    }
 }
 
 void KablamEngine::DrawPoint(int x, int y, short colour, short glyph)

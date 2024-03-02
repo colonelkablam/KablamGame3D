@@ -2,7 +2,6 @@
 
 #include "TexturePainter.h"
 
-
 int main()
 {
 	std::cout << "Welcome to Texture Painter!" << std::endl;
@@ -19,7 +18,7 @@ int main()
 
 	if (texturePainter.GetUserStartInput())
 	{
-		texturePainter.BuildConsole(320, 180, 3, 3);
+		texturePainter.BuildConsole(96, 96, 8, 8);
 		texturePainter.Start();
 	}
 

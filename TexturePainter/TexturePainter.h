@@ -11,8 +11,10 @@ private:
     static const int MIN_TEXTURE_SIZE = 4;
     static const int MAX_TEXTURE_SIZE = 64;
 
-    const std::wstring sSaveFolderName = L"Textures\\"; // relative path to subDir
-    const std::wstring sExtensionName = L".txr";
+    const std::wstring SAVE_FOLDER = L"Textures\\"; // relative path to subDir
+    const std::wstring TEXTURE_EXTENSION = L".txr";
+    const size_t CANVAS_XPOS = 16;
+    const size_t CANVAS_YPOS = 16;
 
     short currentColour = FG_WHITE;
     short currentGlyph = PIXEL_SOLID;
@@ -33,6 +35,9 @@ private:
     std::vector<Canvas> canvases;
 
     int nCurrentCanvas = -1;
+
+    // ptrs to manage current selected canvas and texture
+    const Canvas* currentCanvas;
 
 
 public:
@@ -60,6 +65,8 @@ private:
     bool InitCanvasExistingTexture(const std::wstring& fileName);
 
     bool InitCanvasNewTexture(int width, int height, bool illuminated, const std::wstring& fileName);
+
+    void ChangeCanvas(size_t index);
 
     // check if within canvas
     bool WithinCanvas(int x, int y);

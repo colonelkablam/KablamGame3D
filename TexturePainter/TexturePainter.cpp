@@ -13,9 +13,12 @@ TexturePainter::~TexturePainter()
 {
     for (Canvas canvas: canvases)
     {
-        delete[] canvas.texture;
+        delete canvas.texture;
         canvas.texture = nullptr;
     }
+
+    delete currentCanvas;
+    currentCanvas = nullptr;
 }
 
 bool TexturePainter::OnGameCreate() 
@@ -26,37 +29,37 @@ bool TexturePainter::OnGameCreate()
         return Error(L"No textures loaded; unable to continue.");
     }
 
+
+    // start at 1st canvas
     nCurrentCanvas = 0;
+
+    // set current canvas pointer 
+    currentCanvas = &canvases.at(nCurrentCanvas);
+
     return true;
 }
 
 
 bool TexturePainter::OnGameUpdate(float fElapsedTime) {
 
-    
-    while (bGameThreadRunning) {
-
-        int canvasXPos = canvases.at(nCurrentCanvas).xPos;
-        int canvasYPos = canvases.at(nCurrentCanvas).yPos;
-        int canvasWidth = canvases.at(nCurrentCanvas).width;
-        int canvasHeight = canvases.at(nCurrentCanvas).height;
-        Texture* canvasTexture = canvases.at(nCurrentCanvas).texture;
 
 
-        // square around canvas position
-        DrawRectangleEdgeLength(canvasXPos - 1, canvasYPos - 1, canvasWidth, canvasHeight, FG_RED);
+    const Canvas* currentCanvas = &canvases.at(nCurrentCanvas);
 
-        // add texture to screen buffer
-        DrawTextureToScreen(canvasTexture, canvasXPos, canvasYPos, 1);
+    // square around canvas position
+    DrawRectangleEdgeLength(currentCanvas->xPos - 1, currentCanvas->xPos - 1, currentCanvas->width + 2, currentCanvas->height + 2, FG_RED);
+
+    // add texture to screen buffer
+    DrawTextureToScreen(currentCanvas->texture, currentCanvas->xPos, currentCanvas->yPos, 1);
 
 
-        // update info display
-        WriteStringToBuffer(1, 1, L"Current File Name: " + sCurrentFileName);
-        WriteStringToBuffer(1, 3, L"Dimentions: " + std::to_wstring(canvasWidth) + L" x " + std::to_wstring(canvasHeight));
-        WriteStringToBuffer(1, 5, L"                                                    "); // hack to clear mouse position info
-        WriteStringToBuffer(1, 5, L"Canvas COORDS X: " + std::to_wstring(mouseCoords.X - canvasXPos) + L", Y: " + std::to_wstring(mouseCoords.Y - canvasYPos));
+    // update info display
+    WriteStringToBuffer(1, 1, L"Current File Name: " + currentCanvas->fileName, FG_WHITE);
+    WriteStringToBuffer(1, 3, L"Dimentions: " + std::to_wstring(currentCanvas->width) + L" x " + std::to_wstring(currentCanvas->height));
+    WriteStringToBuffer(1, 5, L"                                                    "); // hack to clear mouse position info
+    WriteStringToBuffer(1, 5, L"Canvas COORDS X: " + std::to_wstring(mouseCoords.X - currentCanvas->xPos) +
+        L", Y: " + std::to_wstring(mouseCoords.Y - currentCanvas->yPos));
 
-    }
 
     return true;
 }
@@ -71,25 +74,25 @@ bool TexturePainter::GetUserStartInput()
     std::vector <std::wstring>* fileList{ nullptr };
 
     // check if folder exists; create a new one if not.
-    if (!CheckFolderExist(sSaveFolderName))
+    if (!CheckFolderExist(SAVE_FOLDER))
     {
-        AddToLog(L"'" + sSaveFolderName + L"' does not exist.");
-        if (!CreateFolder(sSaveFolderName))
+        AddToLog(L"'" + SAVE_FOLDER + L"' does not exist.");
+        if (!CreateFolder(SAVE_FOLDER))
         {
-            AddToLog(L"'" + sSaveFolderName + L"Unable to create save folder. Exiting program.");
+            AddToLog(L"'" + SAVE_FOLDER + L"Unable to create save folder. Exiting program.");
             return false;
         }
         else
-            AddToLog(L"'" + sSaveFolderName + L"Created '" + sSaveFolderName + L"' save folder.");
+            AddToLog(L"'" + SAVE_FOLDER + L"Created '" + SAVE_FOLDER + L"' save folder.");
     }
     else
-        AddToLog(L"'" + sSaveFolderName + L"' exists. No need to create save folder.");
+        AddToLog(L"'" + SAVE_FOLDER + L"' exists. No need to create save folder.");
 
 
     // ask until existing or correct format file name given
     do {
         // attempt to get list of saved files
-        fileList = GetFileList(sSaveFolderName, sExtensionName);
+        fileList = GetFileList(SAVE_FOLDER, TEXTURE_EXTENSION);
         std::wcout << std::endl;
 
         // Prompt the user for a string value
@@ -111,10 +114,10 @@ bool TexturePainter::GetUserStartInput()
         }
         else // else test to see if file exists
         {
-            if (FileExistInDir(fileList, userFileName + sExtensionName)) // if exists
+            if (FileExistInDir(fileList, userFileName + TEXTURE_EXTENSION)) // if exists
             {
                 // load texture from existing file
-                InitCanvasExistingTexture(userFileName + sExtensionName);
+                InitCanvasExistingTexture(userFileName + TEXTURE_EXTENSION);
             }
             else
             {
@@ -125,7 +128,7 @@ bool TexturePainter::GetUserStartInput()
 
 
                 // create and save new .txr file in saves path
-                InitCanvasNewTexture(inputWidth, inputHeight, inputIllumination, userFileName + sExtensionName);
+                InitCanvasNewTexture(inputWidth, inputHeight, inputIllumination, userFileName + TEXTURE_EXTENSION);
             }
         }
         if (!GetYesNoInput(L"\nDo you want to add more Textures to edit? (y/n): "))
@@ -156,34 +159,41 @@ bool TexturePainter::InitCanvasNewTexture(int width, int height, bool illuminate
     // create new canvas
     Canvas canvas;
     canvas.fileName = fileName;
-    canvas.filePath = sSaveFolderName + fileName;
+    canvas.filePath = SAVE_FOLDER + fileName;
+    canvas.xPos = CANVAS_XPOS;
+    canvas.yPos = CANVAS_YPOS;
     canvas.width = width;
     canvas.height = height;
     canvas.illumination = illuminated;
     canvas.texture = new Texture(width, height, false);
 
     // save the new texture to save folder (create an empty file)
-    canvas.texture->SaveAs(sCurrentFilePath);
+    canvas.texture->SaveAs(canvas.filePath);
 
     canvases.push_back(canvas);
 
     return true;
 }
 
+void TexturePainter::ChangeCanvas(size_t index)
+{
+    currentCanvas = &canvases.at(index);
+}
+
 bool TexturePainter::InitCanvasExistingTexture(const std::wstring& fileName)
 {
     // create new canvas
     Canvas canvas;
-    canvas.texture = new Texture(sSaveFolderName + fileName);
+    canvas.texture = new Texture(SAVE_FOLDER + fileName);
     canvas.fileName = fileName;
-    canvas.filePath = sSaveFolderName + fileName;
+    canvas.filePath = SAVE_FOLDER + fileName;
+    canvas.xPos = CANVAS_XPOS;
+    canvas.yPos = CANVAS_YPOS;
     canvas.width = canvas.texture->GetWidth();
     canvas.height = canvas.texture->GetWidth();
     canvas.illumination = canvas.texture->IsIlluminated();
 
-
     // no need to save a file as texture already exists
-
     canvases.push_back(canvas);
 
     return true;
