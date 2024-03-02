@@ -44,7 +44,7 @@ bool TexturePainter::OnGameUpdate(float fElapsedTime) {
 
     HandleKeyPress(fElapsedTime);
 
-    const Canvas* currentCanvas = &canvases.at(nCurrentCanvas);
+    currentCanvas = &canvases.at(nCurrentCanvas);
 
     // square around canvas position
     DrawRectangleEdgeLength(currentCanvas->xPos - 1, currentCanvas->xPos - 1, currentCanvas->width + 2, currentCanvas->height + 2, FG_RED);
@@ -243,7 +243,7 @@ bool TexturePainter::HandleKeyPress(float fElapsedTime)
                                            mouseCoords.Y - currentCanvas->xPos, currentGlyph);
     }
 
-    if (keyArray[VK_LBUTTON].bHeld)
+    if (keyArray[VK_RBUTTON].bHeld)
     {
         currentCanvas->texture->SetColour( mouseCoords.X - currentCanvas->xPos,
                                            mouseCoords.Y - currentCanvas->xPos, FG_BLACK);

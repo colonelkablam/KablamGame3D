@@ -464,7 +464,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				}
 		}
 
-		//DrawTextureToScreen(spriteTextures.at(0), 50, 50, 1.0f);
+		DrawTextureToScreen(spriteTextures.at(0), 50, 50, 1.0f);
 		//DrawRectangleCoords(1, 1, 3, 3, FG_CYAN, true, PIXEL_SOLID);
 		//DrawRectangleEdgeLength(1, 5, 3, 3, FG_DARK_GREY, true, PIXEL_SOLID);
 		//DrawCircle(150, 100, 30, FG_YELLOW, PIXEL_SOLID, true);
