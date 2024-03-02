@@ -68,11 +68,12 @@ private:
 
     void ChangeCanvas(size_t index);
 
-    // check if within canvas
     bool WithinCanvas(int x, int y);
 
     // only draw if in canvas
     void DrawPointOnTexture(int mouse_x, int mouse_y, short colour = FG_WHITE, short glyph = 0x2588);
+
+    bool HandleKeyPress(float fElapsedTime);
 
     bool CheckFolderExist(const std::wstring& folderPath);
 

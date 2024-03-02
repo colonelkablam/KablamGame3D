@@ -42,7 +42,7 @@ bool TexturePainter::OnGameCreate()
 
 bool TexturePainter::OnGameUpdate(float fElapsedTime) {
 
-
+    HandleKeyPress(fElapsedTime);
 
     const Canvas* currentCanvas = &canvases.at(nCurrentCanvas);
 
@@ -230,6 +230,30 @@ bool TexturePainter::CheckFolderExist(const std::wstring& folderPath) {
     // The path exists but is not a directory (it's a file)
     return false;
 }
+
+
+bool TexturePainter::HandleKeyPress(float fElapsedTime)
+{
+    //controls
+    if (keyArray[VK_LBUTTON].bHeld)
+    {
+        currentCanvas->texture->SetColour( mouseCoords.X - currentCanvas->xPos,
+                                           mouseCoords.Y - currentCanvas->xPos, currentColour);
+        currentCanvas->texture->SetGlyph(  mouseCoords.X - currentCanvas->xPos,
+                                           mouseCoords.Y - currentCanvas->xPos, currentGlyph);
+    }
+
+    if (keyArray[VK_LBUTTON].bHeld)
+    {
+        currentCanvas->texture->SetColour( mouseCoords.X - currentCanvas->xPos,
+                                           mouseCoords.Y - currentCanvas->xPos, FG_BLACK);
+        currentCanvas->texture->SetGlyph(  mouseCoords.X - currentCanvas->xPos,
+                                           mouseCoords.Y - currentCanvas->xPos, L' ');
+    }
+
+    return true;
+}
+
 
 bool TexturePainter::CreateFolder(const std::wstring& folderPath) {
     if (!CreateDirectory(folderPath.c_str(), NULL)) {
