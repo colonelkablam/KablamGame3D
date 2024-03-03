@@ -671,6 +671,33 @@ int KablamEngine::CleanUp()
     return 0; // if successful 
 }
 
+void KablamEngine::DisplayAlertMessage(const std::wstring& message)
+{
+    int x = nScreenWidth / 2 - static_cast<int>(message.length()) / 2;
+    int y = nScreenHeight / 2;
+
+    WriteStringToBuffer(x, y, message);
+    WriteStringToBuffer(x, y + 1, L"Press any key to continue...");
+
+    // Update Console Buffer with screen buffer
+    WriteConsoleOutput(hNewBuffer, screen, { (short)nScreenWidth, (short)nScreenHeight }, { 0,0 }, &windowSize);
+
+    // Flush the console input buffer to clear out any prior key presses
+    FlushConsoleInputBuffer(hConsoleInput);
+
+    // Wait for a key press
+    INPUT_RECORD ir;
+    DWORD numRead;
+    while (true) {
+        // Read the next input event
+        ReadConsoleInput(hConsoleInput, &ir, 1, &numRead);
+
+        // Check if the event is a key event and the key is pressed down
+        if (ir.EventType == KEY_EVENT && ir.Event.KeyEvent.bKeyDown) {
+            break; // Exit the loop on a key press
+        }
+    }
+}
 
 // STATIC MEMBERS
 

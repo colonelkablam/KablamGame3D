@@ -175,6 +175,8 @@ protected:
 
     int CleanUp();
 
+    void DisplayAlertMessage(const std::wstring& message);
+
     static void AddToLog(std::wstring message);
 
 private:

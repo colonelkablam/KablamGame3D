@@ -237,18 +237,32 @@ bool TexturePainter::HandleKeyPress(float fElapsedTime)
     //controls
     if (keyArray[VK_LBUTTON].bHeld)
     {
-        currentCanvas->texture->SetColour( mouseCoords.X - currentCanvas->xPos,
-                                           mouseCoords.Y - currentCanvas->xPos, currentColour);
-        currentCanvas->texture->SetGlyph(  mouseCoords.X - currentCanvas->xPos,
-                                           mouseCoords.Y - currentCanvas->xPos, currentGlyph);
+        currentCanvas->texture->SetColour(mouseCoords.X - currentCanvas->xPos,
+            mouseCoords.Y - currentCanvas->xPos, currentColour);
+        currentCanvas->texture->SetGlyph(mouseCoords.X - currentCanvas->xPos,
+            mouseCoords.Y - currentCanvas->xPos, currentGlyph);
     }
 
     if (keyArray[VK_RBUTTON].bHeld)
     {
-        currentCanvas->texture->SetColour( mouseCoords.X - currentCanvas->xPos,
-                                           mouseCoords.Y - currentCanvas->xPos, FG_BLACK);
-        currentCanvas->texture->SetGlyph(  mouseCoords.X - currentCanvas->xPos,
-                                           mouseCoords.Y - currentCanvas->xPos, L' ');
+        currentCanvas->texture->SetColour(mouseCoords.X - currentCanvas->xPos,
+            mouseCoords.Y - currentCanvas->xPos, FG_BLACK);
+        currentCanvas->texture->SetGlyph(mouseCoords.X - currentCanvas->xPos,
+            mouseCoords.Y - currentCanvas->xPos, L' ');
+
+    }
+
+    for (size_t i{ 0 }; i < 10; i++)
+    {
+        wchar_t num = L'0' + i; // Convert the digit to its corresponding wchar_t character
+
+        if (keyArray[num].bHeld)
+        {
+            if (i < canvases.size())
+                nCurrentCanvas = i;
+            else
+                DisplayAlertMessage(L"Test Input Error!...");
+        }
     }
 
     return true;
