@@ -113,6 +113,12 @@ private:
 	// get map value at coord x,y
 	int getMapValue(int x, int y, const std::vector<int>& map) const;
 
+	void DisplayAim(int* aimArray = new int[25]{ 0, 0, 1, 0, 0,
+												 0, 0, 1, 0, 0, 
+												 1, 1, 1, 1, 1, 
+												 0, 0, 1, 0, 0, 
+												 0, 0, 1, 0, 0, }, size_t size = 25);
+
 
 }; // end of KablamGraphics class definition
 

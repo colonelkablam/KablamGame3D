@@ -102,7 +102,7 @@ protected:
     // CONSOLE / WINDOW
     bool bConsoleFocus;
     bool bFocusPause;
-    bool bGameThreadPaused;
+    bool bGameUpdatePaused;
     bool bFullScreen;
     COORD mouseCoords;
 

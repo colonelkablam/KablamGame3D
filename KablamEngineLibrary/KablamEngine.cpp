@@ -15,7 +15,7 @@ KablamEngine::KablamEngine()
     :nScreenWidth{ 30 }, nScreenHeight{ 10 }, nFontWidth{ 5 }, nFontHeight{ 10 }, hConsoleWindow{ GetConsoleWindow() },
     hOGBuffer{ GetStdHandle(STD_OUTPUT_HANDLE) }, hConsoleInput{ GetStdHandle(STD_INPUT_HANDLE) }, hNewBuffer{ INVALID_HANDLE_VALUE },
     dwPreviousConsoleMode{ 0 }, screen{ nullptr }, windowSize{ 0, 0, 1, 1 }, mouseCoords{ 0,0 }, sConsoleTitle{ L"no_name_given" },
-    bConsoleFocus{ true }, bGameThreadPaused{ false }, bFocusPause{ false }, bFullScreen{ false } {
+    bConsoleFocus{ true }, bGameUpdatePaused{ false }, bFocusPause{ false }, bFullScreen{ false } {
 
     // initialise storage of input events - key and mouse
     // use standard library fill
@@ -225,8 +225,9 @@ int KablamEngine::GameThread()
         // exit app with ESCAPE
         if (keyArray[VK_ESCAPE].bPressed && bConsoleFocus)
         {
+            AddToLog(L"ESCAPE key pressed, exiting program.");
             bGameThreadRunning = false;
-            bGameThreadPaused = false;
+            bGameUpdatePaused = false;
         }
 
         // toggle FULL SCREEN with F12
@@ -240,7 +241,7 @@ int KablamEngine::GameThread()
         // handling input
         KablamEngine::UpdateInputStates();
 
-        if (!bGameThreadPaused) // Check if the game is not paused
+        if (!bGameUpdatePaused) // Check if the game is not paused
         {
             // Handle Timing
             tp2 = std::chrono::system_clock::now();
@@ -504,7 +505,7 @@ void KablamEngine::UpdateInputStates() // mouse location and focus state of wind
                 bConsoleFocus = inputBuffer[i].Event.FocusEvent.bSetFocus;
                 
                 if (bFocusPause)
-                    bGameThreadPaused = !bConsoleFocus, AddToLog(L"Game Paused");
+                    bGameUpdatePaused = !bConsoleFocus, AddToLog(L"Game Paused");
                 break;
             }
 

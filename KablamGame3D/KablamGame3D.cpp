@@ -467,17 +467,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 					}
 			}
 
-			DrawTextureToScreen(spriteTextures.at(0), 50, 50, 1.0f);
-			//DrawRectangleCoords(1, 1, 3, 3, FG_CYAN, true, PIXEL_SOLID);
-			//DrawRectangleEdgeLength(1, 5, 3, 3, FG_DARK_GREY, true, PIXEL_SOLID);
-			//DrawCircle(150, 100, 30, FG_YELLOW, PIXEL_SOLID, true);
-
-
-			// display aiming cross
-			int nCrossSize{ 2 };
-			DrawLine(GetConsoleWidth() / 2 - nCrossSize, GetConsoleHeight() / 2, GetConsoleWidth() / 2 + nCrossSize, GetConsoleHeight() / 2, FG_WHITE, PIXEL_HALF);
-			DrawLine(GetConsoleWidth() / 2, GetConsoleHeight() / 2 - nCrossSize, GetConsoleWidth() / 2, GetConsoleHeight() / 2 + nCrossSize, FG_WHITE, PIXEL_HALF);
-
+			DisplayAim();
 
 		} // end of screen column iteration
 
@@ -647,4 +637,24 @@ int KablamGame3D::getMapValue(int x, int y, const std::vector<int>& map) const
 	}
 	else
 		return 0;
+}
+
+// display aiming cross
+void KablamGame3D::DisplayAim(int* aimArray, size_t size)
+{
+	if (size > 25)
+	{
+		AddToLog(L"Error displaying aim cross, input array geater than 25 elements.");
+		return;
+	}
+	
+	int xOff = int(GetConsoleWidth() / 2) - 2;
+	int yOff = int(GetConsoleHeight() / 2) - 2;
+
+	for (size_t x{ 0 }; x < 5; x++)
+		for (size_t y{ 0 }; y < 5; y++)
+		{
+			if (aimArray[y * 5 + x] == 1)
+				DrawPoint(x + xOff, y + yOff, FG_WHITE, PIXEL_HALF);
+		}
 }
