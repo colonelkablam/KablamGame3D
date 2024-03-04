@@ -44,6 +44,25 @@ private:
 	float fPlayerTilt = 0.0f;
 	float fPlayerTiltSpeed = 150.0f;
 
+	struct ActionStates
+	{
+		bool lookUp = false;
+		bool lookDown = false;
+		bool rotateLeft = false;
+		bool rotateRight = false;
+		bool forward = false;
+		bool backward = false;
+		bool left = false;
+		bool right = false;
+		bool use = false;
+		bool jump = false;
+		bool pause = false;
+		bool toggleMap = false;
+	};
+
+	ActionStates actionStates;
+	bool bGamePaused = false;
+
 	COORD newMouseCoords = { 0,0 };
 	COORD centerScreenCoords = { 0,0 };
 	std::pair<int, int> mouseVelocity = { 0.0f, 0.0f };
@@ -80,7 +99,10 @@ public:
 
 private:
 	// handle player inputs
-	bool HandleKeyPress(float fElapsedTime);
+	void HandleKeyPress();
+
+	// apply movements to player
+	bool ApplyMovementAndActions(float fElapsedTime);
 
 	// get ray length from opposite and adjacent sides of ray vector
 	float rayLength(float px, float py, float rx, float ry) const;

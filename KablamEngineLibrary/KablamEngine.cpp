@@ -5,6 +5,10 @@
 #include "framework.h"
 #include "KablamEngine.h"
 
+// undefine the macros from windows.h
+#undef max
+#undef min
+
 // constructor
 
 KablamEngine::KablamEngine()
@@ -222,11 +226,13 @@ int KablamEngine::GameThread()
         if (keyArray[VK_ESCAPE].bPressed && bConsoleFocus)
         {
             bGameThreadRunning = false;
+            bGameThreadPaused = false;
         }
 
         // toggle FULL SCREEN with F12
         if (keyArray[VK_F12].bPressed && bConsoleFocus)
         {
+            // could change to toggle fullscreen but prefer explicit true/false
             bFullScreen = !bFullScreen;
             SetFullScreen(bFullScreen);
         }
@@ -256,7 +262,7 @@ int KablamEngine::GameThread()
         }
         else
         {
-            Sleep(1000); // Sleep briefly to reduce CPU usage
+            Sleep(500); // Sleep briefly to reduce CPU usage
         }
 
     }
@@ -278,11 +284,14 @@ int KablamEngine::GetConsoleHeight()
     return nScreenHeight;
 }
 
-
-void KablamEngine::WriteStringToBuffer(int x, int y, std::wstring string, short colour)
+void KablamEngine::WriteStringToBuffer(int x, int y, const std::wstring& string, short colour)
 {
+    if (y < 0 || y >= nScreenHeight) return; // Y out of bounds
+
     for (size_t i = 0; i < string.size(); i++)
     {
+        if (x + i < 0 || x + i >= nScreenWidth) continue; // X out of bounds
+
         screen[y * nScreenWidth + x + i].Char.UnicodeChar = string[i];
         screen[y * nScreenWidth + x + i].Attributes = colour;
     }
@@ -444,7 +453,6 @@ int KablamEngine::DrawTextureToScreen(const Texture* texture, int xScreen, int y
 
 void KablamEngine::UpdateInputStates() // mouse location and focus state of window
 {
-
     for (int i{ 0 }; i < 256; i++)
     {
         // reset pressed and released (as one-off events)
@@ -673,22 +681,39 @@ int KablamEngine::CleanUp()
 
 void KablamEngine::DisplayAlertMessage(const std::wstring& message)
 {
-    int x = nScreenWidth / 2 - static_cast<int>(message.length()) / 2;
-    int y = nScreenHeight / 2;
+    int border = 3;
+    int maxMessageLength = nScreenWidth - border * 2; // Maximum message length considering the border
+    std::wstring truncatedMessage = message.substr(0, maxMessageLength); // Truncate message accordingly
+    int messageLength = std::max(static_cast<int>(truncatedMessage.length()), 28); // 28 is "Press any key" message length
+    int messageLines = 3; // Number of lines for the message
+    // Center the message
+    int x = nScreenWidth / 2 - messageLength / 2;
+    int y = nScreenHeight / 2 - messageLines / 2;
 
-    WriteStringToBuffer(x, y, message);
-    WriteStringToBuffer(x, y + 1, L"Press any key to continue...");
+    // Draw background of message box
+    DrawRectangleEdgeLength(x - border, y - border, messageLength + border * 2, messageLines + border * 2, FG_DARK_MAGENTA, true, PIXEL_SOLID);
+    // Draw border
+    DrawRectangleEdgeLength(x - border, y - border, messageLength + border * 2, messageLines + border * 2, FG_WHITE | FG_DARK_MAGENTA, false, L'*');
+
+    // Write the truncated message and the "Press any key" instruction
+    WriteStringToBuffer(x, y, truncatedMessage, FG_WHITE | BG_DARK_MAGENTA);
+    WriteStringToBuffer(x, y + 2, L"Press any key to continue...", FG_WHITE | BG_DARK_MAGENTA);
 
     // Update Console Buffer with screen buffer
     WriteConsoleOutput(hNewBuffer, screen, { (short)nScreenWidth, (short)nScreenHeight }, { 0,0 }, &windowSize);
 
+    WaitForKeyPress();
+}
+
+void KablamEngine::WaitForKeyPress()
+{
     // Flush the console input buffer to clear out any prior key presses
     FlushConsoleInputBuffer(hConsoleInput);
 
     // Wait for a key press
     INPUT_RECORD ir;
     DWORD numRead;
-    while (true) {
+    while (bGameThreadRunning) {
         // Read the next input event
         ReadConsoleInput(hConsoleInput, &ir, 1, &numRead);
 

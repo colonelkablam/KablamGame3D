@@ -8,7 +8,7 @@ int main()
 
 	TexturePainter texturePainter(L"Texture Painter!");
 
-	// dismal res   180 x 90
+	// 4od res   180 x 90
 	// low res		240 x 135
 	// med res		320 x 180
 	// med-high	res	480 x 270
@@ -22,9 +22,9 @@ int main()
 		texturePainter.Start();
 	}
 
-	std::cout << "End of main() reached\n";
+	std::cout << "End of main() Texture Painter reached.\n";
 
-	Sleep(3000);
+	//Sleep(3000);
 
 	return 0;
 }

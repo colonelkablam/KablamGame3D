@@ -16,9 +16,6 @@ TexturePainter::~TexturePainter()
         delete canvas.texture;
         canvas.texture = nullptr;
     }
-
-    delete currentCanvas;
-    currentCanvas = nullptr;
 }
 
 bool TexturePainter::OnGameCreate() 

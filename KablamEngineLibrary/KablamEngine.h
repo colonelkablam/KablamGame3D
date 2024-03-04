@@ -137,19 +137,19 @@ protected:
 
     int GetConsoleHeight();
 
-    void WriteStringToBuffer(int x, int y, std::wstring string, short colour = 0x000F);
+    void WriteStringToBuffer(int x, int y, const std::wstring& string, short colour = FG_WHITE);
 
-    void DrawPoint(int x, int y, short colour = FG_WHITE, short glyph = 0x2588);
+    void DrawPoint(int x, int y, short colour = FG_WHITE, short glyph = PIXEL_SOLID);
 
-    void DrawLine(int x0, int y0, int x1, int y1, short colour = FG_WHITE, short glyph = 0x2588);
+    void DrawLine(int x0, int y0, int x1, int y1, short colour = FG_WHITE, short glyph = PIXEL_SOLID);
 
-    void DrawSquare(int x, int y, int sideLength, short colour = FG_WHITE, short glyph = 0x2588, int lineWidth = 1, bool filled = false);
+    void DrawSquare(int x, int y, int sideLength, short colour = FG_WHITE, short glyph = PIXEL_SOLID, int lineWidth = 1, bool filled = false);
 
-    void DrawRectangleCoords(int x0, int y0, int x1, int y1, short colour = FG_WHITE, bool filled = false, short glyph = 0x2588, int lineWidth = 1);
+    void DrawRectangleCoords(int x0, int y0, int x1, int y1, short colour = FG_WHITE, bool filled = false, short glyph = PIXEL_SOLID, int lineWidth = 1);
 
-    void DrawRectangleEdgeLength(int x, int y, int width, int height, short colour = FG_WHITE, bool filled = false, short glyph = 0x2588, int lineWidth = 1);
+    void DrawRectangleEdgeLength(int x, int y, int width, int height, short colour = FG_WHITE, bool filled = false, short glyph = PIXEL_SOLID, int lineWidth = 1);
 
-    void DrawCircle(int x, int y, int radius, short colour = FG_WHITE, short glyph = 0x2588, bool filled = false);
+    void DrawCircle(int x, int y, int radius, short colour = FG_WHITE, short glyph = PIXEL_SOLID, bool filled = false);
 
     int DrawTextureToScreen(const Texture* texture, int x, int y, float scale);
 
@@ -176,6 +176,8 @@ protected:
     int CleanUp();
 
     void DisplayAlertMessage(const std::wstring& message);
+    
+    void WaitForKeyPress();
 
     static void AddToLog(std::wstring message);
 

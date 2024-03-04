@@ -38,6 +38,9 @@ enum COLOUR
 	BG_MAGENTA = 0x00D0,
 	BG_YELLOW = 0x00E0,
 	BG_WHITE = 0x00F0,
+	// intensity
+	BG_INTENSITY = 0x0080,
+	FG_INTENSITY = 0x0008
 };
 
 // from olc @ https://www.onelonecoder.com
