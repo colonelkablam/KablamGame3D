@@ -34,6 +34,13 @@ private:
 	std::vector<Texture*> ceilingTextures{};
 	std::vector<Texture*> spriteTextures{};
 
+	// crosshair
+	int aimArray[25] = {0, 0, 1, 0, 0,
+						0, 0, 1, 0, 0,
+						1, 1, 1, 1, 1,
+						0, 0, 1, 0, 0,
+						0, 0, 1, 0, 0, };
+
 
 	float fFOV = PI / 4.0f;
 	float fDepth = 32.0f;
@@ -75,7 +82,7 @@ private:
 	float fPlayerHDefault = 0.5f;
 	float fPlayerH{ fPlayerHDefault };
 	float fPlayerUpVelocity = 0.0f;
-	float fGravity = -20.0f;
+	float fGravity = -19.0f;
 	float fPlayerJumpPower = 6.5f;
 	bool bPlayerJumping = false;
 
@@ -113,11 +120,7 @@ private:
 	// get map value at coord x,y
 	int getMapValue(int x, int y, const std::vector<int>& map) const;
 
-	void DisplayAim(int* aimArray = new int[25]{ 0, 0, 1, 0, 0,
-												 0, 0, 1, 0, 0, 
-												 1, 1, 1, 1, 1, 
-												 0, 0, 1, 0, 0, 
-												 0, 0, 1, 0, 0, }, size_t size = 25);
+	void DisplayAim();
 
 
 }; // end of KablamGraphics class definition

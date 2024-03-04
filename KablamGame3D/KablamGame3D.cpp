@@ -586,7 +586,6 @@ bool KablamGame3D::ApplyMovementAndActions(float fElapsedTime)
 	if (bPlayerJumping)
 	{
 		fPlayerUpVelocity += fGravity * fElapsedTime;
-
 		fPlayerH += fPlayerUpVelocity * fElapsedTime;
 
 		if (fPlayerH <= fPlayerHDefault)
@@ -640,14 +639,8 @@ int KablamGame3D::getMapValue(int x, int y, const std::vector<int>& map) const
 }
 
 // display aiming cross
-void KablamGame3D::DisplayAim(int* aimArray, size_t size)
+void KablamGame3D::DisplayAim()
 {
-	if (size > 25)
-	{
-		AddToLog(L"Error displaying aim cross, input array geater than 25 elements.");
-		return;
-	}
-	
 	int xOff = int(GetConsoleWidth() / 2) - 2;
 	int yOff = int(GetConsoleHeight() / 2) - 2;
 

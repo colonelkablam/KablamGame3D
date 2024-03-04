@@ -222,6 +222,9 @@ int KablamEngine::GameThread()
 
     while (bGameThreadRunning == true)
     {
+        // handling input
+        KablamEngine::UpdateInputStates();
+
         // exit app with ESCAPE
         if (keyArray[VK_ESCAPE].bPressed && bConsoleFocus)
         {
@@ -237,9 +240,6 @@ int KablamEngine::GameThread()
             bFullScreen = !bFullScreen;
             SetFullScreen(bFullScreen);
         }
-
-        // handling input
-        KablamEngine::UpdateInputStates();
 
         if (!bGameUpdatePaused) // Check if the game is not paused
         {
@@ -261,10 +261,10 @@ int KablamEngine::GameThread()
             // Update Console Buffer with screen buffer
             WriteConsoleOutput(hNewBuffer, screen, { (short)nScreenWidth, (short)nScreenHeight }, { 0,0 }, &windowSize);
         }
-        else
-        {
-            Sleep(500); // Sleep briefly to reduce CPU usage
-        }
+        //else
+        //{
+        //    Sleep(500); // Sleep briefly to reduce CPU usage
+        //}
 
     }
         /////   END OF MAIN GAME LOOP   /////
@@ -502,10 +502,14 @@ void KablamEngine::UpdateInputStates() // mouse location and focus state of wind
             switch (inputBuffer[i].EventType) {
 
             case FOCUS_EVENT: {
+                // get console focus state
                 bConsoleFocus = inputBuffer[i].Event.FocusEvent.bSetFocus;
                 
-                if (bFocusPause)
-                    bGameUpdatePaused = !bConsoleFocus, AddToLog(L"Game Paused");
+                if (bFocusPause) // if focusPause flag set to true, pause game update
+                {
+                    bGameUpdatePaused = !bConsoleFocus;
+                    AddToLog(L"Game Paused");
+                }
                 break;
             }
 
@@ -711,16 +715,18 @@ void KablamEngine::WaitForKeyPress()
     // Flush the console input buffer to clear out any prior key presses
     FlushConsoleInputBuffer(hConsoleInput);
 
-    // Wait for a key press
     INPUT_RECORD ir;
     DWORD numRead;
     while (bGameThreadRunning) {
         // Read the next input event
-        ReadConsoleInput(hConsoleInput, &ir, 1, &numRead);
-
-        // Check if the event is a key event and the key is pressed down
-        if (ir.EventType == KEY_EVENT && ir.Event.KeyEvent.bKeyDown) {
-            break; // Exit the loop on a key press
+        if (ReadConsoleInput(hConsoleInput, &ir, 1, &numRead) && numRead > 0) {
+            // Check if the event is a key event
+            if (ir.EventType == KEY_EVENT) {
+                // Check if the key is pressed down, ignoring key up events
+                if (ir.Event.KeyEvent.bKeyDown) {
+                    break; // Exit the loop on a new key press
+                }
+            }
         }
     }
 }
