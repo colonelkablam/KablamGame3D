@@ -235,17 +235,17 @@ bool TexturePainter::HandleKeyPress(float fElapsedTime)
     if (keyArray[VK_LBUTTON].bHeld)
     {
         currentCanvas->texture->SetColour(mouseCoords.X - currentCanvas->xPos,
-            mouseCoords.Y - currentCanvas->xPos, currentColour);
+        mouseCoords.Y - currentCanvas->xPos, currentColour);
         currentCanvas->texture->SetGlyph(mouseCoords.X - currentCanvas->xPos,
-            mouseCoords.Y - currentCanvas->xPos, currentGlyph);
+        mouseCoords.Y - currentCanvas->xPos, currentGlyph);
     }
 
     if (keyArray[VK_RBUTTON].bHeld)
     {
         currentCanvas->texture->SetColour(mouseCoords.X - currentCanvas->xPos,
-            mouseCoords.Y - currentCanvas->xPos, FG_BLACK);
+        mouseCoords.Y - currentCanvas->xPos, FG_BLACK);
         currentCanvas->texture->SetGlyph(mouseCoords.X - currentCanvas->xPos,
-            mouseCoords.Y - currentCanvas->xPos, L' ');
+        mouseCoords.Y - currentCanvas->xPos, L' ');
 
     }
 
