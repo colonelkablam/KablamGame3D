@@ -34,12 +34,19 @@ private:
 	std::vector<Texture*> ceilingTextures{};
 	std::vector<Texture*> spriteTextures{};
 
+	//// crosshair
+	//int aimArray[25] = {0, 0, 1, 0, 0,
+	//					0, 0, 1, 0, 0,
+	//					1, 1, 1, 1, 1,
+	//					0, 0, 1, 0, 0,
+	//					0, 0, 1, 0, 0, };
+
 	// crosshair
-	int aimArray[25] = {0, 0, 1, 0, 0,
-						0, 0, 1, 0, 0,
-						1, 1, 1, 1, 1,
-						0, 0, 1, 0, 0,
-						0, 0, 1, 0, 0, };
+	int aimArray[25] = { 0, 0, 0, 0, 0,
+						 1, 0, 0, 0, 1,
+					  	 0, 1, 0, 1, 0,
+						 1, 0, 0, 0, 1,
+						 0, 0, 0, 0, 0, };
 
 
 	float fFOV = PI / 4.0f;
@@ -49,7 +56,8 @@ private:
 	float fPlayerSpeed = 6.0f;
 	float fPlayerRotationSpeed = 1.7f;
 	float fPlayerTilt = 0.0f;
-	float fPlayerTiltSpeed = 150.0f;
+	float fPlayerTiltSpeed = 170.0f;
+	int nLookHeight = 40;
 
 	struct ActionStates
 	{
@@ -68,7 +76,6 @@ private:
 	};
 
 	ActionStates actionStates;
-	bool bGamePaused = false;
 
 	COORD newMouseCoords = { 0,0 };
 	COORD centerScreenCoords = { 0,0 };
@@ -77,7 +84,7 @@ private:
 
 	float fPlayerX = 24.0f;
 	float fPlayerY = 24.0f;
-	float fPlayerA = PI;
+	float fPlayerA = 0;
 
 	float fPlayerHDefault = 0.5f;
 	float fPlayerH{ fPlayerHDefault };
@@ -111,6 +118,8 @@ private:
 	// apply movements to player
 	bool ApplyMovementAndActions(float fElapsedTime);
 
+	
+
 	// get ray length from opposite and adjacent sides of ray vector
 	float rayLength(float px, float py, float rx, float ry) const;
 
@@ -120,7 +129,7 @@ private:
 	// get map value at coord x,y
 	int getMapValue(int x, int y, const std::vector<int>& map) const;
 
-	void DisplayAim();
+	void DisplayAim(short colour = FG_WHITE, short glyph = PIXEL_SOLID);
 
 
 }; // end of KablamGraphics class definition

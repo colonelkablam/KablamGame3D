@@ -57,421 +57,413 @@ bool KablamGame3D::OnGameCreate()
 
 bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 {
-
 	HandleKeyPress();
-	if (!bGamePaused)
+
+	ApplyMovementAndActions(fElapsedTime);
+
+	// iterating through screen columns
+	for (int x{ 0 }; x < GetConsoleWidth(); x++)
 	{
-		ApplyMovementAndActions(fElapsedTime);
+		// calculate the ray angle for each iteration
+		float fRayAngle = (fPlayerA - fFOV / 2.0f) + ((fFOV / (float)GetConsoleWidth())) * (float)x;
+		// handling ray angle wrap-around 
+		if (fRayAngle > 2 * PI) fRayAngle -= 2 * PI;
+		if (fRayAngle < 0) fRayAngle += 2 * PI;
 
-		//handling player angle wrap-around
-		if (fPlayerA > 2 * PI) fPlayerA -= 2 * PI;
-		if (fPlayerA < 0) fPlayerA += 2 * PI;
+		// initiate vars and flags
+		float fDistanceToWall{ 1000.0f };
+		float fTileHit{ -1.0f };
+		float fYDistanceToWall{ 1000.0f };
+		float fYTileHit = { -1.0f };
+		float fXDistanceToWall{ 1000.0f };
+		float fXTileHit{ -1.0f };
 
-		// iterating through screen columns
-		for (int x{ 0 }; x < GetConsoleWidth(); x++)
+		// wall hit info to store
+		bool bHitWall{ false };
+		int nWallTypeX{ 0 };
+		int nWallTypeY{ 0 };
+		int nWallType{ 0 };
+
+		// floats to hold ray x/y and then x/y offsets
+		float fRayY{ 0.0f }, fRayX{ 0.0f }, fRayYO{ 0.0f }, fRayXO{ 0.0f };
+		// int to store depth searched
+		int nDepth{ nMaxDepthOfView };
+
+
+		float fTanValue{ tanf(fRayAngle) };
+
+		// looking at HORIZONTAL Y line collision
+
+		// Skip if looking left (PI) or right (0) as will never intersect a horizontal line
+		if (fRayAngle != 0.0f && fRayAngle != PI)
 		{
-			// calculate the ray angle for each iteration
-			float fRayAngle = (fPlayerA - fFOV / 2.0f) + ((fFOV / (float)GetConsoleWidth())) * (float)x;
-			// handling ray angle wrap-around 
-			if (fRayAngle > 2 * PI) fRayAngle -= 2 * PI;
-			if (fRayAngle < 0) fRayAngle += 2 * PI;
+			// depth of field set to zero
+			nDepth = 0;
+			bHitWall = false;
 
-			// initiate vars and flags
-			float fDistanceToWall{ 1000.0f };
-			float fTileHit{ -1.0f };
-			float fYDistanceToWall{ 1000.0f };
-			float fYTileHit = { -1.0f };
-			float fXDistanceToWall{ 1000.0f };
-			float fXTileHit{ -1.0f };
-
-			// wall hit info to store
-			bool bHitWall{ false };
-			int nWallTypeX{ 0 };
-			int nWallTypeY{ 0 };
-			int nWallType{ 0 };
-
-			// floats to hold ray x/y and then x/y offsets
-			float fRayY{ 0.0f }, fRayX{ 0.0f }, fRayYO{ 0.0f }, fRayXO{ 0.0f };
-			// int to store depth searched
-			int nDepth{ nMaxDepthOfView };
-
-
-			float fTanValue{ tanf(fRayAngle) };
-
-			// looking at HORIZONTAL Y line collision
-
-			// Skip if looking left (PI) or right (0) as will never intersect a horizontal line
-			if (fRayAngle != 0.0f && fRayAngle != PI)
+			if (fRayAngle < PI) // looking down
 			{
-				// depth of field set to zero
-				nDepth = 0;
-				bHitWall = false;
+				fRayY = (int)fPlayerY + 1.0f;								// next y intersect moving down
+				fRayX = fPlayerX + (fRayY - fPlayerY) / fTanValue;	// x position at next y intersect
+				fRayYO = 1.0f;													// y offset down (1x1 grid)
+				fRayXO = fRayYO / fTanValue;							// x offest for moving 1 y
+			}
+			else if (fRayAngle > PI) // looking up
+			{
+				fRayY = (int)fPlayerY - 0.0001f;							// next y intersect moving up
+				fRayX = fPlayerX + (fRayY - fPlayerY) / fTanValue;	// x position at next y intersect
+				fRayYO = -1.0f;												// y offset up (1x1 grid)
+				fRayXO = fRayYO / fTanValue;							// x offest for moving 1 y
+			}
 
-				if (fRayAngle < PI) // looking down
+			// calculate HORIZONTAL 
+			while (nDepth < nMaxDepthOfView)
+			{
+				// integer values for vector used to test if hitting wall
+
+				int nTestX{ 0 };
+				if (fRayX < 0) // as (int)-0.XX will go to 0, not -1
+					nTestX = (int)fRayX - 1;
+				else
+					nTestX = (int)fRayX;
+
+				int nTestY = (int)fRayY;
+
+				// test if ray has hit a wall
+				if (withinMapBounds(nTestX, nTestY))
 				{
-					fRayY = (int)fPlayerY + 1.0f;								// next y intersect moving down
-					fRayX = fPlayerX + (fRayY - fPlayerY) / fTanValue;	// x position at next y intersect
-					fRayYO = 1.0f;													// y offset down (1x1 grid)
-					fRayXO = fRayYO / fTanValue;							// x offest for moving 1 y
-				}
-				else if (fRayAngle > PI) // looking up
-				{
-					fRayY = (int)fPlayerY - 0.0001f;							// next y intersect moving up
-					fRayX = fPlayerX + (fRayY - fPlayerY) / fTanValue;	// x position at next y intersect
-					fRayYO = -1.0f;												// y offset up (1x1 grid)
-					fRayXO = fRayYO / fTanValue;							// x offest for moving 1 y
-				}
-
-				// calculate HORIZONTAL 
-				while (nDepth < nMaxDepthOfView)
-				{
-					// integer values for vector used to test if hitting wall
-
-					int nTestX{ 0 };
-					if (fRayX < 0) // as (int)-0.XX will go to 0, not -1
-						nTestX = (int)fRayX - 1;
-					else
-						nTestX = (int)fRayX;
-
-					int nTestY = (int)fRayY;
-
-					// test if ray has hit a wall
-					if (withinMapBounds(nTestX, nTestY))
+					if (getMapValue(nTestX, nTestY, mapWalls) != 0)
 					{
-						if (getMapValue(nTestX, nTestY, mapWalls) != 0)
-						{
-							bHitWall = true;
-							nWallTypeY = getMapValue(nTestX, nTestY, mapWalls);
-							nDepth = nMaxDepthOfView;
-
-							// find distance of wall 'hit' to 'left' side of tile
-							if (fRayYO > 0) // ray looking down
-								fYTileHit = 1 - (fRayX - nTestX);
-							else
-								fYTileHit = fRayX - nTestX;
-						}
-						else // add calculated offsets
-						{
-							fRayX += fRayXO;
-							fRayY += fRayYO;
-							nDepth++;
-						}
-					}
-					else
-					{
+						bHitWall = true;
+						nWallTypeY = getMapValue(nTestX, nTestY, mapWalls);
 						nDepth = nMaxDepthOfView;
+
+						// find distance of wall 'hit' to 'left' side of tile
+						if (fRayYO > 0) // ray looking down
+							fYTileHit = 1 - (fRayX - nTestX);
+						else
+							fYTileHit = fRayX - nTestX;
+					}
+					else // add calculated offsets
+					{
+						fRayX += fRayXO;
+						fRayY += fRayYO;
+						nDepth++;
 					}
 				}
-
-				// store distance to next HORIZONTAL line that is a wall
-				if (bHitWall)
+				else
 				{
-					fYDistanceToWall = rayLength(fPlayerX, fPlayerY, fRayX, fRayY);
+					nDepth = nMaxDepthOfView;
 				}
+			}
 
-			} // end of HORIZONTAL line checking
-
-
-			// looking at VERTICAL X line collision
-
-			// Skip if looking up (3*PI/2) or down PI/2 as will never intersect a vertical line
-			if (fRayAngle != P2 && fRayAngle != P3)
+			// store distance to next HORIZONTAL line that is a wall
+			if (bHitWall)
 			{
-				// depth of field set to zero
-				nDepth = 0;
-				bHitWall = false;
+				fYDistanceToWall = rayLength(fPlayerX, fPlayerY, fRayX, fRayY);
+			}
 
-				if (fRayAngle > P3 || fRayAngle < P2) // looking right
+		} // end of HORIZONTAL line checking
+
+
+		// looking at VERTICAL X line collision
+
+		// Skip if looking up (3*PI/2) or down PI/2 as will never intersect a vertical line
+		if (fRayAngle != P2 && fRayAngle != P3)
+		{
+			// depth of field set to zero
+			nDepth = 0;
+			bHitWall = false;
+
+			if (fRayAngle > P3 || fRayAngle < P2) // looking right
+			{
+				fRayX = ((int)(fPlayerX)+1.0f);								// next x intersect moving right
+				fRayY = fPlayerY + (fRayX - fPlayerX) * fTanValue;	// y position at next x intersect
+				fRayXO = 1;													// x offset down (1x1 grid)
+				fRayYO = fRayXO * fTanValue;							// y offest for moving 1 x
+			}
+			else if (fRayAngle > P2 && fRayAngle < P3) // looking left
+			{
+				fRayX = (int)fPlayerX - 0.0001f;								// next x intersect moving left
+				fRayY = fPlayerY + (fRayX - fPlayerX) * fTanValue;	// y position at next x intersect
+				fRayXO = -1;												// x offset up (1x1 grid)
+				fRayYO = fRayXO * fTanValue;							// y offest for moving 1 x
+			}
+
+			while (nDepth < nMaxDepthOfView)
+			{
+				// integer values for vector used to test if hitting wall
+				int nTestY{ 0 };
+				if (fRayY < 0) // as (int)-0.XX will go to 0, not -1 
+					nTestY = (int)fRayY - 1;
+				else
+					nTestY = (int)fRayY;
+
+				int nTestX = (int)fRayX;
+
+
+				// test if ray has hit a wall
+				if (withinMapBounds(nTestX, nTestY))
 				{
-					fRayX = ((int)(fPlayerX)+1.0f);								// next x intersect moving right
-					fRayY = fPlayerY + (fRayX - fPlayerX) * fTanValue;	// y position at next x intersect
-					fRayXO = 1;													// x offset down (1x1 grid)
-					fRayYO = fRayXO * fTanValue;							// y offest for moving 1 x
-				}
-				else if (fRayAngle > P2 && fRayAngle < P3) // looking left
-				{
-					fRayX = (int)fPlayerX - 0.0001f;								// next x intersect moving left
-					fRayY = fPlayerY + (fRayX - fPlayerX) * fTanValue;	// y position at next x intersect
-					fRayXO = -1;												// x offset up (1x1 grid)
-					fRayYO = fRayXO * fTanValue;							// y offest for moving 1 x
-				}
-
-				while (nDepth < nMaxDepthOfView)
-				{
-					// integer values for vector used to test if hitting wall
-					int nTestY{ 0 };
-					if (fRayY < 0) // as (int)-0.XX will go to 0, not -1 
-						nTestY = (int)fRayY - 1;
-					else
-						nTestY = (int)fRayY;
-
-					int nTestX = (int)fRayX;
-
-
-					// test if ray has hit a wall
-					if (withinMapBounds(nTestX, nTestY))
+					if (getMapValue(nTestX, nTestY, mapWalls) != 0)
 					{
-						if (getMapValue(nTestX, nTestY, mapWalls) != 0)
-						{
-							bHitWall = true;
-							nWallTypeX = getMapValue(nTestX, nTestY, mapWalls);
-							nDepth = nMaxDepthOfView;
-
-							// find distance of wall 'hit' to 'left' side of tile
-							if (fRayXO < 0) // ray looking left
-								fXTileHit = 1 - (fRayY - nTestY);
-							else
-								fXTileHit = fRayY - nTestY;
-						}
-						else // add calculated offsets
-						{
-							fRayX += fRayXO;
-							fRayY += fRayYO;
-							nDepth++;
-						}
-					}
-					else
-					{
+						bHitWall = true;
+						nWallTypeX = getMapValue(nTestX, nTestY, mapWalls);
 						nDepth = nMaxDepthOfView;
+
+						// find distance of wall 'hit' to 'left' side of tile
+						if (fRayXO < 0) // ray looking left
+							fXTileHit = 1 - (fRayY - nTestY);
+						else
+							fXTileHit = fRayY - nTestY;
+					}
+					else // add calculated offsets
+					{
+						fRayX += fRayXO;
+						fRayY += fRayYO;
+						nDepth++;
 					}
 				}
-
-				// store distance to next HORIZONTAL line that is a wall
-				if (bHitWall)
+				else
 				{
-					fXDistanceToWall = rayLength(fPlayerX, fPlayerY, fRayX, fRayY);
-				}
-
-			} // end of VERTICAL line checking
-
-			// get shortist distance and correlating tile hit axis and wall type
-			if (fYDistanceToWall <= fXDistanceToWall)
-			{
-				fDistanceToWall = fYDistanceToWall;
-				fTileHit = fYTileHit;
-				nWallType = nWallTypeY;
-			}
-			else
-			{
-				fDistanceToWall = fXDistanceToWall;
-				fTileHit = fXTileHit;
-				nWallType = nWallTypeX;
-
-			}
-
-			// correct for fish-eye effect
-			fDistanceToWall *= cosf(fRayAngle - fPlayerA);
-
-
-			// get ratios of wall to ceiling and floor
-
-			// height of wall calculated as a ratio of ScreenHeight() / distance, * fWallUnit means height of top of wall
-			float fWall{ (GetConsoleHeight() / fDistanceToWall) * fWallHUnit };
-
-			// calculate ceiling start according to wall height AND player height
-			float fCeiling{ GetConsoleHeight() / 2 - fWall * (fWallHUnit - fPlayerH) - fPlayerTilt };
-			// + (fPlayerH - fPlayerHDefault) / 3)  - will look down while jumping
-
-			// simple to calculate floor position 
-			float fFloor{ fCeiling + fWall * fWallHUnit };
-
-			// apply ratios to draw 'heights' for each column
-			int nCeiling{ (int)(fCeiling) };
-			int nFloor{ (int)(fFloor) };
-
-			// char to draw 'shade'
-			short nWallShadeGlyph{ 0 };
-
-			if (fDistanceToWall > 18)
-				nWallShadeGlyph = PIXEL_QUARTER;
-			else if (fDistanceToWall > 10)
-				nWallShadeGlyph = PIXEL_HALF;
-			else if (fDistanceToWall > 6)
-				nWallShadeGlyph = PIXEL_THREEQUARTERS;
-			else
-				nWallShadeGlyph = PIXEL_SOLID;
-
-
-			// draw the full column
-			for (int y{ 0 }; y < GetConsoleHeight(); y++)
-			{
-				// draw ceiling
-				if (y <= nCeiling)
-				{
-					//calculate difference from mid screen
-					float dy = y - GetConsoleHeight() / 2.0f + fPlayerTilt;
-
-					// handle dy == 0;
-					if (dy == 0)
-						dy = 1;
-
-					// 'fisheye' correction
-					float fRayFix = cosf(fRayAngle - fPlayerA);
-
-					// calculate ceiling textile 'hit' x & y - looking up so * fPlayerH - fWallHUnit
-					float fTileHitX = fPlayerX + cosf(fRayAngle) * (GetConsoleHeight() * fWallHUnit * (fPlayerH - fWallHUnit)) / dy / fRayFix;
-					float fTileHitY = fPlayerY + sinf(fRayAngle) * (GetConsoleHeight() * fWallHUnit * (fPlayerH - fWallHUnit)) / dy / fRayFix;
-
-					// get index for texture ceiling map
-					int nTileIndexX;
-					int nTileIndexY;
-
-					// as (int)-0.XX will go to 0, not -1 
-					if (fTileHitX < 0)
-						nTileIndexX = (int)fTileHitX - 1;
-					else
-						nTileIndexX = (int)fTileHitX;
-
-					if (fTileHitY < 0)
-						nTileIndexY = (int)fTileHitY - 1;
-					else
-						nTileIndexY = (int)fTileHitY;
-
-					// char to draw 'shade'
-					short nCeilingShadeGlyph;
-
-					if (y < GetConsoleHeight() / 6.0f - (int)fPlayerTilt)
-						nCeilingShadeGlyph = PIXEL_SOLID;
-					else if (y < GetConsoleHeight() / 4.0f - (int)fPlayerTilt)
-						nCeilingShadeGlyph = PIXEL_THREEQUARTERS;
-					else if (y < GetConsoleHeight() / 3.0f - (int)fPlayerTilt)
-						nCeilingShadeGlyph = PIXEL_HALF;
-					else
-						nCeilingShadeGlyph = PIXEL_QUARTER;
-
-					int nCeilingType = getMapValue(nTileIndexX, nTileIndexY, mapCeilingTiles);
-
-					// draw corresponding pixel per ceiling tile
-					if (nCeilingType == 0)
-					{
-						DrawPoint(x, y, FG_DARK_BLUE, PIXEL_THREEQUARTERS);
-					}
-					else
-					{
-						short colour = ceilingTextures[nCeilingType - 1]->SampleColour(fTileHitX - nTileIndexX, fTileHitY - nTileIndexY);
-
-						if (ceilingTextures.at(nCeilingType - 1)->IsIlluminated())
-							colour = FG_DARK_BLUE | FOREGROUND_INTENSITY;
-
-						DrawPoint(x, y, colour, PIXEL_SOLID);
-					}
-
-				}
-				// draw a wall character
-				else if (y > nCeiling && y <= nFloor && nWallType != 0)
-				{
-					// calculate Y sample of texture tile
-					float fSampleY = ((float)y - (float)nCeiling) / ((float)nFloor - (float)nCeiling);
-
-					// nShade added for depth
-					DrawPoint(x, y, wallTextures[nWallType - 1]->SampleColour(fTileHit, fSampleY), nWallShadeGlyph);
-				}
-				// draw a floor character
-				else if (y >= nFloor && y <= GetConsoleHeight())
-				{
-					//calculate difference from mid screen
-					float dy = y - GetConsoleHeight() / 2 + fPlayerTilt;
-
-					// handle dy == 0;
-					if (dy == 0)
-						dy = 1;
-
-					// 'fisheye' correction
-					float fRayFix = cosf(fRayAngle - fPlayerA);
-
-
-					// calculate floor tile 'hit' x & y - looking down so * fPlayerH
-					float fTileHitX = fPlayerX + cosf(fRayAngle) * (GetConsoleHeight() * fWallHUnit * fPlayerH) / dy / fRayFix;
-					float fTileHitY = fPlayerY + sinf(fRayAngle) * (GetConsoleHeight() * fWallHUnit * fPlayerH) / dy / fRayFix;
-
-					// get index for texture floor map
-					int nTileIndexX;
-					int nTileIndexY;
-					// as (int)-0.XX will go to 0, not -1 
-					if (fTileHitX < 0)
-						nTileIndexX = (int)fTileHitX - 1;
-					else
-						nTileIndexX = (int)fTileHitX;
-
-					if (fTileHitY < 0)
-						nTileIndexY = (int)fTileHitY - 1;
-					else
-						nTileIndexY = (int)fTileHitY;
-
-					// char to draw 'shade'
-					short nFloorShadeGlyph;
-
-					if (y < GetConsoleHeight() - GetConsoleHeight() / 2.5f - (int)fPlayerTilt)
-						nFloorShadeGlyph = PIXEL_QUARTER;
-					else if (y < GetConsoleHeight() - GetConsoleHeight() / 3.0f - (int)fPlayerTilt)
-						nFloorShadeGlyph = PIXEL_HALF;
-					else if (y < GetConsoleHeight() - GetConsoleHeight() / 4.5f - (int)fPlayerTilt)
-						nFloorShadeGlyph = PIXEL_THREEQUARTERS;
-					else
-						nFloorShadeGlyph = PIXEL_SOLID;
-
-					int nFloorType = getMapValue(nTileIndexX, nTileIndexY, mapFloorTiles);
-					short colour;
-
-					// draw corresponding pixel per floor tile
-					if (nFloorType == 0)
-					{
-						DrawPoint(x, y, FG_DARK_GREEN, PIXEL_THREEQUARTERS);
-					}
-					else
-					{
-						colour = floorTextures[nFloorType - 1]->SampleColour(fTileHitX - nTileIndexX, fTileHitY - nTileIndexY);
-
-						if (floorTextures.at(nFloorType - 1)->IsIlluminated() == true)
-						{
-							colour = colour | FOREGROUND_INTENSITY;
-						}
-
-						DrawPoint(x, y, colour, PIXEL_SOLID);
-					}
+					nDepth = nMaxDepthOfView;
 				}
 			}
 
-
-			// display map and player
-
-			if (nMapDisplayStatus != 0)
+			// store distance to next HORIZONTAL line that is a wall
+			if (bHitWall)
 			{
-				for (int x{ 0 }; x < nMapWidth; x++)
-					for (int y{ 0 }; y < nMapHeight; y++)
-					{
-						short wcMapPixelColour = FG_BLACK;
-						if (mapWalls[y * nMapWidth + x] == 1)
-							wcMapPixelColour = FG_YELLOW;
-
-						// draw an enlaged map
-						if (nMapDisplayStatus > 0)
-						{
-							// draw player position
-							int pX{ (int)fPlayerX };
-							int pY{ (int)fPlayerY };
-							DrawLine((pX + pX) + 1, (pY + pY) + 1, (pX + pX) + 1 + cosf(fPlayerA) * 4, (pY + pY) + 1 + sinf(fPlayerA) * 4);
-							DrawPoint((pX + pX) + 1, (pY + pY) + 1, FG_DARK_RED, PIXEL_SOLID);
-
-							// draw top partial map
-							DrawPoint((x + x) + 1, (y + y) + 1, wcMapPixelColour, PIXEL_SOLID);
-
-						}
-						if (nMapDisplayStatus > 1)
-						{
-							// draw full map
-							DrawPoint((x + x + 1) + 1, (y + y + 1) + 1, wcMapPixelColour, PIXEL_SOLID);
-							DrawPoint((x + x) + 1, (y + y + 1) + 1, wcMapPixelColour, PIXEL_SOLID);
-							DrawPoint((x + x + 1) + 1, (y + y) + 1, wcMapPixelColour, PIXEL_SOLID);
-						}
-					}
+				fXDistanceToWall = rayLength(fPlayerX, fPlayerY, fRayX, fRayY);
 			}
 
-			DisplayAim();
+		} // end of VERTICAL line checking
 
-		} // end of screen column iteration
+		// get shortist distance and correlating tile hit axis and wall type
+		if (fYDistanceToWall <= fXDistanceToWall)
+		{
+			fDistanceToWall = fYDistanceToWall;
+			fTileHit = fYTileHit;
+			nWallType = nWallTypeY;
+		}
+		else
+		{
+			fDistanceToWall = fXDistanceToWall;
+			fTileHit = fXTileHit;
+			nWallType = nWallTypeX;
 
-	} // end of pause
+		}
+
+		// correct for fish-eye effect
+		fDistanceToWall *= cosf(fRayAngle - fPlayerA);
+
+
+		// get ratios of wall to ceiling and floor
+
+		// height of wall calculated as a ratio of ScreenHeight() / distance, * fWallUnit means height of top of wall
+		float fWall{ (GetConsoleHeight() / fDistanceToWall) * fWallHUnit };
+
+		// calculate ceiling start according to wall height AND player height
+		float fCeiling{ GetConsoleHeight() / 2 - fWall * (fWallHUnit - fPlayerH) - fPlayerTilt };
+		// + (fPlayerH - fPlayerHDefault) / 3)  - will look down while jumping
+
+		// simple to calculate floor position 
+		float fFloor{ fCeiling + fWall * fWallHUnit };
+
+		// apply ratios to draw 'heights' for each column
+		int nCeiling{ (int)(fCeiling) };
+		int nFloor{ (int)(fFloor) };
+
+		// char to draw 'shade'
+		short nWallShadeGlyph{ 0 };
+
+		if (fDistanceToWall > 18)
+			nWallShadeGlyph = PIXEL_QUARTER;
+		else if (fDistanceToWall > 10)
+			nWallShadeGlyph = PIXEL_HALF;
+		else if (fDistanceToWall > 6)
+			nWallShadeGlyph = PIXEL_THREEQUARTERS;
+		else
+			nWallShadeGlyph = PIXEL_SOLID;
+
+
+		// draw the full column
+		for (int y{ 0 }; y < GetConsoleHeight(); y++)
+		{
+			// draw ceiling
+			if (y <= nCeiling)
+			{
+				//calculate difference from mid screen
+				float dy = y - GetConsoleHeight() / 2.0f + fPlayerTilt;
+
+				// handle dy == 0;
+				if (dy == 0)
+					dy = 1;
+
+				// 'fisheye' correction
+				float fRayFix = cosf(fRayAngle - fPlayerA);
+
+				// calculate ceiling textile 'hit' x & y - looking up so * fPlayerH - fWallHUnit
+				float fTileHitX = fPlayerX + cosf(fRayAngle) * (GetConsoleHeight() * fWallHUnit * (fPlayerH - fWallHUnit)) / dy / fRayFix;
+				float fTileHitY = fPlayerY + sinf(fRayAngle) * (GetConsoleHeight() * fWallHUnit * (fPlayerH - fWallHUnit)) / dy / fRayFix;
+
+				// get index for texture ceiling map
+				int nTileIndexX;
+				int nTileIndexY;
+
+				// as (int)-0.XX will go to 0, not -1 
+				if (fTileHitX < 0)
+					nTileIndexX = (int)fTileHitX - 1;
+				else
+					nTileIndexX = (int)fTileHitX;
+
+				if (fTileHitY < 0)
+					nTileIndexY = (int)fTileHitY - 1;
+				else
+					nTileIndexY = (int)fTileHitY;
+
+				// char to draw 'shade'
+				short nCeilingShadeGlyph;
+
+				if (y < GetConsoleHeight() / 6.0f - (int)fPlayerTilt)
+					nCeilingShadeGlyph = PIXEL_SOLID;
+				else if (y < GetConsoleHeight() / 4.0f - (int)fPlayerTilt)
+					nCeilingShadeGlyph = PIXEL_THREEQUARTERS;
+				else if (y < GetConsoleHeight() / 3.0f - (int)fPlayerTilt)
+					nCeilingShadeGlyph = PIXEL_HALF;
+				else
+					nCeilingShadeGlyph = PIXEL_QUARTER;
+
+				int nCeilingType = getMapValue(nTileIndexX, nTileIndexY, mapCeilingTiles);
+
+				// draw corresponding pixel per ceiling tile
+				if (nCeilingType == 0)
+				{
+					DrawPoint(x, y, FG_DARK_BLUE, PIXEL_THREEQUARTERS);
+				}
+				else
+				{
+					short colour = ceilingTextures[nCeilingType - 1]->SampleColour(fTileHitX - nTileIndexX, fTileHitY - nTileIndexY);
+
+					if (ceilingTextures.at(nCeilingType - 1)->IsIlluminated())
+						colour = FG_DARK_BLUE | FOREGROUND_INTENSITY;
+
+					DrawPoint(x, y, colour, PIXEL_SOLID);
+				}
+
+			}
+			// draw a wall character
+			else if (y > nCeiling && y <= nFloor && nWallType != 0)
+			{
+				// calculate Y sample of texture tile
+				float fSampleY = ((float)y - (float)nCeiling) / ((float)nFloor - (float)nCeiling);
+
+				// nShade added for depth
+				DrawPoint(x, y, wallTextures[nWallType - 1]->SampleColour(fTileHit, fSampleY), nWallShadeGlyph);
+			}
+			// draw a floor character
+			else if (y >= nFloor && y <= GetConsoleHeight())
+			{
+				//calculate difference from mid screen
+				float dy = y - GetConsoleHeight() / 2 + fPlayerTilt;
+
+				// handle dy == 0;
+				if (dy == 0)
+					dy = 1;
+
+				// 'fisheye' correction
+				float fRayFix = cosf(fRayAngle - fPlayerA);
+
+
+				// calculate floor tile 'hit' x & y - looking down so * fPlayerH
+				float fTileHitX = fPlayerX + cosf(fRayAngle) * (GetConsoleHeight() * fWallHUnit * fPlayerH) / dy / fRayFix;
+				float fTileHitY = fPlayerY + sinf(fRayAngle) * (GetConsoleHeight() * fWallHUnit * fPlayerH) / dy / fRayFix;
+
+				// get index for texture floor map
+				int nTileIndexX;
+				int nTileIndexY;
+				// as (int)-0.XX will go to 0, not -1 
+				if (fTileHitX < 0)
+					nTileIndexX = (int)fTileHitX - 1;
+				else
+					nTileIndexX = (int)fTileHitX;
+
+				if (fTileHitY < 0)
+					nTileIndexY = (int)fTileHitY - 1;
+				else
+					nTileIndexY = (int)fTileHitY;
+
+				// char to draw 'shade'
+				short nFloorShadeGlyph;
+
+				if (y < GetConsoleHeight() - GetConsoleHeight() / 2.5f - (int)fPlayerTilt)
+					nFloorShadeGlyph = PIXEL_QUARTER;
+				else if (y < GetConsoleHeight() - GetConsoleHeight() / 3.0f - (int)fPlayerTilt)
+					nFloorShadeGlyph = PIXEL_HALF;
+				else if (y < GetConsoleHeight() - GetConsoleHeight() / 4.5f - (int)fPlayerTilt)
+					nFloorShadeGlyph = PIXEL_THREEQUARTERS;
+				else
+					nFloorShadeGlyph = PIXEL_SOLID;
+
+				int nFloorType = getMapValue(nTileIndexX, nTileIndexY, mapFloorTiles);
+				short colour;
+
+				// draw corresponding pixel per floor tile
+				if (nFloorType == 0)
+				{
+					DrawPoint(x, y, FG_DARK_GREEN, PIXEL_THREEQUARTERS);
+				}
+				else
+				{
+					colour = floorTextures[nFloorType - 1]->SampleColour(fTileHitX - nTileIndexX, fTileHitY - nTileIndexY);
+
+					if (floorTextures.at(nFloorType - 1)->IsIlluminated() == true)
+					{
+						colour = colour | FOREGROUND_INTENSITY;
+					}
+
+					DrawPoint(x, y, colour, PIXEL_SOLID);
+				}
+			}
+		}
+
+
+		// display map and player
+
+		if (nMapDisplayStatus != 0)
+		{
+			for (int x{ 0 }; x < nMapWidth; x++)
+				for (int y{ 0 }; y < nMapHeight; y++)
+				{
+					short wcMapPixelColour = FG_BLACK;
+					if (mapWalls[y * nMapWidth + x] == 1)
+						wcMapPixelColour = FG_YELLOW;
+
+					// draw an enlaged map
+					if (nMapDisplayStatus > 0)
+					{
+						// draw player position
+						int pX{ (int)fPlayerX };
+						int pY{ (int)fPlayerY };
+						DrawLine((pX + pX) + 1, (pY + pY) + 1, (pX + pX) + 1 + cosf(fPlayerA) * 4, (pY + pY) + 1 + sinf(fPlayerA) * 4);
+						DrawPoint((pX + pX) + 1, (pY + pY) + 1, FG_DARK_RED, PIXEL_SOLID);
+
+						// draw top partial map
+						DrawPoint((x + x) + 1, (y + y) + 1, wcMapPixelColour, PIXEL_SOLID);
+
+					}
+					if (nMapDisplayStatus > 1)
+					{
+						// draw full map
+						DrawPoint((x + x + 1) + 1, (y + y + 1) + 1, wcMapPixelColour, PIXEL_SOLID);
+						DrawPoint((x + x) + 1, (y + y + 1) + 1, wcMapPixelColour, PIXEL_SOLID);
+						DrawPoint((x + x + 1) + 1, (y + y) + 1, wcMapPixelColour, PIXEL_SOLID);
+					}
+				}
+		}
+
+		DisplayAim();
+	} // end of screen column iteration
+
 
 	return true;
 } // end of OnGameUpdate
@@ -500,27 +492,37 @@ void KablamGame3D::HandleKeyPress()
 	actionStates.pause = GetKeyState(L'P').bPressed;
 	actionStates.toggleMap = GetKeyState(L'M').bPressed;
 
-	// pause
-	if (actionStates.pause)
-	{
-		bGamePaused = !bGamePaused;
-	}
 }
 
 bool KablamGame3D::ApplyMovementAndActions(float fElapsedTime)
 {
 	//Handle Rotation
 	if (actionStates.rotateLeft)
+	{
 		fPlayerA -= (fPlayerRotationSpeed)*fElapsedTime;
+		//handling player angle wrap-around
+		if (fPlayerA < 0) fPlayerA += 2 * PI;
+	}
 
 	if (actionStates.rotateRight)
+	{
 		fPlayerA += (fPlayerRotationSpeed)*fElapsedTime;
+		//handling player angle wrap-around
+		if (fPlayerA > 2 * PI) fPlayerA -= 2 * PI;
+	}
 
+	// Handle looking 
 	if (actionStates.lookUp)
-		fPlayerTilt -= (fPlayerTiltSpeed)*fElapsedTime;
+	{
+		if (fPlayerTilt > - nLookHeight)
+			fPlayerTilt -= (fPlayerTiltSpeed)*fElapsedTime;
+	}
 
 	if (actionStates.lookDown)
-		fPlayerTilt += (fPlayerTiltSpeed)*fElapsedTime;
+	{
+		if (fPlayerTilt <  nLookHeight)
+			fPlayerTilt += (fPlayerTiltSpeed)*fElapsedTime;
+	}
 
 	// Handle Movement
 	if (actionStates.forward)
@@ -606,6 +608,10 @@ bool KablamGame3D::ApplyMovementAndActions(float fElapsedTime)
 	// map
 	if (actionStates.toggleMap)
 		nMapDisplayStatus = (nMapDisplayStatus + 1) % 3;
+	
+	// pause
+	if (actionStates.pause)
+		DisplayAlertMessage(L"Game Paused.");
 
 	return true;
 }
@@ -639,7 +645,7 @@ int KablamGame3D::getMapValue(int x, int y, const std::vector<int>& map) const
 }
 
 // display aiming cross
-void KablamGame3D::DisplayAim()
+void KablamGame3D::DisplayAim(short colour, short glyph)
 {
 	int xOff = int(GetConsoleWidth() / 2) - 2;
 	int yOff = int(GetConsoleHeight() / 2) - 2;
@@ -648,6 +654,6 @@ void KablamGame3D::DisplayAim()
 		for (size_t y{ 0 }; y < 5; y++)
 		{
 			if (aimArray[y * 5 + x] == 1)
-				DrawPoint(x + xOff, y + yOff, FG_WHITE, PIXEL_HALF);
+				DrawPoint(x + xOff, y + yOff, colour, glyph);
 		}
 }

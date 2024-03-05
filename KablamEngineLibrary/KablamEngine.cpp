@@ -214,8 +214,8 @@ int KablamEngine::GameThread()
 
     // handle timing
     // get elapsed time to regulate update method
-    auto tp1 = std::chrono::system_clock::now();
-    auto tp2 = std::chrono::system_clock::now();
+    tp1 = std::chrono::system_clock::now();
+    tp2 = std::chrono::system_clock::now();
 
 
         /////       MAIN GAME LOOP      /////
@@ -241,7 +241,7 @@ int KablamEngine::GameThread()
             SetFullScreen(bFullScreen);
         }
 
-        if (!bGameUpdatePaused) // Check if the game is not paused
+        if (!bGameUpdatePaused) // Check if the game is paused
         {
             // Handle Timing
             tp2 = std::chrono::system_clock::now();
@@ -261,10 +261,10 @@ int KablamEngine::GameThread()
             // Update Console Buffer with screen buffer
             WriteConsoleOutput(hNewBuffer, screen, { (short)nScreenWidth, (short)nScreenHeight }, { 0,0 }, &windowSize);
         }
-        //else
-        //{
-        //    Sleep(500); // Sleep briefly to reduce CPU usage
-        //}
+        else
+        {
+            Sleep(100); // Sleep briefly to reduce CPU usage
+        }
 
     }
         /////   END OF MAIN GAME LOOP   /////
@@ -502,13 +502,21 @@ void KablamEngine::UpdateInputStates() // mouse location and focus state of wind
             switch (inputBuffer[i].EventType) {
 
             case FOCUS_EVENT: {
-                // get console focus state
+                // Update console focus state
                 bConsoleFocus = inputBuffer[i].Event.FocusEvent.bSetFocus;
-                
-                if (bFocusPause) // if focusPause flag set to true, pause game update
-                {
-                    bGameUpdatePaused = !bConsoleFocus;
-                    AddToLog(L"Game Paused");
+
+                // Log focus state change
+                std::wstring logMessage = bConsoleFocus ? L"Console window in focus." : L"Console window out of focus.";
+                AddToLog(logMessage);
+
+                // Handle game pause/resume based on focus state and bFocusPause setting
+                if (bFocusPause) {
+                    if (bConsoleFocus) {
+                        UnPauseGameUpdate();
+                    }
+                    else {
+                        PauseGameUpdate();
+                    }
                 }
                 break;
             }
@@ -528,14 +536,32 @@ void KablamEngine::UpdateInputStates() // mouse location and focus state of wind
     }
 }
 
+// Set if window pauses when out of focus
 void KablamEngine::SetConsoleFocusPause(bool state)
 {
-     bFocusPause = state;
+    bFocusPause = state;
+    std::wstring logMessage = state ? L"Console window set TO PAUSE on loss of focus." : L"Console window set TO NOT PAUSE on loss of focus.";
+    AddToLog(logMessage);
 }
 
 bool KablamEngine::GetConsoleFocus()
 {
     return bConsoleFocus;
+}
+
+// Handle pause and unpause of GameUpdate (not GameThread)
+void KablamEngine::PauseGameUpdate()
+{
+    bGameUpdatePaused = true;
+    AddToLog(L"GameUpdate paused.");
+}
+
+void KablamEngine::UnPauseGameUpdate()
+{
+    bGameUpdatePaused = false;
+    // reset gameloop timer
+    tp1 = std::chrono::system_clock::now();
+    AddToLog(L"GameUpdate unpaused.");
 }
 
 KablamEngine::keyState KablamEngine::GetKeyState(short key)
@@ -707,7 +733,9 @@ void KablamEngine::DisplayAlertMessage(const std::wstring& message)
     // Update Console Buffer with screen buffer
     WriteConsoleOutput(hNewBuffer, screen, { (short)nScreenWidth, (short)nScreenHeight }, { 0,0 }, &windowSize);
 
+    PauseGameUpdate();
     WaitForKeyPress();
+    UnPauseGameUpdate();
 }
 
 void KablamEngine::WaitForKeyPress()
@@ -728,6 +756,7 @@ void KablamEngine::WaitForKeyPress()
                 }
             }
         }
+        Sleep(100);
     }
 }
 

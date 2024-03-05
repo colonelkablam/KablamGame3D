@@ -66,6 +66,10 @@ protected:
     short nFontWidth;      // Font width in pixels
     short nFontHeight;    // Font height in pixels
 
+    // timing points
+    std::chrono::system_clock::time_point tp1;
+    std::chrono::system_clock::time_point tp2;
+
     std::wstring sConsoleTitle;
     std::wstring sCurrentFileName;
     std::wstring sCurrentFilePath;
@@ -158,6 +162,10 @@ protected:
     void SetConsoleFocusPause(bool state);
 
     bool GetConsoleFocus();
+
+    void PauseGameUpdate();
+
+    void UnPauseGameUpdate();
 
     keyState GetKeyState(short key);
 
