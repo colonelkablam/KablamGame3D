@@ -2,6 +2,8 @@
 #pragma once
 
 #include <string>
+#include <map>
+#include <array>
 
 // from olc @ https://www.onelonecoder.com
 enum COLOUR
@@ -79,6 +81,10 @@ public:
 private:
 	bool Initialise(int w, int h, bool illuminated = false, short backgroundColour = BG_BLACK);
 
+	std::map<short, int> countColorRatios(short c00, short c10, short c01, short c11);
+
+	std::map<short, float> calculateColorRatios(const std::map<short, int>& colorCounts);
+
 public:
 	bool SaveAs(const std::wstring& sFilePath);
 
@@ -91,6 +97,8 @@ public:
 	short SampleColour(float x, float) const;
 
 	short SampleGlyph(float x, float y) const;
+
+	void SampleColourBilinearGlyph(float x, float y, CHAR_INFO& pixel);
 
 	bool IsIlluminated() const;
 

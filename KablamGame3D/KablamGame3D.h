@@ -57,7 +57,7 @@ private:
 	float fPlayerRotationSpeed = 1.7f;
 	float fPlayerTilt = 0.0f;
 	float fPlayerTiltSpeed = 170.0f;
-	int nLookHeight = 40;
+	int nTiltMax = 40;
 
 	struct ActionStates
 	{
@@ -86,7 +86,7 @@ private:
 	float fPlayerY = 24.0f;
 	float fPlayerA = 0;
 
-	float fPlayerHDefault = 0.5f;
+	float fPlayerHDefault = 0.6f;
 	float fPlayerH{ fPlayerHDefault };
 	float fPlayerUpVelocity = 0.0f;
 	float fGravity = -19.0f;

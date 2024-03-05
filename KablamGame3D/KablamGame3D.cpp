@@ -354,11 +354,20 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 			// draw a wall character
 			else if (y > nCeiling && y <= nFloor && nWallType != 0)
 			{
+				//// calculate Y sample of texture tile
+				//float fSampleY = ((float)y - (float)nCeiling) / ((float)nFloor - (float)nCeiling);
+
+				//// nShade added for depth
+				//DrawPoint(x, y, wallTextures[nWallType - 1]->SampleColour(fTileHit, fSampleY), nWallShadeGlyph);
+
+
 				// calculate Y sample of texture tile
 				float fSampleY = ((float)y - (float)nCeiling) / ((float)nFloor - (float)nCeiling);
 
-				// nShade added for depth
-				DrawPoint(x, y, wallTextures[nWallType - 1]->SampleColour(fTileHit, fSampleY), nWallShadeGlyph);
+				CHAR_INFO pixel;
+				wallTextures[nWallType - 1]->SampleColourBilinearGlyph(fTileHit, fSampleY, pixel);
+
+				DrawPoint(x, y, pixel.Attributes, pixel.Char.UnicodeChar);
 			}
 			// draw a floor character
 			else if (y >= nFloor && y <= GetConsoleHeight())
@@ -414,14 +423,20 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				}
 				else
 				{
-					colour = floorTextures[nFloorType - 1]->SampleColour(fTileHitX - nTileIndexX, fTileHitY - nTileIndexY);
+					//colour = floorTextures[nFloorType - 1]->SampleColour(fTileHitX - nTileIndexX, fTileHitY - nTileIndexY);
 
-					if (floorTextures.at(nFloorType - 1)->IsIlluminated() == true)
-					{
-						colour = colour | FOREGROUND_INTENSITY;
-					}
+					//if (floorTextures.at(nFloorType - 1)->IsIlluminated() == true)
+					//{
+					//	colour = colour | FOREGROUND_INTENSITY;
+					//}
 
-					DrawPoint(x, y, colour, PIXEL_SOLID);
+					//DrawPoint(x, y, colour, PIXEL_SOLID);
+
+					CHAR_INFO glyph;
+
+					floorTextures[nFloorType - 1]->SampleColourBilinearGlyph(fTileHitX - nTileIndexX, fTileHitY - nTileIndexY, glyph);
+
+					DrawPoint(x, y, glyph.Attributes, glyph.Char.UnicodeChar);
 				}
 			}
 		}
@@ -514,13 +529,13 @@ bool KablamGame3D::ApplyMovementAndActions(float fElapsedTime)
 	// Handle looking 
 	if (actionStates.lookUp)
 	{
-		if (fPlayerTilt > - nLookHeight)
+		if (fPlayerTilt > - nTiltMax)
 			fPlayerTilt -= (fPlayerTiltSpeed)*fElapsedTime;
 	}
 
 	if (actionStates.lookDown)
 	{
-		if (fPlayerTilt <  nLookHeight)
+		if (fPlayerTilt <  nTiltMax)
 			fPlayerTilt += (fPlayerTiltSpeed)*fElapsedTime;
 	}
 
