@@ -76,6 +76,9 @@ protected:
 
     CHAR_INFO* screen;      // pointer to screen buffer
     CHAR_INFO* screenBilinear;      // if applying filtering
+
+    bool bBilinearApplied;
+
     SMALL_RECT windowSize;  // console window physical size
     int nScreenArrayLength;
 
@@ -114,10 +117,11 @@ protected:
 
     // BILINEAR sampling
     struct Colour4Sample {
-        short c00;
-        short c01;
-        short c10;
-        short c11;
+        short c = 0;
+        short c00 = 0;
+        short c01 = 0;
+        short c10 = 0;
+        short c11 = 0;
     };
 
     struct Pixel {
@@ -176,16 +180,12 @@ protected:
 
  private:
 
-    void CountColorRatios(Colour4Sample& sample, std::map<short, int>& colourMap);
-    void CalculateColorRatios(const std::map<short, int>& colorCounts, std::map<short, float>& ratioMap);
+    void SampleSurroundingTexels(int x, int y, Colour4Sample& sample);
+    void TwoMainColourCounts(const std::map<short, int>& colourMap, std::pair<short, int>& firstColour, std::pair<short, int>& secondColour);
 
 protected:
 
     void ApplyBilinearProcess();
-
-    Colour4Sample Get4ColourSample(int x, int y);
-
-    void Blend4ColourSample(const Colour4Sample& sample, Pixel& pix);
 
     void UpdateInputStates();
 

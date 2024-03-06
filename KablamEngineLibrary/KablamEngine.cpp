@@ -14,7 +14,9 @@
 KablamEngine::KablamEngine()
     :nScreenWidth{ 30 }, nScreenHeight{ 10 }, nFontWidth{ 5 }, nFontHeight{ 10 }, hConsoleWindow{ GetConsoleWindow() },
     hOGBuffer{ GetStdHandle(STD_OUTPUT_HANDLE) }, hConsoleInput{ GetStdHandle(STD_INPUT_HANDLE) }, hNewBuffer{ INVALID_HANDLE_VALUE },
-    dwPreviousConsoleMode{ 0 }, screen{ nullptr }, screenBilinear{ nullptr }, nScreenArrayLength{ 0 }, windowSize { 0, 0, 1, 1 }, mouseCoords{ 0,0 },
+    dwPreviousConsoleMode{ 0 }, screen{ nullptr }, screenBilinear{ nullptr }, bBilinearApplied{ false }, nScreenArrayLength {
+    0
+}, windowSize{ 0, 0, 1, 1 }, mouseCoords{ 0,0 },
     sConsoleTitle{ L"no_name_given" }, bConsoleFocus{ true }, bGameUpdatePaused{ false }, bFocusPause{ false }, bFullScreen{ false } {
 
     // initialise storage of input events - key and mouse
@@ -88,12 +90,17 @@ int KablamEngine::BuildConsole(int screenWidth, int screenHeight, int fontWidth,
     nScreenArrayLength = nScreenWidth * nScreenHeight;
     screen = new CHAR_INFO[nScreenArrayLength];
     // clear memory for screen buffer
-    memset(screen, 0, sizeof(CHAR_INFO) * nScreenWidth * nScreenHeight);
+    memset(screen, 0, sizeof(CHAR_INFO) * nScreenArrayLength);
+
+    screenBilinear = new CHAR_INFO[nScreenArrayLength];
+    // clear memory for screen buffer
+    memset(screenBilinear, 0, sizeof(CHAR_INFO) * nScreenArrayLength);
 
     // create new console buffer
     hNewBuffer = CreateConsoleScreenBuffer(GENERIC_READ | GENERIC_WRITE, 0, NULL, CONSOLE_TEXTMODE_BUFFER, NULL);
     if (hNewBuffer == INVALID_HANDLE_VALUE) {
         delete[] screen;  // Clean up allocated memory
+        delete[] screenBilinear;  // Clean up allocated memory
         return Error(L"Failed to CreateConsoleScreenBuffer.");
     }
 
@@ -263,6 +270,7 @@ int KablamEngine::GameThread()
 
             // Update Console Buffer with screen buffer
             WriteConsoleOutput(hNewBuffer, screen, { (short)nScreenWidth, (short)nScreenHeight }, { 0,0 }, &windowSize);
+
         }
         else
         {
@@ -456,76 +464,88 @@ int KablamEngine::DrawTextureToScreen(const Texture* texture, int xScreen, int y
 }
 
 
-void KablamEngine::CountColorRatios(Colour4Sample& sample, std::map<short, int>& colourMap)
+void KablamEngine::SampleSurroundingTexels(int x, int y, Colour4Sample& sample)
 {
-// Increment the count for each color
-    colourMap[sample.c00]++;
-    colourMap[sample.c01]++;
-    colourMap[sample.c10]++;
-    colourMap[sample.c11]++;
+    //sample the four texels 
+    sample.c = screen[y * nScreenWidth + x].Attributes;                                       // center pixel
+    sample.c00 = screen[y * nScreenWidth + std::min(x + 1, nScreenWidth - 1)].Attributes;     // right
+    sample.c01 = screen[y * nScreenWidth + std::max(x - 1, 0)].Attributes;                    // left
+    sample.c10 = screen[std::min(y + 1, nScreenHeight - 1) * nScreenWidth + x].Attributes;    // bottom
+    sample.c11 = screen[std::max(y - 1, 0) * nScreenWidth + x].Attributes;                    // top
+
 }
 
 
-void KablamEngine::CalculateColorRatios(const std::map<short, int>& colorCounts, std::map<short, float>& ratioMap) {
-    for (const auto& pair : colorCounts) {
-        ratioMap[pair.first] = pair.second / 4.0f;  // Dividing by 4, as there are 4 texels
+void KablamEngine::TwoMainColourCounts(const std::map<short, int>& colourMap, std::pair<short, int>& firstColour, std::pair<short, int>& secondColour)
+{
+    // iterate through to get two main colours
+    for (const auto& pair : colourMap) {
+        if (pair.second > firstColour.second) {
+            secondColour = firstColour; // Second becomes what used to be the max
+            firstColour = pair;
+        }
+        else if (pair.second > secondColour.second) {
+            secondColour = pair;
+        }
     }
 }
 
 void KablamEngine::ApplyBilinearProcess()
 {
-    Colour4Sample colourSample;
-    std::map<short, int> colourMap;
-    std::map<short, float> ratioMap;
-
+    // iterate through screen array to smooth out display
     for (int x{ 0 }; x < nScreenWidth; x++)
     {
         for (int y{ 0 }; y < nScreenHeight; y++)
         {
-            // Fetch the four texels nearest to (x, y)
-            colourSample.c00 = screen[y * nScreenWidth + x].Attributes;
-            colourSample.c10 = screen[y * nScreenWidth + std::min(x + 1, nScreenWidth - 1)].Attributes;
-            colourSample.c01 = screen[std::min(y + 1, nScreenHeight - 1) * nScreenWidth + x].Attributes;
-            colourSample.c11 = screen[std::min(y + 1, nScreenHeight - 1) * nScreenWidth + std::min(x + 1, nScreenWidth - 1)].Attributes;
+            Colour4Sample colourSample;
+            SampleSurroundingTexels(x, y, colourSample);
 
-            CountColorRatios(colourSample, colourMap);
-            CalculateColorRatios(colourMap, ratioMap);
+            std::map<short, int> colourMap;
 
-            // Sort colors by their ratio to find the most and second most dominant colors
-            std::vector<std::pair<short, float>> sortedRatios(ratioMap.begin(), ratioMap.end());
-            std::sort(sortedRatios.begin(), sortedRatios.end(), [](const auto& a, const auto& b) {
-                return a.second > b.second; // Descending order
-                });
+            colourMap[colourSample.c]++;
+            colourMap[colourSample.c00]++;
+            colourMap[colourSample.c01]++;
+            colourMap[colourSample.c10]++;
+            colourMap[colourSample.c11]++;
 
-            // Select the two most dominant colors for foreground and background
-            short fgColour = sortedRatios.size() > 0 ? sortedRatios[0].first : FG_WHITE; // Most dominant
-            short bgColour = sortedRatios.size() > 1 ? sortedRatios[1].first : BG_BLACK; // Second most dominant
+            // defaults if only one colour
+            short fgColour{ colourSample.c };
+            short bgColour{ BG_BLACK };
+            short glyph{ PIXEL_SOLID };
 
-            // Choose a glyph based on the ratio of the most dominant color
-            short glyph;
-            float ratio = sortedRatios[0].second; // Ratio of the most dominant color
+            if (colourMap.size() > 1)
+            {
+                // pairs to hold the colour (short value) and count of two main colours
+                std::pair<short, int> dominantColour = { 0, 0 };
+                std::pair<short, int> secondColour = { 0, 0 };
 
-            std::array<short, 4> glyphs = { PIXEL_QUARTER, PIXEL_HALF, PIXEL_THREEQUARTERS, PIXEL_SOLID };
+                TwoMainColourCounts(colourMap, dominantColour, secondColour);
 
-            int ratioIndex = std::min(static_cast<int>(ratio * 4), 3); // Assuming ratio is normalized to [0, 1]
-            glyph = glyphs[ratioIndex];
+                // 
+                fgColour = dominantColour.first;
+                bgColour = secondColour.first;
 
-            screenBilinear[y * nScreenHeight + x].Attributes = fgColour | (bgColour << 4);
-            screenBilinear[y * nScreenHeight + x].Char.UnicodeChar = glyph;
+                // calculate ratio of main colour to determine glyph 'shade'
+                float ratio = secondColour.second == 0 ? 1 : dominantColour.second / (float)(dominantColour.second + secondColour.second); // ratio of main colour
+
+                // the ratios of two colours can be 4:1, 3:2, 3:1, 2:2, 1:1 -> 0.8, 0.6 or 0.5.
+                if (ratio > 0.81f)
+                    glyph = PIXEL_SOLID;
+                else if (ratio > 0.61f)
+                    glyph = PIXEL_THREEQUARTERS;
+                else 
+                    glyph = PIXEL_HALF;
+
+            }
+
+            // assign colors and glyph to bilinear array
+            screenBilinear[y * nScreenWidth + x].Attributes = fgColour | (bgColour << 4);
+            screenBilinear[y * nScreenWidth + x].Char.UnicodeChar = glyph;
         }
     }
 
-    screen = screenBilinear;
-}
-
-KablamEngine::Colour4Sample KablamEngine::Get4ColourSample(int x, int y)
-{
-
-}
-
-void KablamEngine::Blend4ColourSample(const Colour4Sample& sample, Pixel& pix)
-{
-
+    // copy mem accross in screen from screenBilinear - easier than setting flags but possibly more costly - seems fast on testing
+    std::memcpy(screen, screenBilinear, nScreenWidth * nScreenHeight * sizeof(screen[0]));
 }
 
 void KablamEngine::UpdateInputStates() // mouse location and focus state of window
@@ -540,7 +560,7 @@ void KablamEngine::UpdateInputStates() // mouse location and focus state of wind
         newKeyStateArray[i] = GetAsyncKeyState(i);
 
         // store a reference to speed access as needed multiple times
-        keyState& key = keyArray[i];
+        KeyState& key = keyArray[i];
         short& newKeyState = newKeyStateArray[i];
 
         // if new state is different from old

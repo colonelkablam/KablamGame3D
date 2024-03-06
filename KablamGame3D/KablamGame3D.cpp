@@ -354,20 +354,12 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 			// draw a wall character
 			else if (y > nCeiling && y <= nFloor && nWallType != 0)
 			{
-				//// calculate Y sample of texture tile
-				//float fSampleY = ((float)y - (float)nCeiling) / ((float)nFloor - (float)nCeiling);
-
-				//// nShade added for depth
-				//DrawPoint(x, y, wallTextures[nWallType - 1]->SampleColour(fTileHit, fSampleY), nWallShadeGlyph);
-
-
 				// calculate Y sample of texture tile
 				float fSampleY = ((float)y - (float)nCeiling) / ((float)nFloor - (float)nCeiling);
 
-				CHAR_INFO pixel;
-				wallTextures[nWallType - 1]->SampleColourBilinearGlyph(fTileHit, fSampleY, pixel);
+				// nShade added for depth
+				DrawPoint(x, y, wallTextures[nWallType - 1]->SampleColour(fTileHit, fSampleY), PIXEL_SOLID);
 
-				DrawPoint(x, y, pixel.Attributes, pixel.Char.UnicodeChar);
 			}
 			// draw a floor character
 			else if (y >= nFloor && y <= GetConsoleHeight())
@@ -434,47 +426,44 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				}
 			}
 		}
-
-		ApplyBilinearProcess();
-
-
-		// display map and player
-
-		if (nMapDisplayStatus != 0)
-		{
-			for (int x{ 0 }; x < nMapWidth; x++)
-				for (int y{ 0 }; y < nMapHeight; y++)
-				{
-					short wcMapPixelColour = FG_BLACK;
-					if (mapWalls[y * nMapWidth + x] == 1)
-						wcMapPixelColour = FG_YELLOW;
-
-					// draw an enlaged map
-					if (nMapDisplayStatus > 0)
-					{
-						// draw player position
-						int pX{ (int)fPlayerX };
-						int pY{ (int)fPlayerY };
-						DrawLine((pX + pX) + 1, (pY + pY) + 1, (pX + pX) + 1 + cosf(fPlayerA) * 4, (pY + pY) + 1 + sinf(fPlayerA) * 4);
-						DrawPoint((pX + pX) + 1, (pY + pY) + 1, FG_DARK_RED, PIXEL_SOLID);
-
-						// draw top partial map
-						DrawPoint((x + x) + 1, (y + y) + 1, wcMapPixelColour, PIXEL_SOLID);
-
-					}
-					if (nMapDisplayStatus > 1)
-					{
-						// draw full map
-						DrawPoint((x + x + 1) + 1, (y + y + 1) + 1, wcMapPixelColour, PIXEL_SOLID);
-						DrawPoint((x + x) + 1, (y + y + 1) + 1, wcMapPixelColour, PIXEL_SOLID);
-						DrawPoint((x + x + 1) + 1, (y + y) + 1, wcMapPixelColour, PIXEL_SOLID);
-					}
-				}
-		}
-
-		DisplayAim();
 	} // end of screen column iteration
 
+	ApplyBilinearProcess();
+
+	DisplayAim();
+	
+	// display map and player
+	if (nMapDisplayStatus != 0)
+	{
+		for (int x{ 0 }; x < nMapWidth; x++)
+			for (int y{ 0 }; y < nMapHeight; y++)
+			{
+				short wcMapPixelColour = FG_BLACK;
+				if (mapWalls[y * nMapWidth + x] == 1)
+					wcMapPixelColour = FG_YELLOW;
+
+				// draw an enlaged map
+				if (nMapDisplayStatus > 0)
+				{
+					// draw player position
+					int pX{ (int)fPlayerX };
+					int pY{ (int)fPlayerY };
+					DrawLine((pX + pX) + 1, (pY + pY) + 1, (pX + pX) + 1 + cosf(fPlayerA) * 4, (pY + pY) + 1 + sinf(fPlayerA) * 4);
+					DrawPoint((pX + pX) + 1, (pY + pY) + 1, FG_DARK_RED, PIXEL_SOLID);
+
+					// draw top partial map
+					DrawPoint((x + x) + 1, (y + y) + 1, wcMapPixelColour, PIXEL_SOLID);
+
+				}
+				if (nMapDisplayStatus > 1)
+				{
+					// draw full map
+					DrawPoint((x + x + 1) + 1, (y + y + 1) + 1, wcMapPixelColour, PIXEL_SOLID);
+					DrawPoint((x + x) + 1, (y + y + 1) + 1, wcMapPixelColour, PIXEL_SOLID);
+					DrawPoint((x + x + 1) + 1, (y + y) + 1, wcMapPixelColour, PIXEL_SOLID);
+				}
+			}
+	}
 
 	return true;
 } // end of OnGameUpdate
