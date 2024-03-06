@@ -75,7 +75,9 @@ protected:
     std::wstring sCurrentFilePath;
 
     CHAR_INFO* screen;      // pointer to screen buffer
+    CHAR_INFO* screenBilinear;      // if applying filtering
     SMALL_RECT windowSize;  // console window physical size
+    int nScreenArrayLength;
 
     // grab handle to the console window (Windows manages this);
     // hiding mouse / system stuff etc...
@@ -93,13 +95,13 @@ protected:
 
     // KEYS
     // struct for each key
-    struct keyState {
+    struct KeyState {
         bool bPressed;
         bool bReleased;
         bool bHeld;
     };
 
-    keyState keyArray[256];
+    KeyState keyArray[256];
     short newKeyStateArray[256];
     short oldKeyStateArray[256];
 
@@ -109,6 +111,20 @@ protected:
     bool bGameUpdatePaused;
     bool bFullScreen;
     COORD mouseCoords;
+
+    // BILINEAR sampling
+    struct Colour4Sample {
+        short c00;
+        short c01;
+        short c10;
+        short c11;
+    };
+
+    struct Pixel {
+        short fgCol;
+        short bgCol;
+        short glyph;
+    };
 
 
 public:
@@ -157,6 +173,20 @@ protected:
 
     int DrawTextureToScreen(const Texture* texture, int x, int y, float scale);
 
+
+ private:
+
+    void CountColorRatios(Colour4Sample& sample, std::map<short, int>& colourMap);
+    void CalculateColorRatios(const std::map<short, int>& colorCounts, std::map<short, float>& ratioMap);
+
+protected:
+
+    void ApplyBilinearProcess();
+
+    Colour4Sample Get4ColourSample(int x, int y);
+
+    void Blend4ColourSample(const Colour4Sample& sample, Pixel& pix);
+
     void UpdateInputStates();
 
     void SetConsoleFocusPause(bool state);
@@ -167,7 +197,7 @@ protected:
 
     void UnPauseGameUpdate();
 
-    keyState GetKeyState(short key);
+    KeyState GetKeyState(short key);
 
     COORD GetMousePosition();
 

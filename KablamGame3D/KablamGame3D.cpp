@@ -423,23 +423,19 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				}
 				else
 				{
-					//colour = floorTextures[nFloorType - 1]->SampleColour(fTileHitX - nTileIndexX, fTileHitY - nTileIndexY);
+					colour = floorTextures[nFloorType - 1]->SampleColour(fTileHitX - nTileIndexX, fTileHitY - nTileIndexY);
 
-					//if (floorTextures.at(nFloorType - 1)->IsIlluminated() == true)
-					//{
-					//	colour = colour | FOREGROUND_INTENSITY;
-					//}
+					if (floorTextures.at(nFloorType - 1)->IsIlluminated() == true)
+					{
+						colour = colour | FOREGROUND_INTENSITY;
+					}
 
-					//DrawPoint(x, y, colour, PIXEL_SOLID);
-
-					CHAR_INFO glyph;
-
-					floorTextures[nFloorType - 1]->SampleColourBilinearGlyph(fTileHitX - nTileIndexX, fTileHitY - nTileIndexY, glyph);
-
-					DrawPoint(x, y, glyph.Attributes, glyph.Char.UnicodeChar);
+					DrawPoint(x, y, colour, PIXEL_SOLID);
 				}
 			}
 		}
+
+		ApplyBilinearProcess();
 
 
 		// display map and player

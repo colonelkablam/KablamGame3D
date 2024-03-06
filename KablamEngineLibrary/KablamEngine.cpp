@@ -14,15 +14,15 @@
 KablamEngine::KablamEngine()
     :nScreenWidth{ 30 }, nScreenHeight{ 10 }, nFontWidth{ 5 }, nFontHeight{ 10 }, hConsoleWindow{ GetConsoleWindow() },
     hOGBuffer{ GetStdHandle(STD_OUTPUT_HANDLE) }, hConsoleInput{ GetStdHandle(STD_INPUT_HANDLE) }, hNewBuffer{ INVALID_HANDLE_VALUE },
-    dwPreviousConsoleMode{ 0 }, screen{ nullptr }, windowSize{ 0, 0, 1, 1 }, mouseCoords{ 0,0 }, sConsoleTitle{ L"no_name_given" },
-    bConsoleFocus{ true }, bGameUpdatePaused{ false }, bFocusPause{ false }, bFullScreen{ false } {
+    dwPreviousConsoleMode{ 0 }, screen{ nullptr }, screenBilinear{ nullptr }, nScreenArrayLength{ 0 }, windowSize { 0, 0, 1, 1 }, mouseCoords{ 0,0 },
+    sConsoleTitle{ L"no_name_given" }, bConsoleFocus{ true }, bGameUpdatePaused{ false }, bFocusPause{ false }, bFullScreen{ false } {
 
     // initialise storage of input events - key and mouse
     // use standard library fill
     std::fill(std::begin(newKeyStateArray), std::end(newKeyStateArray), false);
     std::fill(std::begin(oldKeyStateArray), std::end(oldKeyStateArray), false);
 
-    for (keyState& key : keyArray) {
+    for (KeyState& key : keyArray) {
         key.bPressed = false;
         key.bHeld = false;
         key.bReleased = false;
@@ -48,6 +48,8 @@ KablamEngine::~KablamEngine()
 
     delete[] screen;
     screen = nullptr;
+    delete[] screenBilinear;
+    screenBilinear = nullptr;
 }
 
 
@@ -83,7 +85,8 @@ int KablamEngine::BuildConsole(int screenWidth, int screenHeight, int fontWidth,
         return Error(L"Bad INVALID_HANDLE_VALUE.");
 
     // Create a new screen buffer
-    screen = new CHAR_INFO[nScreenWidth * nScreenHeight];
+    nScreenArrayLength = nScreenWidth * nScreenHeight;
+    screen = new CHAR_INFO[nScreenArrayLength];
     // clear memory for screen buffer
     memset(screen, 0, sizeof(CHAR_INFO) * nScreenWidth * nScreenHeight);
 
@@ -452,6 +455,79 @@ int KablamEngine::DrawTextureToScreen(const Texture* texture, int xScreen, int y
     return 0;
 }
 
+
+void KablamEngine::CountColorRatios(Colour4Sample& sample, std::map<short, int>& colourMap)
+{
+// Increment the count for each color
+    colourMap[sample.c00]++;
+    colourMap[sample.c01]++;
+    colourMap[sample.c10]++;
+    colourMap[sample.c11]++;
+}
+
+
+void KablamEngine::CalculateColorRatios(const std::map<short, int>& colorCounts, std::map<short, float>& ratioMap) {
+    for (const auto& pair : colorCounts) {
+        ratioMap[pair.first] = pair.second / 4.0f;  // Dividing by 4, as there are 4 texels
+    }
+}
+
+void KablamEngine::ApplyBilinearProcess()
+{
+    Colour4Sample colourSample;
+    std::map<short, int> colourMap;
+    std::map<short, float> ratioMap;
+
+    for (int x{ 0 }; x < nScreenWidth; x++)
+    {
+        for (int y{ 0 }; y < nScreenHeight; y++)
+        {
+            // Fetch the four texels nearest to (x, y)
+            colourSample.c00 = screen[y * nScreenWidth + x].Attributes;
+            colourSample.c10 = screen[y * nScreenWidth + std::min(x + 1, nScreenWidth - 1)].Attributes;
+            colourSample.c01 = screen[std::min(y + 1, nScreenHeight - 1) * nScreenWidth + x].Attributes;
+            colourSample.c11 = screen[std::min(y + 1, nScreenHeight - 1) * nScreenWidth + std::min(x + 1, nScreenWidth - 1)].Attributes;
+
+            CountColorRatios(colourSample, colourMap);
+            CalculateColorRatios(colourMap, ratioMap);
+
+            // Sort colors by their ratio to find the most and second most dominant colors
+            std::vector<std::pair<short, float>> sortedRatios(ratioMap.begin(), ratioMap.end());
+            std::sort(sortedRatios.begin(), sortedRatios.end(), [](const auto& a, const auto& b) {
+                return a.second > b.second; // Descending order
+                });
+
+            // Select the two most dominant colors for foreground and background
+            short fgColour = sortedRatios.size() > 0 ? sortedRatios[0].first : FG_WHITE; // Most dominant
+            short bgColour = sortedRatios.size() > 1 ? sortedRatios[1].first : BG_BLACK; // Second most dominant
+
+            // Choose a glyph based on the ratio of the most dominant color
+            short glyph;
+            float ratio = sortedRatios[0].second; // Ratio of the most dominant color
+
+            std::array<short, 4> glyphs = { PIXEL_QUARTER, PIXEL_HALF, PIXEL_THREEQUARTERS, PIXEL_SOLID };
+
+            int ratioIndex = std::min(static_cast<int>(ratio * 4), 3); // Assuming ratio is normalized to [0, 1]
+            glyph = glyphs[ratioIndex];
+
+            screenBilinear[y * nScreenHeight + x].Attributes = fgColour | (bgColour << 4);
+            screenBilinear[y * nScreenHeight + x].Char.UnicodeChar = glyph;
+        }
+    }
+
+    screen = screenBilinear;
+}
+
+KablamEngine::Colour4Sample KablamEngine::Get4ColourSample(int x, int y)
+{
+
+}
+
+void KablamEngine::Blend4ColourSample(const Colour4Sample& sample, Pixel& pix)
+{
+
+}
+
 void KablamEngine::UpdateInputStates() // mouse location and focus state of window
 {
     for (int i{ 0 }; i < 256; i++)
@@ -564,7 +640,7 @@ void KablamEngine::UnPauseGameUpdate()
     AddToLog(L"GameUpdate unpaused.");
 }
 
-KablamEngine::keyState KablamEngine::GetKeyState(short key)
+KablamEngine::KeyState KablamEngine::GetKeyState(short key)
 {
     return keyArray[key];
 }
@@ -695,6 +771,9 @@ int KablamEngine::CleanUp()
 {
     delete[] screen;  // Clean up allocated memory
     screen = nullptr; // ptr is now safe to check against nullptr
+
+    delete[] screenBilinear;  // Clean up allocated memory
+    screenBilinear = nullptr; // ptr is now safe to check against nullptr
 
     if (!CloseHandle(hNewBuffer)) {
         return Error(L"Unable to CloseHandle of new buffer when cleaning up.");
