@@ -98,7 +98,7 @@ public:
 
 	short SampleGlyph(float x, float y) const;
 
-	void SampleColourBilinearGlyph(float x, float y, CHAR_INFO& pixel);
+	void BilinearInterpolationWithGlyphShading(float x, float y, CHAR_INFO& pixel);
 
 	bool IsIlluminated() const;
 

@@ -149,11 +149,8 @@ short Texture::SampleGlyph(float x, float y) const
 	y = std::max(0.0f, std::min(y, 1.0f));
 
 	// Scale the normalized coordinates to array indices - handle edge cases
-	int ix = static_cast<int>(x * (m_width));
-	ix = std::min(ix, m_width - 1);          // Clamp to the maximum valid index
-
-	int iy = static_cast<int>(y * (m_height));
-	iy = std::min(iy, m_height - 1);          // Clamp to the maximum valid index
+	int ix = static_cast<int>(x * (m_width)) % m_width;
+	int iy = static_cast<int>(y * (m_height)) % m_height;
 
 	// Calculate the index in the glyph array
 	int index = iy * m_width + ix;
@@ -162,70 +159,93 @@ short Texture::SampleGlyph(float x, float y) const
 	return m_glyphArray[index];
 }
 
-
-// experiment to see if can blend console colours with glyphs
-
-std::map<short, int> Texture::countColorRatios(short c00, short c10, short c01, short c11) {
-	std::map<short, int> colorCounts;
-
-	// Increment the count for each color
-	colorCounts[c00]++;
-	colorCounts[c10]++;
-	colorCounts[c01]++;
-	colorCounts[c11]++;
-
-	return colorCounts;
-}
-
-std::map<short, float> Texture::calculateColorRatios(const std::map<short, int>& colorCounts) {
-	std::map<short, float> colorRatios;
-	for (const auto& pair : colorCounts) {
-		colorRatios[pair.first] = pair.second / 4.0f;  // Dividing by 4, as there are 4 texels
-	}
-	return colorRatios;
-}
-
-void Texture::SampleColourBilinearGlyph(float x, float y, CHAR_INFO &pixel) {
+void Texture::BilinearInterpolationWithGlyphShading(float x, float y, CHAR_INFO& pixel)
+{
 	// Ensure x and y are within the expected range [0.0, 1.0]
 	x = std::max(0.0f, std::min(x, 1.0f));
 	y = std::max(0.0f, std::min(y, 1.0f));
 
-	// Scale the normalized coordinates to array indices - handle edge cases
-	int ix = static_cast<int>(x * (m_width));
-	ix = std::min(ix, m_width - 1);          // Clamp to the maximum valid index
+	// needed to find the dx/dy within the TEXEL
+	float fx = x * m_width;
+	float fy = y * m_height;
 
-	int iy = static_cast<int>(y * (m_height));
-	iy = std::min(iy, m_height - 1);          // Clamp to the maximum valid index
+	// Convert to integer indices - allow wrap around
+	int ix = static_cast<int>(fx) % m_width;
+	int iy = static_cast<int>(fy) % m_height;
 
-	// Fetch the four texels nearest to (x, y)
+	// Calculate distance from TEXEL edge
+	float dx = fx - ix;
+	float dy = fy - iy;
+
+	// Sample the center FG colour texel
 	short c00 = m_colourArray[iy * m_width + ix];
-	short c10 = m_colourArray[iy * m_width + std::min(ix + 1, m_width - 1)];
-	short c01 = m_colourArray[std::min(iy + 1, m_height - 1) * m_width + ix];
-	short c11 = m_colourArray[std::min(iy + 1, m_height - 1) * m_width + std::min(ix + 1, m_width - 1)];
 
-	auto colourCounts = countColorRatios(c00, c10, c01, c11);
-	auto colourRatios = calculateColorRatios(colourCounts);
+	// colour of secondary colour (to be used as BG colour)
+	short c01{ BG_CYAN };
 
-	// Sort colors by their ratio to find the most and second most dominant colors
-	std::vector<std::pair<short, float>> sortedRatios(colourRatios.begin(), colourRatios.end());
-	std::sort(sortedRatios.begin(), sortedRatios.end(), [](const auto& a, const auto& b) {
-		return a.second > b.second; // Descending order
-		});
+	// delta value for fractional distance from center of TEXEL to next closest TEXEL
+	// used to assign glyph character for 'shading'
+	float delta{ 0 };
 
-	// Select the two most dominant colors for foreground and background
-	short fgColour = sortedRatios.size() > 0 ? sortedRatios[0].first : FG_WHITE; // Most dominant
-	short bgColour = sortedRatios.size() > 1 ? sortedRatios[1].first : BG_BLACK; // Second most dominant
+	// BOTTOM RIGHT quadrant of texel
+	if (dx >= 0.5f && dy >= 0.5f) {
+		if (dx > dy) { // RIGHT takes precedence
+			c01 = m_colourArray[iy * m_width + (ix + 1) % m_width]; // Wrap around horizontally
+			delta = dx - 0.5f;
+		}
+		else { // DOWN takes precedence
+			c01 = m_colourArray[((iy + 1) % m_height) * m_width + ix]; // Wrap around vertically
+			delta = dy - 0.5f;
+		}
+	}
+	// TOP RIGHT quadrant of texel
+	else if (dx >= 0.5f && dy <= 0.5f) {
+		if (1.0f - dx < dy) { // RIGHT takes precedence over UP
+			c01 = m_colourArray[iy * m_width + (ix + 1) % m_width]; // Wrap around horizontally
+			delta = dx - 0.5f;
+		}
+		else { // UP takes precedence
+			c01 = m_colourArray[((iy - 1 + m_height) % m_height) * m_width + ix]; // Wrap around vertically
+			delta = 0.5f - dy;
+		}
+	}
+	// BOTTOM LEFT quadrant of texel
+	else if (dx <= 0.5f && dy >= 0.5f) {
+		if (dx < 1.0f - dy) { // LEFT takes precedence
+			c01 = m_colourArray[iy * m_width + ((ix - 1 + m_width) % m_width)]; // Wrap around horizontally
+			delta = 0.5f - dx;
+		}
+		else { // DOWN takes precedence
+			c01 = m_colourArray[((iy + 1) % m_height) * m_width + ix]; // Wrap around vertically
+			delta = dy - 0.5f;
+		}
+	}
+	// TOP LEFT quadrant of texel
+	else if (dx <= 0.5f && dy <= 0.5f) {
+		if (dx < dy) { // LEFT takes precedence over UP
+			c01 = m_colourArray[iy * m_width + ((ix - 1 + m_width) % m_width)]; // Wrap around horizontally
+			delta = 0.5f - dx;
+		}
+		else { // UP takes precedence
+			c01 = m_colourArray[((iy - 1 + m_height) % m_height) * m_width + ix]; // Wrap around vertically
+			delta = 0.5f - dy;
+		}
+	}
 
-	// Choose a glyph based on the ratio of the most dominant color
-	short glyph;
-	float ratio = sortedRatios[0].second; // Ratio of the most dominant color
+	// default glyph
+	short glyph = PIXEL_SOLID;
 
-	std::array<short, 4> glyphs = { PIXEL_QUARTER, PIXEL_HALF, PIXEL_THREEQUARTERS, PIXEL_SOLID };
+	// closer to the center of TEXEL (-> 0) more solid glyph
+	if (delta < 0.35)
+		glyph = PIXEL_SOLID;
+	else if (delta < 0.45f)
+		glyph = PIXEL_THREEQUARTERS;
+	else 
+		glyph = PIXEL_HALF;
 
-	int ratioIndex = std::min(static_cast<int>(ratio * 4), 3); // Assuming ratio is normalized to [0, 1]
-	glyph = glyphs[ratioIndex];
 
-	pixel.Attributes = fgColour | (bgColour << 4);
+	// assign fg/bg colors and glyph to CHAR_INFO pixel
+	pixel.Attributes = c00 | c01 << 4; // shift bg colour into WORD
 	pixel.Char.UnicodeChar = glyph;
 }
 

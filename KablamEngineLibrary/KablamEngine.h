@@ -185,7 +185,7 @@ protected:
 
 protected:
 
-    void ApplyBilinearProcess();
+    void ApplyBilinearFilterScreen();
 
     void UpdateInputStates();
 

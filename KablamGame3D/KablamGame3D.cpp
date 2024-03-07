@@ -354,12 +354,24 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 			// draw a wall character
 			else if (y > nCeiling && y <= nFloor && nWallType != 0)
 			{
+				//// calculate Y sample of texture tile
+				//float fSampleY = ((float)y - (float)nCeiling) / ((float)nFloor - (float)nCeiling);
+
+				//// nShade added for depth
+				//DrawPoint(x, y, wallTextures[nWallType - 1]->SampleColour(fTileHit, fSampleY), PIXEL_SOLID);
+
 				// calculate Y sample of texture tile
 				float fSampleY = ((float)y - (float)nCeiling) / ((float)nFloor - (float)nCeiling);
 
-				// nShade added for depth
-				DrawPoint(x, y, wallTextures[nWallType - 1]->SampleColour(fTileHit, fSampleY), PIXEL_SOLID);
-
+				if (fDistanceToWall < 6)
+				{
+					DrawPoint(x, y, wallTextures[nWallType - 1]->SampleColour(fTileHit, fSampleY) | BG_BLACK, PIXEL_SOLID);
+				}
+				else {
+					CHAR_INFO pixel;
+					wallTextures[nWallType - 1]->BilinearInterpolationWithGlyphShading(fTileHit, fSampleY, pixel);
+					DrawPoint(x, y, pixel.Attributes, pixel.Char.UnicodeChar);
+				}
 			}
 			// draw a floor character
 			else if (y >= nFloor && y <= GetConsoleHeight())
@@ -415,20 +427,28 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				}
 				else
 				{
-					colour = floorTextures[nFloorType - 1]->SampleColour(fTileHitX - nTileIndexX, fTileHitY - nTileIndexY);
+					/*colour = floorTextures[nFloorType - 1]->SampleColour(fTileHitX - nTileIndexX, fTileHitY - nTileIndexY);
 
 					if (floorTextures.at(nFloorType - 1)->IsIlluminated() == true)
 					{
 						colour = colour | FOREGROUND_INTENSITY;
 					}
 
-					DrawPoint(x, y, colour, PIXEL_SOLID);
+					DrawPoint(x, y, colour, PIXEL_SOLID);*/
+
+					CHAR_INFO pixel;
+					floorTextures[nFloorType - 1]->BilinearInterpolationWithGlyphShading(fTileHitX - nTileIndexX, fTileHitY - nTileIndexY, pixel);
+					DrawPoint(x, y, pixel.Attributes, pixel.Char.UnicodeChar);
 				}
+
+
+
+
 			}
 		}
 	} // end of screen column iteration
 
-	ApplyBilinearProcess();
+	//ApplyBilinearFilterScreen();
 
 	DisplayAim();
 	

@@ -490,7 +490,7 @@ void KablamEngine::TwoMainColourCounts(const std::map<short, int>& colourMap, st
     }
 }
 
-void KablamEngine::ApplyBilinearProcess()
+void KablamEngine::ApplyBilinearFilterScreen()
 {
     // iterate through screen array to smooth out display
     for (int x{ 0 }; x < nScreenWidth; x++)
