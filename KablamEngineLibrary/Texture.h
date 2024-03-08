@@ -63,6 +63,26 @@ private:
 	short* m_colourArray;
 	short* m_glyphArray;
 
+	struct MipmapLevel {
+		short* colourArray;
+		short* glyphArray;
+		int width, height;
+		MipmapLevel* next;  // Pointer to the next mipmap level (lower resolution)
+
+		MipmapLevel(int w, int h) : width(w), height(h), next(nullptr) {
+			colourArray = new short[w * h];
+			glyphArray = new short[w * h];
+			// Initialize arrays, e.g., with default color and glyph
+		}
+
+		~MipmapLevel() {
+			delete[] colourArray;
+			delete[] glyphArray;
+		}
+	};
+
+	MipmapLevel* topMipmap; // start at highest res
+
 public:
 
 	// constructors
@@ -80,19 +100,28 @@ public:
 	// member methods
 private:
 	bool Initialise(int w, int h, bool illuminated = false, short backgroundColour = BG_BLACK);
+	
+	void GenerateMipmaps();
 
-	std::map<short, int> countColorRatios(short c00, short c10, short c01, short c11);
+	void Downsample(MipmapLevel* currentLevel, MipmapLevel* nextLevel);
 
-	std::map<short, float> calculateColorRatios(const std::map<short, int>& colorCounts);
+	short AverageColour(short colours[4]);
+
 
 public:
+
+	MipmapLevel* GetMipmapLevel(float detail) const;
+
 	bool SaveAs(const std::wstring& sFilePath);
 
 	bool LoadFrom(const std::wstring& sFilePath);
 
+	// no mipmap
 	short SampleColour(float x, float) const;
-
 	short SampleGlyph(float x, float y) const;
+
+	// mipmap
+	short SampleColourWithMipmap(float x, float y, float detail) const;
 
 private:
 	void SetColourAndDeltaFromSecondaryTexel(int ix, int iy, float dx, float dy, short primaryColour, short& secondaryColour, float& delta);

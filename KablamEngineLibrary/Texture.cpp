@@ -8,19 +8,22 @@
 #undef min
 
 Texture::Texture(int w, int h, bool illum)
-	: m_colourArray{ nullptr }, m_glyphArray{ nullptr }
+	: m_colourArray{ nullptr }, m_glyphArray{ nullptr }, topMipmap{ nullptr }
 {
 	Initialise(w, h, illum);
+
+	GenerateMipmaps();
 }
 
 Texture::Texture(std::wstring filePath)
-	: m_colourArray{ nullptr }, m_glyphArray{ nullptr }
+	: m_colourArray{ nullptr }, m_glyphArray{ nullptr }, topMipmap{ nullptr }
 {
 	if (!LoadFrom(filePath))
 	{
 		// if failed to load make a 32*32 dark red canvas
 		Initialise(32, 32, false, FG_DARK_MAGENTA);
 	}
+	GenerateMipmaps();
 }
 
 // copy constructor TBC
@@ -32,6 +35,13 @@ Texture::~Texture()
 {
 	delete[] m_colourArray;
 	delete[] m_glyphArray;
+
+	MipmapLevel* current = topMipmap;
+	while (current != nullptr) {
+		MipmapLevel* next = current->next;
+		delete current;
+		current = next;
+	}
 }
 
 bool Texture::Initialise(int width, int height, bool illumination, short colour)
@@ -47,8 +57,90 @@ bool Texture::Initialise(int width, int height, bool illumination, short colour)
 		m_colourArray[i] = colour;
 		m_glyphArray[i] = L' ';
 	}
+
 	return true;
 }
+
+void Texture::GenerateMipmaps() {
+
+	topMipmap = new MipmapLevel(m_width, m_height);
+
+	topMipmap->colourArray = m_colourArray;
+	topMipmap->glyphArray = m_glyphArray;
+	topMipmap->height = m_height;
+	topMipmap->width = m_width;
+	topMipmap->next = nullptr;
+
+	if (!topMipmap) return;  // Ensure the top level exists
+
+	MipmapLevel* currentLevel = topMipmap;
+	while (currentLevel->width > 1 && currentLevel->height > 1) {
+		int nextWidth = currentLevel->width / 2;
+		int nextHeight = currentLevel->height / 2;
+
+		MipmapLevel* nextLevel = new MipmapLevel(nextWidth, nextHeight);
+		// Populate nextLevel->colourArray and nextLevel->glyphArray by downsampling from currentLevel
+
+
+		Downsample(currentLevel, nextLevel);
+
+		currentLevel->next = nextLevel;  // Link to the new level
+		currentLevel = nextLevel;  // Move down to the new level
+	}
+}
+
+void Texture::Downsample(MipmapLevel* currentLevel, MipmapLevel* nextLevel) {
+	int currentWidth = currentLevel->width;
+	int nextWidth = nextLevel->width;
+	int nextHeight = nextLevel->height;
+
+	for (int y = 0; y < nextHeight; ++y) {
+		for (int x = 0; x < nextWidth; ++x) {
+			// Corresponding top-left pixel in the current level
+			int topLeftX = x * 2;
+			int topLeftY = y * 2;
+
+			// Sample 2x2 block from current level
+			short colours[4];
+			for (int dy = 0; dy < 2; ++dy) {
+				for (int dx = 0; dx < 2; ++dx) {
+					int index = (topLeftY + dy) * currentWidth + (topLeftX + dx);
+					colours[dy * 2 + dx] = currentLevel->colourArray[index];
+				}
+			}
+
+			// Compute averages for colour and glyph. Note: averaging glyphs may not always give desired visual results.
+			short avgColour = AverageColour(colours);
+
+			// Set averaged colour and glyph in the next level
+			nextLevel->colourArray[y * nextWidth + x] = avgColour;
+		}
+	}
+}
+
+short Texture::AverageColour(short colours[4]) {
+	// Example averaging function for colours
+	int sum = 0;
+	for (int i = 0; i < 4; ++i) {
+		sum += colours[i];
+	}
+	return static_cast<short>(sum / 4);
+}
+
+Texture::MipmapLevel* Texture::GetMipmapLevel(float detail) const {
+	MipmapLevel* currentLevel = topMipmap;
+	int level = 0;
+
+	// Simple heuristic to determine mipmap level based on 'detail'
+	// 'detail' might represent distance from viewer or some other metric
+	while (currentLevel->next != nullptr && level < detail) {
+		currentLevel = currentLevel->next;
+		level++;
+	}
+
+	return currentLevel;
+}
+
 
 bool Texture::SaveAs(const std::wstring& filePath)
 {
@@ -78,6 +170,7 @@ bool Texture::LoadFrom(const std::wstring& filePath)
 	m_illuminated = false;
 	delete[] m_colourArray;
 	delete[] m_glyphArray;
+	topMipmap = nullptr;
 
 	FILE* file = nullptr;
 	_wfopen_s(&file, filePath.c_str(), L"rb");
@@ -122,6 +215,7 @@ short Texture::SampleColour(float x, float y) const
 	return m_colourArray[index];
 }
 
+
 short Texture::SampleGlyph(float x, float y) const
 {
 	// Ensure x and y are within the expected range [0.0, 1.0]
@@ -137,6 +231,21 @@ short Texture::SampleGlyph(float x, float y) const
 
 	// Return the glyph at the index
 	return m_glyphArray[index];
+}
+
+// MIPMAPPING
+short Texture::SampleColourWithMipmap(float x, float y, float detail) const {
+	MipmapLevel* level = GetMipmapLevel(detail);  // Determine appropriate mipmap level based on detail
+
+	// Scale x, y to level dimensions and clamp
+	x = std::max(0.0f, std::min(x, 1.0f)) * level->width;
+	y = std::max(0.0f, std::min(y, 1.0f)) * level->height;
+
+	int ix = std::min(static_cast<int>(x), level->width - 1);
+	int iy = std::min(static_cast<int>(y), level->height - 1);
+
+	// Return colour from the selected mipmap level
+	return level->colourArray[iy * level->width + ix];
 }
 
 // takes a reference to second colour and delta for modification

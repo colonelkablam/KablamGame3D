@@ -322,16 +322,29 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 					nTileIndexY = (int)fTileHitY;
 
 				// char to draw 'shade'
-				short nCeilingShadeGlyph;
+				short nCeilingShadeGlyph{ L' '};
+				int nDetailLevel{ 0 };
 
 				if (y < GetConsoleHeight() / 6.0f - (int)fPlayerTilt)
+				{
 					nCeilingShadeGlyph = PIXEL_SOLID;
+					nDetailLevel = 0;
+				}
 				else if (y < GetConsoleHeight() / 4.0f - (int)fPlayerTilt)
+				{
 					nCeilingShadeGlyph = PIXEL_THREEQUARTERS;
+					nDetailLevel = 1;
+				}
 				else if (y < GetConsoleHeight() / 3.0f - (int)fPlayerTilt)
+				{
 					nCeilingShadeGlyph = PIXEL_HALF;
-				else
+					nDetailLevel = 2;
+				}
+				else if (y < GetConsoleHeight() / 2.0f - (int)fPlayerTilt)
+				{
 					nCeilingShadeGlyph = PIXEL_QUARTER;
+					nDetailLevel = 3;
+				}
 
 				int nCeilingType = getMapValue(nTileIndexX, nTileIndexY, mapCeilingTiles);
 
@@ -345,9 +358,9 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 					short colour = ceilingTextures[nCeilingType - 1]->SampleColour(fTileHitX - nTileIndexX, fTileHitY - nTileIndexY);
 
 					if (ceilingTextures.at(nCeilingType - 1)->IsIlluminated())
-						colour = FG_DARK_BLUE | FOREGROUND_INTENSITY;
+						nCeilingShadeGlyph = PIXEL_SOLID;
 
-					DrawPoint(x, y, colour, PIXEL_SOLID);
+					DrawPoint(x, y, colour, nCeilingShadeGlyph);
 				}
 
 			}
@@ -365,12 +378,16 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 
 				if (fDistanceToWall < 0)
 				{
-					DrawPoint(x, y, wallTextures[nWallType - 1]->SampleColour(fTileHit, fSampleY) | BG_BLACK, PIXEL_SOLID);
+					DrawPoint(x, y, wallTextures[nWallType - 1]->SampleColour(fTileHit, fSampleY), PIXEL_SOLID);
 				}
 				else {
-					CHAR_INFO pixel;
-					wallTextures[nWallType - 1]->LinearInterpolationWithGlyphShading(fTileHit, fSampleY, pixel);
-					DrawPoint(x, y, pixel.Attributes, pixel.Char.UnicodeChar);
+					//CHAR_INFO pixel;
+					//wallTextures[nWallType - 1]->LinearInterpolationWithGlyphShading(fTileHit, fSampleY, pixel);
+					//DrawPoint(x, y, pixel.Attributes, pixel.Char.UnicodeChar);
+
+					short colour = wallTextures[nWallType - 1]->SampleColourWithMipmap(fTileHit, fSampleY, 0);
+
+					DrawPoint(x, y, colour, PIXEL_SOLID);
 				}
 			}
 			// draw a floor character
@@ -406,16 +423,26 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 					nTileIndexY = (int)fTileHitY;
 
 				// char to draw 'shade'
-				short nFloorShadeGlyph;
+				short nFloorShadeGlyph{ PIXEL_SOLID };
+				int nDetailLevel{ 0 };
 
-				if (y < GetConsoleHeight() - GetConsoleHeight() / 2.5f - (int)fPlayerTilt)
+				if (y < GetConsoleHeight() - GetConsoleHeight() / 2.5f - (int)fPlayerTilt) 
+				{
 					nFloorShadeGlyph = PIXEL_QUARTER;
+					nDetailLevel = 3;
+				}
 				else if (y < GetConsoleHeight() - GetConsoleHeight() / 3.0f - (int)fPlayerTilt)
+				{
 					nFloorShadeGlyph = PIXEL_HALF;
-				else if (y < GetConsoleHeight() - GetConsoleHeight() / 4.5f - (int)fPlayerTilt)
+					nDetailLevel = 2;
+
+				}
+				else if (y < GetConsoleHeight() - GetConsoleHeight() / 4.0f - (int)fPlayerTilt)
+				{
 					nFloorShadeGlyph = PIXEL_THREEQUARTERS;
-				else
-					nFloorShadeGlyph = PIXEL_SOLID;
+					nDetailLevel = 1;
+				}
+
 
 				int nFloorType = getMapValue(nTileIndexX, nTileIndexY, mapFloorTiles);
 				short colour;
@@ -436,9 +463,21 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 
 					DrawPoint(x, y, colour, PIXEL_SOLID);*/
 
-					CHAR_INFO pixel;
-					floorTextures[nFloorType - 1]->LinearInterpolationWithGlyphShading(fTileHitX - nTileIndexX, fTileHitY - nTileIndexY, pixel);
-					DrawPoint(x, y, pixel.Attributes, pixel.Char.UnicodeChar);
+					////CHAR_INFO pixel;
+					////floorTextures[nFloorType - 1]->LinearInterpolationWithGlyphShading(fTileHitX - nTileIndexX, fTileHitY - nTileIndexY, pixel);
+					////DrawPoint(x, y, pixel.Attributes, pixel.Char.UnicodeChar);
+					////CHAR_INFO pixel;
+					
+
+					colour = floorTextures[nFloorType - 1]->SampleColourWithMipmap(fTileHitX - nTileIndexX, fTileHitY - nTileIndexY, nDetailLevel);
+
+					if (floorTextures.at(nFloorType - 1)->IsIlluminated() == true)
+					{
+						colour = colour | FG_INTENSITY;
+					}
+
+					DrawPoint(x, y, colour, PIXEL_SOLID);
+
 				}
 
 
