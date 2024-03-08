@@ -102,26 +102,6 @@ bool Texture::LoadFrom(const std::wstring& filePath)
 
 }
 
-bool Texture::SetColour(int x, int y, short colour)
-{
-	if (x < 0 || x >= m_width || y < 0 || y >= m_height)
-		return false;
-	else
-		m_colourArray[y * m_width + x] = colour;
-
-	return true;
-}
-
-bool Texture::SetGlyph(int x, int y, short glyph)
-{
-	if (x < 0 || x >= m_width || y < 0 || y >= m_height)
-		return false;
-	else
-		m_glyphArray[y * m_width + x] = glyph;
-
-	return true;
-}
-
 short Texture::SampleColour(float x, float y) const
 {
 	// Ensure x and y are within the expected range [0.0, 1.0]
@@ -159,99 +139,169 @@ short Texture::SampleGlyph(float x, float y) const
 	return m_glyphArray[index];
 }
 
-void Texture::BilinearInterpolationWithGlyphShading(float x, float y, CHAR_INFO& pixel)
-{
-	// Ensure x and y are within the expected range [0.0, 1.0]
-	x = std::max(0.0f, std::min(x, 1.0f));
-	y = std::max(0.0f, std::min(y, 1.0f));
-
-	// needed to find the dx/dy within the TEXEL
-	float fx = x * m_width;
-	float fy = y * m_height;
-
-	// Convert to integer indices - allow wrap around
-	int ix = static_cast<int>(fx) % m_width;
-	int iy = static_cast<int>(fy) % m_height;
-
-	// Calculate distance from TEXEL edge
-	float dx = fx - ix;
-	float dy = fy - iy;
-
-	// Sample the center FG colour texel
-	short c00 = m_colourArray[iy * m_width + ix];
-
-	// colour of secondary colour (to be used as BG colour)
-	short c01{ BG_CYAN };
-
-	// delta value for fractional distance from center of TEXEL to next closest TEXEL
-	// used to assign glyph character for 'shading'
-	float delta{ 0 };
-
-	// BOTTOM RIGHT quadrant of texel
+// takes a reference to second colour and delta for modification
+void Texture::SetColourAndDeltaFromSecondaryTexel(int ix, int iy, float dx, float dy, short primaryColour, short& secondaryColour, float& delta) {
+	
+	//	 BOTTOM RIGHT quadrant of texel
 	if (dx >= 0.5f && dy >= 0.5f) {
 		if (dx > dy) { // RIGHT takes precedence
-			c01 = m_colourArray[iy * m_width + (ix + 1) % m_width]; // Wrap around horizontally
+			secondaryColour = m_colourArray[iy * m_width + (ix + 1) % m_width]; // Wrap around horizontally
 			delta = dx - 0.5f;
+
+			if (primaryColour == secondaryColour)
+			{
+				secondaryColour = m_colourArray[((iy + 1) % m_height) * m_width + ix]; // Wrap around vertically
+				delta = dy - 0.5f;
+			}
 		}
 		else { // DOWN takes precedence
-			c01 = m_colourArray[((iy + 1) % m_height) * m_width + ix]; // Wrap around vertically
+			secondaryColour = m_colourArray[((iy + 1) % m_height) * m_width + ix]; // Wrap around vertically
 			delta = dy - 0.5f;
+
+			if (primaryColour == secondaryColour)
+			{
+				secondaryColour = m_colourArray[iy * m_width + (ix + 1) % m_width]; // Wrap around horizontally
+				delta = dx - 0.5f;
+			}
 		}
 	}
 	// TOP RIGHT quadrant of texel
 	else if (dx >= 0.5f && dy <= 0.5f) {
 		if (1.0f - dx < dy) { // RIGHT takes precedence over UP
-			c01 = m_colourArray[iy * m_width + (ix + 1) % m_width]; // Wrap around horizontally
+			secondaryColour = m_colourArray[iy * m_width + (ix + 1) % m_width]; // Wrap around horizontally
 			delta = dx - 0.5f;
+
+			if (primaryColour == secondaryColour)
+			{
+				secondaryColour = m_colourArray[((iy - 1 + m_height) % m_height) * m_width + ix]; // Wrap around vertically
+				delta = 0.5f - dy;
+			}
 		}
 		else { // UP takes precedence
-			c01 = m_colourArray[((iy - 1 + m_height) % m_height) * m_width + ix]; // Wrap around vertically
+			secondaryColour = m_colourArray[((iy - 1 + m_height) % m_height) * m_width + ix]; // Wrap around vertically
 			delta = 0.5f - dy;
+			if (primaryColour == secondaryColour)
+			{
+				secondaryColour = m_colourArray[iy * m_width + (ix + 1) % m_width]; // Wrap around horizontally
+				delta = dx - 0.5f;
+			}
 		}
 	}
 	// BOTTOM LEFT quadrant of texel
 	else if (dx <= 0.5f && dy >= 0.5f) {
 		if (dx < 1.0f - dy) { // LEFT takes precedence
-			c01 = m_colourArray[iy * m_width + ((ix - 1 + m_width) % m_width)]; // Wrap around horizontally
+			secondaryColour = m_colourArray[iy * m_width + ((ix - 1 + m_width) % m_width)]; // Wrap around horizontally
 			delta = 0.5f - dx;
+
+			if (primaryColour == secondaryColour)
+			{
+				secondaryColour = m_colourArray[((iy + 1) % m_height) * m_width + ix]; // Wrap around vertically
+				delta = dy - 0.5f;
+			}
 		}
 		else { // DOWN takes precedence
-			c01 = m_colourArray[((iy + 1) % m_height) * m_width + ix]; // Wrap around vertically
+			secondaryColour = m_colourArray[((iy + 1) % m_height) * m_width + ix]; // Wrap around vertically
 			delta = dy - 0.5f;
+
+			if (primaryColour == secondaryColour)
+			{
+				secondaryColour = m_colourArray[iy * m_width + ((ix - 1 + m_width) % m_width)]; // Wrap around horizontally
+				delta = 0.5f - dx;
+			}
 		}
 	}
 	// TOP LEFT quadrant of texel
 	else if (dx <= 0.5f && dy <= 0.5f) {
 		if (dx < dy) { // LEFT takes precedence over UP
-			c01 = m_colourArray[iy * m_width + ((ix - 1 + m_width) % m_width)]; // Wrap around horizontally
+			secondaryColour = m_colourArray[iy * m_width + ((ix - 1 + m_width) % m_width)]; // Wrap around horizontally
 			delta = 0.5f - dx;
+
+			if (primaryColour == secondaryColour)
+			{
+				secondaryColour = m_colourArray[((iy - 1 + m_height) % m_height) * m_width + ix]; // Wrap around vertically
+				delta = 0.5f - dy;
+			}
 		}
 		else { // UP takes precedence
-			c01 = m_colourArray[((iy - 1 + m_height) % m_height) * m_width + ix]; // Wrap around vertically
+			secondaryColour = m_colourArray[((iy - 1 + m_height) % m_height) * m_width + ix]; // Wrap around vertically
 			delta = 0.5f - dy;
+
+			if (primaryColour == secondaryColour)
+			{
+				secondaryColour = m_colourArray[iy * m_width + ((ix - 1 + m_width) % m_width)]; // Wrap around horizontally
+				delta = 0.5f - dx;
+			}
 		}
 	}
+}
 
-	// default glyph
-	short glyph = PIXEL_SOLID;
-
-	// closer to the center of TEXEL (-> 0) more solid glyph
-	if (delta < 0.35)
-		glyph = PIXEL_SOLID;
+short Texture::GetGlyphFromDelta(float delta) {
+	// Determine the glyph based on delta
+	if (delta < 0.30)
+		return PIXEL_SOLID;
 	else if (delta < 0.45f)
-		glyph = PIXEL_THREEQUARTERS;
-	else 
-		glyph = PIXEL_HALF;
+		return PIXEL_THREEQUARTERS;
+	else
+		return PIXEL_HALF;
+}
 
+void Texture::LinearInterpolationWithGlyphShading(float x, float y, CHAR_INFO& pixel) {
+	// Ensure x and y are within the expected range [0.0, 1.0]
+	x = std::max(0.0f, std::min(x, 1.0f));
+	y = std::max(0.0f, std::min(y, 1.0f));
 
-	// assign fg/bg colors and glyph to CHAR_INFO pixel
-	pixel.Attributes = c00 | c01 << 4; // shift bg colour into WORD
+	// get decimal value of the relative position in texture grid
+	float fx = x * m_width, fy = y * m_height;
+
+	// get grid index (integer part) of TEXEL to be sampled
+	int ix = static_cast<int>(fx) % m_width, iy = static_cast<int>(fy) % m_height;
+
+	// get the fractional part within the TEXEL
+	float dx = fx - ix, dy = fy - iy;
+
+	// get the colour at the grid index (TEXEL hit by xy)
+	short c00 = GetColour(ix, iy);
+
+	// init. delta (this will be the distance from the center of the MAIN TEXEL
+	float delta{ 0.0f };
+	// init. 2nd colour & glyph
+	short c01{ BG_CYAN }; // default
+
+	// set secondary colour and alter delta accordingly
+	SetColourAndDeltaFromSecondaryTexel(ix, iy, dx, dy, c00, c01, delta);
+
+	// assign glyph shade depending on delta
+	short glyph{ GetGlyphFromDelta(delta) };
+
+	// assign values to pixel to display pixel
+	pixel.Attributes = c00 | (c01 << 4);
 	pixel.Char.UnicodeChar = glyph;
 }
+
 
 bool Texture::IsIlluminated() const
 {
 	return m_illuminated;
+}
+
+bool Texture::SetColour(int x, int y, short colour)
+{
+	if (x < 0 || x >= m_width || y < 0 || y >= m_height)
+		return false;
+	else
+		m_colourArray[y * m_width + x] = colour;
+
+	return true;
+}
+
+bool Texture::SetGlyph(int x, int y, short glyph)
+{
+	if (x < 0 || x >= m_width || y < 0 || y >= m_height)
+		return false;
+	else
+		m_glyphArray[y * m_width + x] = glyph;
+
+	return true;
 }
 
 short Texture::GetColour(int x, int y) const

@@ -363,13 +363,13 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				// calculate Y sample of texture tile
 				float fSampleY = ((float)y - (float)nCeiling) / ((float)nFloor - (float)nCeiling);
 
-				if (fDistanceToWall < 6)
+				if (fDistanceToWall < 0)
 				{
 					DrawPoint(x, y, wallTextures[nWallType - 1]->SampleColour(fTileHit, fSampleY) | BG_BLACK, PIXEL_SOLID);
 				}
 				else {
 					CHAR_INFO pixel;
-					wallTextures[nWallType - 1]->BilinearInterpolationWithGlyphShading(fTileHit, fSampleY, pixel);
+					wallTextures[nWallType - 1]->LinearInterpolationWithGlyphShading(fTileHit, fSampleY, pixel);
 					DrawPoint(x, y, pixel.Attributes, pixel.Char.UnicodeChar);
 				}
 			}
@@ -437,7 +437,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 					DrawPoint(x, y, colour, PIXEL_SOLID);*/
 
 					CHAR_INFO pixel;
-					floorTextures[nFloorType - 1]->BilinearInterpolationWithGlyphShading(fTileHitX - nTileIndexX, fTileHitY - nTileIndexY, pixel);
+					floorTextures[nFloorType - 1]->LinearInterpolationWithGlyphShading(fTileHitX - nTileIndexX, fTileHitY - nTileIndexY, pixel);
 					DrawPoint(x, y, pixel.Attributes, pixel.Char.UnicodeChar);
 				}
 

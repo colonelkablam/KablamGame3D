@@ -90,17 +90,22 @@ public:
 
 	bool LoadFrom(const std::wstring& sFilePath);
 
-	bool SetColour(int x, int y, short colour);
-
-	bool SetGlyph(int x, int y, short glyph);
-
 	short SampleColour(float x, float) const;
 
 	short SampleGlyph(float x, float y) const;
 
-	void BilinearInterpolationWithGlyphShading(float x, float y, CHAR_INFO& pixel);
+private:
+	void SetColourAndDeltaFromSecondaryTexel(int ix, int iy, float dx, float dy, short primaryColour, short& secondaryColour, float& delta);
+	short GetGlyphFromDelta(float delta);
+
+public:
+	void LinearInterpolationWithGlyphShading(float x, float y, CHAR_INFO& pixel);
 
 	bool IsIlluminated() const;
+
+	bool SetColour(int x, int y, short colour);
+
+	bool SetGlyph(int x, int y, short glyph);
 
 	short GetColour(int x, int y) const;
 
