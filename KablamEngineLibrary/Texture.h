@@ -63,6 +63,7 @@ private:
 	short* m_colourArray;
 	short* m_glyphArray;
 
+	// linked list to lower res textures
 	struct MipmapLevel {
 		short* colourArray;
 		short* glyphArray;
@@ -79,6 +80,14 @@ private:
 			delete[] colourArray;
 			delete[] glyphArray;
 		}
+	};
+
+	// sampling
+	struct Colour4Sample {
+		short c00 = 0;
+		short c01 = 0;
+		short c10 = 0;
+		short c11 = 0;
 	};
 
 	MipmapLevel* topMipmap; // start at highest res
@@ -104,6 +113,8 @@ private:
 	void GenerateMipmaps();
 
 	void Downsample(MipmapLevel* currentLevel, MipmapLevel* nextLevel);
+	
+	void TwoMainColourCounts(const std::map<short, int>& colourMap, std::pair<short, int>& firstColour, std::pair<short, int>& secondColour);
 
 	short AverageColour(short colours[4]);
 

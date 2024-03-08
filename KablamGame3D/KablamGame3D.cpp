@@ -355,7 +355,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				}
 				else
 				{
-					short colour = ceilingTextures[nCeilingType - 1]->SampleColour(fTileHitX - nTileIndexX, fTileHitY - nTileIndexY);
+					short colour = ceilingTextures[nCeilingType - 1]->SampleColourWithMipmap(fTileHitX - nTileIndexX, fTileHitY - nTileIndexY, nDetailLevel);
 
 					if (ceilingTextures.at(nCeilingType - 1)->IsIlluminated())
 						nCeilingShadeGlyph = PIXEL_SOLID;
@@ -385,7 +385,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 					//wallTextures[nWallType - 1]->LinearInterpolationWithGlyphShading(fTileHit, fSampleY, pixel);
 					//DrawPoint(x, y, pixel.Attributes, pixel.Char.UnicodeChar);
 
-					short colour = wallTextures[nWallType - 1]->SampleColourWithMipmap(fTileHit, fSampleY, 0);
+					short colour = wallTextures[nWallType - 1]->SampleColourWithMipmap(fTileHit, fSampleY, fDistanceToWall/20);
 
 					DrawPoint(x, y, colour, PIXEL_SOLID);
 				}
@@ -429,7 +429,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				if (y < GetConsoleHeight() - GetConsoleHeight() / 2.5f - (int)fPlayerTilt) 
 				{
 					nFloorShadeGlyph = PIXEL_QUARTER;
-					nDetailLevel = 3;
+					nDetailLevel = 4;
 				}
 				else if (y < GetConsoleHeight() - GetConsoleHeight() / 3.0f - (int)fPlayerTilt)
 				{

@@ -12,6 +12,7 @@ Texture::Texture(int w, int h, bool illum)
 {
 	Initialise(w, h, illum);
 
+	// populate linked list of mipmaps
 	GenerateMipmaps();
 }
 
@@ -23,6 +24,7 @@ Texture::Texture(std::wstring filePath)
 		// if failed to load make a 32*32 dark red canvas
 		Initialise(32, 32, false, FG_DARK_MAGENTA);
 	}
+	// populate linked list of mipmaps
 	GenerateMipmaps();
 }
 
@@ -65,13 +67,12 @@ void Texture::GenerateMipmaps() {
 
 	topMipmap = new MipmapLevel(m_width, m_height);
 
+	// populate top mipmap with original texture 
 	topMipmap->colourArray = m_colourArray;
 	topMipmap->glyphArray = m_glyphArray;
 	topMipmap->height = m_height;
 	topMipmap->width = m_width;
 	topMipmap->next = nullptr;
-
-	if (!topMipmap) return;  // Ensure the top level exists
 
 	MipmapLevel* currentLevel = topMipmap;
 	while (currentLevel->width > 1 && currentLevel->height > 1) {
@@ -79,9 +80,8 @@ void Texture::GenerateMipmaps() {
 		int nextHeight = currentLevel->height / 2;
 
 		MipmapLevel* nextLevel = new MipmapLevel(nextWidth, nextHeight);
-		// Populate nextLevel->colourArray and nextLevel->glyphArray by downsampling from currentLevel
 
-
+		// lower res sample into next level
 		Downsample(currentLevel, nextLevel);
 
 		currentLevel->next = nextLevel;  // Link to the new level
@@ -89,6 +89,7 @@ void Texture::GenerateMipmaps() {
 	}
 }
 
+// samples 2x2 block of current level texels to find dominant colour for next level texel
 void Texture::Downsample(MipmapLevel* currentLevel, MipmapLevel* nextLevel) {
 	int currentWidth = currentLevel->width;
 	int nextWidth = nextLevel->width;
@@ -96,43 +97,57 @@ void Texture::Downsample(MipmapLevel* currentLevel, MipmapLevel* nextLevel) {
 
 	for (int y = 0; y < nextHeight; ++y) {
 		for (int x = 0; x < nextWidth; ++x) {
-			// Corresponding top-left pixel in the current level
+			// Corresponding top-left pixel of 2x2 sample in the current level
 			int topLeftX = x * 2;
 			int topLeftY = y * 2;
 
-			// Sample 2x2 block from current level
-			short colours[4];
+			// map to store 4 sampled colours
+			std::map<short, int> colourMap;
+
+			// Sample 2x2 block from current level into map
 			for (int dy = 0; dy < 2; ++dy) {
 				for (int dx = 0; dx < 2; ++dx) {
 					int index = (topLeftY + dy) * currentWidth + (topLeftX + dx);
-					colours[dy * 2 + dx] = currentLevel->colourArray[index];
+					colourMap[currentLevel->colourArray[index]]++;
 				}
 			}
 
-			// Compute averages for colour and glyph. Note: averaging glyphs may not always give desired visual results.
-			short avgColour = AverageColour(colours);
+			// to count colours
+			std::pair<short, int> firstColour{ 0, 0 };
+			std::pair<short, int> secondColour{ 0, 0 };
 
-			// Set averaged colour and glyph in the next level
-			nextLevel->colourArray[y * nextWidth + x] = avgColour;
+			if (colourMap.size() > 1) 
+				TwoMainColourCounts(colourMap, firstColour, secondColour);
+			else  // only one colour
+				firstColour.first = colourMap.begin()->first;
+
+			// Set dominant colour in the next level
+			nextLevel->colourArray[y * nextWidth + x] = firstColour.first;
+
 		}
 	}
 }
 
-short Texture::AverageColour(short colours[4]) {
-	// Example averaging function for colours
-	int sum = 0;
-	for (int i = 0; i < 4; ++i) {
-		sum += colours[i];
+// very simple bubble sort (between two pairs)
+void Texture::TwoMainColourCounts(const std::map<short, int>& colourMap, std::pair<short, int>& firstColour, std::pair<short, int>& secondColour)
+{
+	// iterate through to get two main colours
+	for (const auto& pair : colourMap) {
+		if (pair.second > firstColour.second) {
+			secondColour = firstColour; // Second becomes what used to be the max
+			firstColour = pair;
+		}
+		else if (pair.second > secondColour.second) {
+			secondColour = pair;
+		}
 	}
-	return static_cast<short>(sum / 4);
 }
 
 Texture::MipmapLevel* Texture::GetMipmapLevel(float detail) const {
 	MipmapLevel* currentLevel = topMipmap;
 	int level = 0;
 
-	// Simple heuristic to determine mipmap level based on 'detail'
-	// 'detail' might represent distance from viewer or some other metric
+	// determine mipmap level based on 'detail' - distance from texture
 	while (currentLevel->next != nullptr && level < detail) {
 		currentLevel = currentLevel->next;
 		level++;
@@ -170,7 +185,6 @@ bool Texture::LoadFrom(const std::wstring& filePath)
 	m_illuminated = false;
 	delete[] m_colourArray;
 	delete[] m_glyphArray;
-	topMipmap = nullptr;
 
 	FILE* file = nullptr;
 	_wfopen_s(&file, filePath.c_str(), L"rb");

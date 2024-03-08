@@ -115,19 +115,13 @@ protected:
     bool bFullScreen;
     COORD mouseCoords;
 
-    // BILINEAR sampling
+    // sampling
     struct Colour4Sample {
         short c = 0;
         short c00 = 0;
         short c01 = 0;
         short c10 = 0;
         short c11 = 0;
-    };
-
-    struct Pixel {
-        short fgCol;
-        short bgCol;
-        short glyph;
     };
 
 
