@@ -116,14 +116,18 @@ void Texture::Downsample(MipmapLevel* currentLevel, MipmapLevel* nextLevel) {
 			std::pair<short, int> firstColour{ 0, 0 };
 			std::pair<short, int> secondColour{ 0, 0 };
 
-			if (colourMap.size() > 1) 
+			if (colourMap.size() > 1)
 				TwoMainColourCounts(colourMap, firstColour, secondColour);
-			else  // only one colour
+			else
+			{
+				// only one colour
 				firstColour.first = colourMap.begin()->first;
+				secondColour.first = colourMap.begin()->first;
+			}
 
-			// Set dominant colour in the next level
+
+			// Set dominant colour in the next level with BG as second colour
 			nextLevel->colourArray[y * nextWidth + x] = firstColour.first;
-
 		}
 	}
 }

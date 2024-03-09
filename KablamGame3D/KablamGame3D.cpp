@@ -356,9 +356,8 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				else
 				{
 					short colour = ceilingTextures[nCeilingType - 1]->SampleColourWithMipmap(fTileHitX - nTileIndexX, fTileHitY - nTileIndexY, nDetailLevel);
-
 					if (ceilingTextures.at(nCeilingType - 1)->IsIlluminated())
-						nCeilingShadeGlyph = PIXEL_SOLID;
+						nCeilingShadeGlyph = PIXEL_QUARTER;
 
 					DrawPoint(x, y, colour, nCeilingShadeGlyph);
 				}

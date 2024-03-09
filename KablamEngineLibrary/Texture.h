@@ -116,13 +116,7 @@ private:
 	
 	void TwoMainColourCounts(const std::map<short, int>& colourMap, std::pair<short, int>& firstColour, std::pair<short, int>& secondColour);
 
-	short AverageColour(short colours[4]);
-
-
 public:
-
-	MipmapLevel* GetMipmapLevel(float detail) const;
-
 	bool SaveAs(const std::wstring& sFilePath);
 
 	bool LoadFrom(const std::wstring& sFilePath);
@@ -134,13 +128,17 @@ public:
 	// mipmap
 	short SampleColourWithMipmap(float x, float y, float detail) const;
 
+	MipmapLevel* GetMipmapLevel(float detail) const;
+
+	// filtering sampling
+public:
+	void LinearInterpolationWithGlyphShading(float x, float y, CHAR_INFO& pixel);
+
 private:
 	void SetColourAndDeltaFromSecondaryTexel(int ix, int iy, float dx, float dy, short primaryColour, short& secondaryColour, float& delta);
 	short GetGlyphFromDelta(float delta);
 
 public:
-	void LinearInterpolationWithGlyphShading(float x, float y, CHAR_INFO& pixel);
-
 	bool IsIlluminated() const;
 
 	bool SetColour(int x, int y, short colour);
