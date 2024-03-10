@@ -82,14 +82,6 @@ private:
 		}
 	};
 
-	// sampling
-	struct Colour4Sample {
-		short c00 = 0;
-		short c01 = 0;
-		short c10 = 0;
-		short c11 = 0;
-	};
-
 	MipmapLevel* topMipmap; // start at highest res
 
 public:
@@ -124,6 +116,7 @@ public:
 	// no mipmap
 	short SampleColour(float x, float) const;
 	short SampleGlyph(float x, float y) const;
+	CHAR_INFO SamplePixel(float x, float y) const;
 
 	// mipmap
 	short SampleColourWithMipmap(float x, float y, float detail) const;
@@ -148,6 +141,8 @@ public:
 	short GetColour(int x, int y) const;
 
 	short GetGlyph(int x, int y) const;
+
+	CHAR_INFO GetPixel(int x, int y) const;
 
 	short GetWidth() const;
 

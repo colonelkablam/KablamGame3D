@@ -476,6 +476,7 @@ int KablamEngine::DrawTextureToScreen(const Texture* texture, int xScreen, int y
     return 0;
 }
 
+// goes through screen[] and applies linear glyph shading
 void KablamEngine::ApplyBilinearFilterScreen()
 {
     // iterate through screen array to smooth out display
@@ -483,7 +484,8 @@ void KablamEngine::ApplyBilinearFilterScreen()
     {
         for (int y{ 0 }; y < nScreenHeight; y++)
         {
-            Colour4Sample colourSample;
+            // samples center, above, right, down, and left texel
+            Colour5Sample colourSample;
             SampleSurroundingTexels(x, y, colourSample);
 
             std::map<short, int> colourMap;
@@ -535,7 +537,8 @@ void KablamEngine::ApplyBilinearFilterScreen()
     std::memcpy(screen, screenBilinear, nScreenWidth * nScreenHeight * sizeof(screen[0]));
 }
 
-void KablamEngine::SampleSurroundingTexels(int x, int y, Colour4Sample& sample)
+// 
+void KablamEngine::SampleSurroundingTexels(int x, int y, Colour5Sample& sample)
 {
     //sample the four texels 
     sample.c = screen[y * nScreenWidth + x].Attributes;                                       // center pixel

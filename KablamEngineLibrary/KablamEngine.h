@@ -116,7 +116,7 @@ protected:
     COORD mouseCoords;
 
     // sampling
-    struct Colour4Sample {
+    struct Colour5Sample {
         short c = 0;
         short c00 = 0;
         short c01 = 0;
@@ -167,7 +167,7 @@ protected:
     void ApplyBilinearFilterScreen();
 
 private:
-    void SampleSurroundingTexels(int x, int y, Colour4Sample& sample);
+    void SampleSurroundingTexels(int x, int y, Colour5Sample& sample);
     void TwoMainColourCounts(const std::map<short, int>& colourMap, std::pair<short, int>& firstColour, std::pair<short, int>& secondColour);
 
 protected:

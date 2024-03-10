@@ -63,6 +63,7 @@ bool Texture::Initialise(int width, int height, bool illumination, short colour)
 	return true;
 }
 
+// populate texture instance with full complement of mipmaps
 void Texture::GenerateMipmaps() {
 
 	topMipmap = new MipmapLevel(m_width, m_height);
@@ -160,7 +161,6 @@ Texture::MipmapLevel* Texture::GetMipmapLevel(float detail) const {
 	return currentLevel;
 }
 
-
 bool Texture::SaveAs(const std::wstring& filePath)
 {
 	FILE* file = nullptr;
@@ -251,6 +251,26 @@ short Texture::SampleGlyph(float x, float y) const
 	return m_glyphArray[index];
 }
 
+CHAR_INFO Texture::SamplePixel(float x, float y) const
+{
+	// Ensure x and y are within the expected range [0.0, 1.0]
+	x = std::max(0.0f, std::min(x, 1.0f));
+	y = std::max(0.0f, std::min(y, 1.0f));
+
+	// Scale the normalized coordinates to array indices - handle edge cases
+	int ix = static_cast<int>(x * (m_width)) % m_width;
+	int iy = static_cast<int>(y * (m_height)) % m_height;
+
+	// Calculate the index in the glyph array
+	int index = iy * m_width + ix;
+
+	CHAR_INFO pixel{ 0 };
+	pixel.Attributes = m_colourArray[index];
+	pixel.Char.UnicodeChar = m_glyphArray[index];
+
+	return pixel;
+}
+
 // MIPMAPPING
 short Texture::SampleColourWithMipmap(float x, float y, float detail) const {
 	MipmapLevel* level = GetMipmapLevel(detail);  // Determine appropriate mipmap level based on detail
@@ -266,9 +286,43 @@ short Texture::SampleColourWithMipmap(float x, float y, float detail) const {
 	return level->colourArray[iy * level->width + ix];
 }
 
+// looks at 4 closest texels and picks dominant (c00) and secondary (c01) colour
+void Texture::LinearInterpolationWithGlyphShading(float x, float y, CHAR_INFO& pixel) {
+	// Ensure x and y are within the expected range [0.0, 1.0]
+	x = std::max(0.0f, std::min(x, 1.0f));
+	y = std::max(0.0f, std::min(y, 1.0f));
+
+	// get decimal value of the relative position in texture grid
+	float fx = x * m_width, fy = y * m_height;
+
+	// get grid index (integer part) of TEXEL to be sampled
+	int ix = static_cast<int>(fx) % m_width, iy = static_cast<int>(fy) % m_height;
+
+	// get the fractional part within the TEXEL
+	float dx = fx - ix, dy = fy - iy;
+
+	// get the colour at the grid index (TEXEL hit by xy)
+	short c00 = GetColour(ix, iy);
+
+	// init. delta (this will be the distance from the center of the MAIN TEXEL
+	float delta{ 0.0f };
+	// init. 2nd colour & glyph
+	short c01{ BG_CYAN }; // default
+
+	// set secondary colour and alter delta accordingly
+	SetColourAndDeltaFromSecondaryTexel(ix, iy, dx, dy, c00, c01, delta);
+
+	// assign glyph shade depending on delta
+	short glyph{ GetGlyphFromDelta(delta) };
+
+	// assign values to pixel to display pixel
+	pixel.Attributes = c00 | (c01 << 4);
+	pixel.Char.UnicodeChar = glyph;
+}
+
 // takes a reference to second colour and delta for modification
 void Texture::SetColourAndDeltaFromSecondaryTexel(int ix, int iy, float dx, float dy, short primaryColour, short& secondaryColour, float& delta) {
-	
+
 	//	 BOTTOM RIGHT quadrant of texel
 	if (dx >= 0.5f && dy >= 0.5f) {
 		if (dx > dy) { // RIGHT takes precedence
@@ -372,40 +426,6 @@ short Texture::GetGlyphFromDelta(float delta) {
 		return PIXEL_HALF;
 }
 
-void Texture::LinearInterpolationWithGlyphShading(float x, float y, CHAR_INFO& pixel) {
-	// Ensure x and y are within the expected range [0.0, 1.0]
-	x = std::max(0.0f, std::min(x, 1.0f));
-	y = std::max(0.0f, std::min(y, 1.0f));
-
-	// get decimal value of the relative position in texture grid
-	float fx = x * m_width, fy = y * m_height;
-
-	// get grid index (integer part) of TEXEL to be sampled
-	int ix = static_cast<int>(fx) % m_width, iy = static_cast<int>(fy) % m_height;
-
-	// get the fractional part within the TEXEL
-	float dx = fx - ix, dy = fy - iy;
-
-	// get the colour at the grid index (TEXEL hit by xy)
-	short c00 = GetColour(ix, iy);
-
-	// init. delta (this will be the distance from the center of the MAIN TEXEL
-	float delta{ 0.0f };
-	// init. 2nd colour & glyph
-	short c01{ BG_CYAN }; // default
-
-	// set secondary colour and alter delta accordingly
-	SetColourAndDeltaFromSecondaryTexel(ix, iy, dx, dy, c00, c01, delta);
-
-	// assign glyph shade depending on delta
-	short glyph{ GetGlyphFromDelta(delta) };
-
-	// assign values to pixel to display pixel
-	pixel.Attributes = c00 | (c01 << 4);
-	pixel.Char.UnicodeChar = glyph;
-}
-
-
 bool Texture::IsIlluminated() const
 {
 	return m_illuminated;
@@ -445,6 +465,23 @@ short Texture::GetGlyph(int x, int y) const
 		return L' ';
 	else
 		return m_glyphArray[y * m_width + x];
+}
+
+CHAR_INFO Texture::GetPixel(int x, int y ) const
+{
+	// 
+	CHAR_INFO pixel{ 0 };
+	short colour{ FG_MAGENTA | BG_DARK_MAGENTA };
+	short glyph{ L'X' };
+
+	if (x < 0 || x >= m_width || y < 0 || y >= m_height)
+		return pixel;
+	else
+	{
+		pixel.Attributes = m_colourArray[y * m_width + x];
+		pixel.Char.UnicodeChar = m_glyphArray[y * m_width + x];
+		return pixel;
+	}
 }
 
 short Texture::GetWidth() const
