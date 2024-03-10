@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Utility.h"
-#include "Texture.h"
 #include "KablamEngine.h"
 
 class TexturePainter : public KablamEngine

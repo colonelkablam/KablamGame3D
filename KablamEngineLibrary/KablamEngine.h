@@ -152,35 +152,25 @@ protected:
     //virtual bool OnGameDestroy() { return true; }
 
     int GetConsoleWidth();
-
     int GetConsoleHeight();
-
     void WriteStringToBuffer(int x, int y, const std::wstring& string, short colour = FG_WHITE);
-
     void DrawPoint(int x, int y, short colour = FG_WHITE, short glyph = PIXEL_SOLID);
-
+    void DrawPixel(int x, int y, const CHAR_INFO& pixel);
     void DrawLine(int x0, int y0, int x1, int y1, short colour = FG_WHITE, short glyph = PIXEL_SOLID);
-
     void DrawSquare(int x, int y, int sideLength, short colour = FG_WHITE, short glyph = PIXEL_SOLID, int lineWidth = 1, bool filled = false);
-
     void DrawRectangleCoords(int x0, int y0, int x1, int y1, short colour = FG_WHITE, bool filled = false, short glyph = PIXEL_SOLID, int lineWidth = 1);
-
     void DrawRectangleEdgeLength(int x, int y, int width, int height, short colour = FG_WHITE, bool filled = false, short glyph = PIXEL_SOLID, int lineWidth = 1);
-
     void DrawCircle(int x, int y, int radius, short colour = FG_WHITE, short glyph = PIXEL_SOLID, bool filled = false);
-
     int DrawTextureToScreen(const Texture* texture, int x, int y, float scale);
 
+protected:
+    void ApplyBilinearFilterScreen();
 
- private:
-
+private:
     void SampleSurroundingTexels(int x, int y, Colour4Sample& sample);
     void TwoMainColourCounts(const std::map<short, int>& colourMap, std::pair<short, int>& firstColour, std::pair<short, int>& secondColour);
 
 protected:
-
-    void ApplyBilinearFilterScreen();
-
     void UpdateInputStates();
 
     void SetConsoleFocusPause(bool state);
@@ -214,9 +204,7 @@ protected:
     static void AddToLog(std::wstring message);
 
 private:
-
     static BOOL WINAPI ConsoleControlHandler(DWORD dwCtrlType);
-
     static bool OutputLogFile();
 
 };

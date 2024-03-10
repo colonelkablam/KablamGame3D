@@ -292,6 +292,11 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 			// draw ceiling
 			if (y <= nCeiling)
 			{
+				CHAR_INFO pixel;
+				pixel.Attributes = FG_BLUE | FG_BLUE;
+				pixel.Char.UnicodeChar = PIXEL_HALF;
+
+
 				//calculate difference from mid screen
 				float dy = y - GetConsoleHeight() / 2.0f + fPlayerTilt;
 
@@ -351,7 +356,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				// draw corresponding pixel per ceiling tile
 				if (nCeilingType == 0)
 				{
-					DrawPoint(x, y, FG_DARK_BLUE, PIXEL_THREEQUARTERS);
+					DrawPixel(x, y, pixel);
 				}
 				else
 				{
@@ -375,7 +380,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				// calculate Y sample of texture tile
 				float fSampleY = ((float)y - (float)nCeiling) / ((float)nFloor - (float)nCeiling);
 
-				if (fDistanceToWall < 0)
+				if (fDistanceToWall < 3)
 				{
 					DrawPoint(x, y, wallTextures[nWallType - 1]->SampleColour(fTileHit, fSampleY), PIXEL_SOLID);
 				}
@@ -388,6 +393,8 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 
 					DrawPoint(x, y, colour, PIXEL_SOLID);
 				}
+
+				
 			}
 			// draw a floor character
 			else if (y >= nFloor && y <= GetConsoleHeight())

@@ -318,6 +318,19 @@ void KablamEngine::DrawPoint(int x, int y, short colour, short glyph)
     }
 }
 
+void KablamEngine::DrawPixel(int x, int y, const CHAR_INFO& pixel)
+{
+    if (x >= 0 && x < nScreenWidth && y >= 0 && y < nScreenHeight)
+    {
+        screen[y * nScreenWidth + x].Attributes = pixel.Attributes;
+        screen[y * nScreenWidth + x].Char.UnicodeChar = pixel.Char.UnicodeChar;
+    }
+    else
+    {
+        Error(L"Attempting to draw outside of screen array");
+    }
+}
+
 // Bresenham's line algorithm
 void KablamEngine::DrawLine(int x0, int y0, int x1, int y1, short colour, short glyph)
 {
@@ -463,33 +476,6 @@ int KablamEngine::DrawTextureToScreen(const Texture* texture, int xScreen, int y
     return 0;
 }
 
-
-void KablamEngine::SampleSurroundingTexels(int x, int y, Colour4Sample& sample)
-{
-    //sample the four texels 
-    sample.c = screen[y * nScreenWidth + x].Attributes;                                       // center pixel
-    sample.c00 = screen[y * nScreenWidth + std::min(x + 1, nScreenWidth - 1)].Attributes;     // right
-    sample.c01 = screen[y * nScreenWidth + std::max(x - 1, 0)].Attributes;                    // left
-    sample.c10 = screen[std::min(y + 1, nScreenHeight - 1) * nScreenWidth + x].Attributes;    // bottom
-    sample.c11 = screen[std::max(y - 1, 0) * nScreenWidth + x].Attributes;                    // top
-
-}
-
-
-void KablamEngine::TwoMainColourCounts(const std::map<short, int>& colourMap, std::pair<short, int>& firstColour, std::pair<short, int>& secondColour)
-{
-    // iterate through to get two main colours
-    for (const auto& pair : colourMap) {
-        if (pair.second > firstColour.second) {
-            secondColour = firstColour; // Second becomes what used to be the max
-            firstColour = pair;
-        }
-        else if (pair.second > secondColour.second) {
-            secondColour = pair;
-        }
-    }
-}
-
 void KablamEngine::ApplyBilinearFilterScreen()
 {
     // iterate through screen array to smooth out display
@@ -544,8 +530,35 @@ void KablamEngine::ApplyBilinearFilterScreen()
         }
     }
 
-    // copy mem accross in screen from screenBilinear - easier than setting flags but possibly more costly - seems fast on testing
+    // copy mem accross in screen from screenBilinear
+    // easier than setting flags and managing two screen arrays but possibly more costly - seems fast on testing
     std::memcpy(screen, screenBilinear, nScreenWidth * nScreenHeight * sizeof(screen[0]));
+}
+
+void KablamEngine::SampleSurroundingTexels(int x, int y, Colour4Sample& sample)
+{
+    //sample the four texels 
+    sample.c = screen[y * nScreenWidth + x].Attributes;                                       // center pixel
+    sample.c00 = screen[y * nScreenWidth + std::min(x + 1, nScreenWidth - 1)].Attributes;     // right
+    sample.c01 = screen[y * nScreenWidth + std::max(x - 1, 0)].Attributes;                    // left
+    sample.c10 = screen[std::min(y + 1, nScreenHeight - 1) * nScreenWidth + x].Attributes;    // bottom
+    sample.c11 = screen[std::max(y - 1, 0) * nScreenWidth + x].Attributes;                    // top
+
+}
+
+
+void KablamEngine::TwoMainColourCounts(const std::map<short, int>& colourMap, std::pair<short, int>& firstColour, std::pair<short, int>& secondColour)
+{
+    // iterate through to get two main colours
+    for (const auto& pair : colourMap) {
+        if (pair.second > firstColour.second) {
+            secondColour = firstColour; // Second becomes what used to be the max
+            firstColour = pair;
+        }
+        else if (pair.second > secondColour.second) {
+            secondColour = pair;
+        }
+    }
 }
 
 void KablamEngine::UpdateInputStates() // mouse location and focus state of window
