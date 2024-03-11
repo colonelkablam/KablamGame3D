@@ -110,7 +110,6 @@ private:
 
 public:
 	bool SaveAs(const std::wstring& sFilePath);
-
 	bool LoadFrom(const std::wstring& sFilePath);
 
 	// no mipmap
@@ -121,6 +120,7 @@ public:
 	// mipmap
 	short SampleColourWithMipmap(float x, float y, float detail) const;
 
+private:
 	MipmapLevel* GetMipmapLevel(float detail) const;
 
 	// filtering sampling
@@ -137,6 +137,8 @@ public:
 	bool SetColour(int x, int y, short colour);
 
 	bool SetGlyph(int x, int y, short glyph);
+
+	bool SetPixel(int x, int y, CHAR_INFO pixel);
 
 	short GetColour(int x, int y) const;
 

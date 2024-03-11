@@ -273,7 +273,10 @@ CHAR_INFO Texture::SamplePixel(float x, float y) const
 
 // MIPMAPPING
 short Texture::SampleColourWithMipmap(float x, float y, float detail) const {
-	MipmapLevel* level = GetMipmapLevel(detail);  // Determine appropriate mipmap level based on detail
+
+	// Determine appropriate mipmap level based on detail 
+	// (0 is the OG texture, 1 is halved res, 2 is halved again and so on...)
+	MipmapLevel* level = GetMipmapLevel(detail);
 
 	// Scale x, y to level dimensions and clamp
 	x = std::max(0.0f, std::min(x, 1.0f)) * level->width;
@@ -447,6 +450,19 @@ bool Texture::SetGlyph(int x, int y, short glyph)
 		return false;
 	else
 		m_glyphArray[y * m_width + x] = glyph;
+
+	return true;
+}
+
+bool Texture::SetPixel(int x, int y, CHAR_INFO pixel)
+{
+	if (x < 0 || x >= m_width || y < 0 || y >= m_height)
+		return false;
+	else
+	{
+		m_colourArray[y * m_width + x] = pixel.Attributes;
+		m_glyphArray[y * m_width + x] = pixel.Char.UnicodeChar;
+	}
 
 	return true;
 }

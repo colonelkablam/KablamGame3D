@@ -316,9 +316,13 @@ void KablamEngine::DrawPoint(int x, int y, short colour, short glyph)
         screen[y * nScreenWidth + x].Attributes = colour;
         screen[y * nScreenWidth + x].Char.UnicodeChar = glyph;
     }
+    else
+    {
+        AddToLog(L"Attempting to DrawPoint() outside of screen array.");
+    }
 }
 
-void KablamEngine::DrawPixel(int x, int y, const CHAR_INFO& pixel)
+void KablamEngine::DrawPoint(int x, int y, const CHAR_INFO& pixel)
 {
     if (x >= 0 && x < nScreenWidth && y >= 0 && y < nScreenHeight)
     {
@@ -327,7 +331,7 @@ void KablamEngine::DrawPixel(int x, int y, const CHAR_INFO& pixel)
     }
     else
     {
-        Error(L"Attempting to draw outside of screen array");
+        AddToLog(L"Attempting to DrawPoint() outside of screen array.");
     }
 }
 
@@ -460,7 +464,6 @@ void KablamEngine::DrawCircle(int xCenter, int yCenter, int radius, short colour
         plotCirclePoints(xCenter, yCenter, x, y);
     }
 }
-
 
 int KablamEngine::DrawTextureToScreen(const Texture* texture, int xScreen, int yScreen, float scale)
 {

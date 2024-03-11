@@ -155,7 +155,7 @@ protected:
     int GetConsoleHeight();
     void WriteStringToBuffer(int x, int y, const std::wstring& string, short colour = FG_WHITE);
     void DrawPoint(int x, int y, short colour = FG_WHITE, short glyph = PIXEL_SOLID);
-    void DrawPixel(int x, int y, const CHAR_INFO& pixel);
+    void DrawPoint(int x, int y, const CHAR_INFO& pixel);
     void DrawLine(int x0, int y0, int x1, int y1, short colour = FG_WHITE, short glyph = PIXEL_SOLID);
     void DrawSquare(int x, int y, int sideLength, short colour = FG_WHITE, short glyph = PIXEL_SOLID, int lineWidth = 1, bool filled = false);
     void DrawRectangleCoords(int x0, int y0, int x1, int y1, short colour = FG_WHITE, bool filled = false, short glyph = PIXEL_SOLID, int lineWidth = 1);

@@ -49,15 +49,14 @@ private:
 						 0, 0, 0, 0, 0, };
 
 
-	float fFOV = PI / 4.0f;
-	float fDepth = 32.0f;
-	int nMaxDepthOfView = 32;
+	const float FOV = PI / 4.0f;
+	const int MAX_DEPTH_OF_VIEW = 32;
 
 	float fPlayerSpeed = 6.0f;
 	float fPlayerRotationSpeed = 1.7f;
 	float fPlayerTilt = 0.0f;
 	float fPlayerTiltSpeed = 170.0f;
-	int nTiltMax = 40;
+	const int TILT_MAX = 40;
 
 	struct ActionStates
 	{
@@ -81,6 +80,10 @@ private:
 	COORD centerScreenCoords = { 0,0 };
 	std::pair<int, int> mouseVelocity = { 0.0f, 0.0f };
 
+	struct FloatCoord {
+		float X;
+		float Y;
+	};
 
 	float fPlayerX = 24.0f;
 	float fPlayerY = 24.0f;
@@ -90,7 +93,7 @@ private:
 	float fPlayerH{ fPlayerHDefault };
 	float fPlayerUpVelocity = 0.0f;
 	float fGravity = -19.0f;
-	float fPlayerJumpPower = 6.5f;
+	float fPlayerJumpPower = 6.0f;
 	bool bPlayerJumping = false;
 
 	int nMapDisplayStatus = 0;
@@ -118,18 +121,26 @@ private:
 	// apply movements to player
 	bool ApplyMovementAndActions(float fElapsedTime);
 
-	
+	void SetHorizontalWallCollisionValues(float rayAngle, float& yDistanceToWall, float& yTileHit, int& yWallType);
+
+	void SetVerticalWallCollisionValues(float rayAngle, float& yDistanceToWall, float& yTileHit, int& yWallType);	
+
+	void SetHorizontalSurfaceHitCoords(int yColumn, FloatCoord& hitCoords, COORD& indexCoords, bool lookingUp);
 
 	// get ray length from opposite and adjacent sides of ray vector
-	float rayLength(float px, float py, float rx, float ry) const;
+	float RayLength(float px, float py, float rx, float ry) const;
 
 	// check if within map bounds
-	bool withinMapBounds(int x, int y) const;
+	bool WithinMapBounds(int x, int y) const;
 
 	// get map value at coord x,y
-	int getMapValue(int x, int y, const std::vector<int>& map) const;
+	int GetMapValue(int x, int y, const std::vector<int>& map) const;
 
 	void DisplayAim(short colour = FG_WHITE, short glyph = PIXEL_SOLID);
+
+	short GetGlyphShadeByDistance(float distance);
+
+	int GetMipmapDetailLevel(float distance);
 
 
 }; // end of KablamGraphics class definition
