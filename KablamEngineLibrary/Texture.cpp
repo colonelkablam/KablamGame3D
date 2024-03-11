@@ -290,7 +290,9 @@ short Texture::SampleColourWithMipmap(float x, float y, float detail) const {
 }
 
 // looks at 4 closest texels and picks dominant (c00) and secondary (c01) colour
-void Texture::LinearInterpolationWithGlyphShading(float x, float y, CHAR_INFO& pixel) {
+CHAR_INFO Texture::LinearInterpolationWithGlyphShading(float x, float y) {
+
+	CHAR_INFO pixel;
 	// Ensure x and y are within the expected range [0.0, 1.0]
 	x = std::max(0.0f, std::min(x, 1.0f));
 	y = std::max(0.0f, std::min(y, 1.0f));
@@ -321,6 +323,8 @@ void Texture::LinearInterpolationWithGlyphShading(float x, float y, CHAR_INFO& p
 	// assign values to pixel to display pixel
 	pixel.Attributes = c00 | (c01 << 4);
 	pixel.Char.UnicodeChar = glyph;
+
+	return pixel;
 }
 
 // takes a reference to second colour and delta for modification

@@ -125,7 +125,7 @@ private:
 
 	// filtering sampling
 public:
-	void LinearInterpolationWithGlyphShading(float x, float y, CHAR_INFO& pixel);
+	CHAR_INFO LinearInterpolationWithGlyphShading(float x, float y);
 
 private:
 	void SetColourAndDeltaFromSecondaryTexel(int ix, int iy, float dx, float dy, short primaryColour, short& secondaryColour, float& delta);

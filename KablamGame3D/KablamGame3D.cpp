@@ -142,7 +142,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 		// draw the full column
 		for (int y{ 0 }; y < GetConsoleHeight(); y++)
 		{
-			// draw ceiling
+			// draw CEILING character
 			if (y <= nCeiling)
 			{
 				// default sky pixel
@@ -150,11 +150,11 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				pixel.Attributes = FG_BLUE | BG_RED;
 				pixel.Char.UnicodeChar = PIXEL_HALF;
 
-				// declare storage for ceiling hits
+				// declare storage for ceiling ray hit
 				FloatCoord ceilingHitCoords{ 0.0f, 0.0f };
 				COORD ceilingHitIndex{ 0, 0 };
 
-				// calculate the ceiling hit coords/index
+				// calculate the ceiling hit coords/index -> pass by ref storage coords
 				SetHorizontalSurfaceHitCoords(y, fRayAngle, ceilingHitCoords, ceilingHitIndex, true); // looking up so true flag
 
 				// how far the hit position is from the player position
@@ -163,7 +163,6 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				// sample xy coords within texture
 				float fXTextureTileHit{ ceilingHitCoords.X - ceilingHitIndex.X };
 				float fYTextureTileHit{ ceilingHitCoords.Y - ceilingHitIndex.Y };
-
 
 				// char to draw 'shade'
 				short nCeilingShadeGlyph = GetGlyphShadeByDistance(fDistanceToCeiling);
@@ -189,145 +188,84 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				}
 
 			}
-			// draw a wall character
+			// draw a WALL character
 			else if (y > nCeiling && y <= nFloor && nWallType != 0)
 			{
+				// default wall pixel
+				CHAR_INFO pixel;
+				pixel.Attributes = FG_RED | BG_CYAN;
+				pixel.Char.UnicodeChar = PIXEL_HALF;
 
 				// char to draw 'shade'
 				short nWallShadeGlyph = GetGlyphShadeByDistance(fDistanceToWall);
 				int nMipmapDetailLevel = GetMipmapDetailLevel(fDistanceToWall);
 
-				//if (fDistanceToWall > 18)
-				//	nWallShadeGlyph = PIXEL_QUARTER;
-				//else if (fDistanceToWall > 10)
-				//	nWallShadeGlyph = PIXEL_HALF;
-				//else if (fDistanceToWall > 6)
-				//	nWallShadeGlyph = PIXEL_THREEQUARTERS;
-				//else
-				//	nWallShadeGlyph = PIXEL_SOLID;
-				
-				//// calculate Y sample of texture tile
-				//float fSampleY = ((float)y - (float)nCeiling) / ((float)nFloor - (float)nCeiling);
-
-				//// nShade added for depth
-				//DrawPoint(x, y, wallTextures[nWallType - 1]->SampleColour(fTileHit, fSampleY), PIXEL_SOLID);
-
-				// calculate Y sample of texture tile
+				// calculate Y sample of texture tile (ratio of y value and wall height in pixels)
 				float fSampleY = ((float)y - (float)nCeiling) / ((float)nFloor - (float)nCeiling);
 
-				if (fDistanceToWall < 3)
+				if (fDistanceToWall < 0)
 				{
 					DrawPoint(x, y, wallTextures[nWallType]->SampleColour(fTileHit, fSampleY), PIXEL_SOLID);
 				}
 				else {
-					//CHAR_INFO pixel;
-					//wallTextures[nWallType - 1]->LinearInterpolationWithGlyphShading(fTileHit, fSampleY, pixel);
-					//DrawPoint(x, y, pixel.Attributes, pixel.Char.UnicodeChar);
+					pixel = wallTextures[nWallType]->LinearInterpolationWithGlyphShading(fTileHit, fSampleY);
+					//short colour = wallTextures[nWallType]->SampleColour(fTileHit, fSampleY);
 
-					short colour = wallTextures[nWallType]->SampleColour(fTileHit, fSampleY);
-
-					DrawPoint(x, y, colour, nWallShadeGlyph);
+					DrawPoint(x, y, pixel);
 				}
 
 				
 			}
-			// draw a floor character
+			// draw a FLOOR character
 			else if (y >= nFloor && y <= GetConsoleHeight())
 			{
-				//calculate difference from mid screen
-				float dy = y - GetConsoleHeight() / 2 + fPlayerTilt;
+				// default floor pixel
+				CHAR_INFO pixel;
+				pixel.Attributes = FG_GREEN | BG_RED;
+				pixel.Char.UnicodeChar = PIXEL_HALF;
 
-				// handle dy == 0;
-				if (dy == 0)
-					dy = 1;
+				// declare storage for floor ray hit
+				FloatCoord floorHitCoords{ 0.0f, 0.0f };
+				COORD floorHitIndex{ 0, 0 };
 
-				// 'fisheye' correction
-				float fRayFix = cosf(fRayAngle - fPlayerA);
+				// calculate the floor hit coords/index -> pass by ref storage coords
+				SetHorizontalSurfaceHitCoords(y, fRayAngle, floorHitCoords, floorHitIndex, false); // looking down so false flag
 
-				// calculate floor tile 'hit' x & y - looking down so * fPlayerH
-				float fTileHitX = fPlayerX + cosf(fRayAngle) * (GetConsoleHeight() * fWallHUnit * fPlayerH) / dy / fRayFix;
-				float fTileHitY = fPlayerY + sinf(fRayAngle) * (GetConsoleHeight() * fWallHUnit * fPlayerH) / dy / fRayFix;
+				// how far the hit position is from the player position
+				float fDistanceToFloor{ RayLength(fPlayerX, fPlayerY, floorHitCoords.X, floorHitCoords.Y) };
 
-				// get index for texture floor map
-				int nTileIndexX;
-				int nTileIndexY;
-				// as (int)-0.XX will go to 0, not -1 
-				if (fTileHitX < 0)
-					nTileIndexX = (int)fTileHitX - 1;
-				else
-					nTileIndexX = (int)fTileHitX;
-
-				if (fTileHitY < 0)
-					nTileIndexY = (int)fTileHitY - 1;
-				else
-					nTileIndexY = (int)fTileHitY;
+				// sample xy coords within texture
+				float fXTextureTileHit{ floorHitCoords.X - floorHitIndex.X };
+				float fYTextureTileHit{ floorHitCoords.Y - floorHitIndex.Y };
 
 				// char to draw 'shade'
-				short nFloorShadeGlyph{ PIXEL_SOLID };
-				int nDetailLevel{ 0 };
+				short nFloorShadeGlyph = GetGlyphShadeByDistance(fDistanceToFloor);
 
-				if (y < GetConsoleHeight() - GetConsoleHeight() / 2.5f - (int)fPlayerTilt) 
+				// detail level (if mipmapping used)
+				int nDetailLevel = GetMipmapDetailLevel(fDistanceToFloor);
+
+				// texture to use
+				int nFloorType = GetMapValue(floorHitIndex.X, floorHitIndex.Y, mapFloorTiles);
+
+				// draw corresponding pixel per ceiling tile
+				if (floorTextures[nFloorType] == nullptr) // handle nullptr
 				{
-					nFloorShadeGlyph = PIXEL_QUARTER;
-					nDetailLevel = 4;
-				}
-				else if (y < GetConsoleHeight() - GetConsoleHeight() / 3.0f - (int)fPlayerTilt)
-				{
-					nFloorShadeGlyph = PIXEL_HALF;
-					nDetailLevel = 2;
-
-				}
-				else if (y < GetConsoleHeight() - GetConsoleHeight() / 4.0f - (int)fPlayerTilt)
-				{
-					nFloorShadeGlyph = PIXEL_THREEQUARTERS;
-					nDetailLevel = 1;
-				}
-
-
-				int nFloorType = GetMapValue(nTileIndexX, nTileIndexY, mapFloorTiles);
-				short colour;
-
-				// draw corresponding pixel per floor tile
-				if (nFloorType == 0)
-				{
-					DrawPoint(x, y, FG_DARK_GREEN, PIXEL_THREEQUARTERS);
+					DrawPoint(x, y, pixel);
 				}
 				else
 				{
-					/*colour = floorTextures[nFloorType - 1]->SampleColour(fTileHitX - nTileIndexX, fTileHitY - nTileIndexY);
+					short colour = floorTextures[nFloorType]->SampleColour(fXTextureTileHit, fYTextureTileHit);
+					if (floorTextures.at(nFloorType)->IsIlluminated())
+						nFloorShadeGlyph = PIXEL_SOLID;
 
-					if (floorTextures.at(nFloorType - 1)->IsIlluminated() == true)
-					{
-						colour = colour | FOREGROUND_INTENSITY;
-					}
-
-					DrawPoint(x, y, colour, PIXEL_SOLID);*/
-
-					////CHAR_INFO pixel;
-					////floorTextures[nFloorType - 1]->LinearInterpolationWithGlyphShading(fTileHitX - nTileIndexX, fTileHitY - nTileIndexY, pixel);
-					////DrawPoint(x, y, pixel.Attributes, pixel.Char.UnicodeChar);
-					////CHAR_INFO pixel;
-					
-
-					colour = floorTextures[nFloorType]->SampleColourWithMipmap(fTileHitX - nTileIndexX, fTileHitY - nTileIndexY, nDetailLevel);
-
-					if (floorTextures.at(nFloorType)->IsIlluminated() == true)
-					{
-						colour = colour | FG_INTENSITY;
-					}
-
-					DrawPoint(x, y, colour, PIXEL_SOLID);
-
+					DrawPoint(x, y, colour, nFloorShadeGlyph);
 				}
-
-
-
-
 			}
-		}
+
+		} // end of column
 	} // end of screen column iteration
 
-	//ApplyBilinearFilterScreen();
+	// ApplyBilinearFilterScreen(); // far too slow
 
 	DisplayAim();
 	
@@ -693,9 +631,11 @@ void KablamGame3D::SetHorizontalSurfaceHitCoords(int yColumn, float rayAngle, Fl
 		hitCoords.X = fPlayerX + cosf(rayAngle) * (GetConsoleHeight() * fWallHUnit * (fPlayerH - fWallHUnit)) / dy / fRayFix;
 		hitCoords.Y = fPlayerY + sinf(rayAngle) * (GetConsoleHeight() * fWallHUnit * (fPlayerH - fWallHUnit)) / dy / fRayFix;
 	}
-	else
+	else // looking down
 	{
-
+		// calculate floor tile 'hit' x & y - looking down so * fPlayerH
+		hitCoords.X = fPlayerX + cosf(rayAngle) * (GetConsoleHeight() * fWallHUnit * fPlayerH) / dy / fRayFix;
+		hitCoords.Y = fPlayerY + sinf(rayAngle) * (GetConsoleHeight() * fWallHUnit * fPlayerH) / dy / fRayFix;
 	}
 
 
@@ -758,10 +698,10 @@ short KablamGame3D::GetGlyphShadeByDistance(float distance)
 	if (distance > 18) {
 		return PIXEL_QUARTER;
 	}
-	else if (distance > 10) {
+	else if (distance > 8) {
 		return PIXEL_HALF;
 	}
-	else if (distance > 6) {
+	else if (distance > 4) {
 		return PIXEL_THREEQUARTERS;
 	}
 	else {
