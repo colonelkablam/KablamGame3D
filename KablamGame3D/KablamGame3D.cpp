@@ -154,18 +154,15 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				FloatCoord ceilingHitCoords{ 0.0f, 0.0f };
 				COORD ceilingHitIndex{ 0, 0 };
 
-				SetHorizontalSurfaceHitCoords(y, fCeilingHitCoords, nCeilingHitIndex, true)
-				//calculate difference from mid screen
-
-
-
+				// calculate the ceiling hit coords/index
+				SetHorizontalSurfaceHitCoords(y, fRayAngle, ceilingHitCoords, ceilingHitIndex, true); // looking up so true flag
 
 				// how far the hit position is from the player position
-				float fDistanceToCeiling{ RayLength(fPlayerX, fPlayerY, fXCeilingHit, fYCeilingHit) };
+				float fDistanceToCeiling{ RayLength(fPlayerX, fPlayerY, ceilingHitCoords.X, ceilingHitCoords.Y) };
 
 				// sample xy coords within texture
-				float fXTextureTileHit{ fXCeilingHit - nXCeilingIndex };
-				float fYTextureTileHit{ fYCeilingHit - nYCeilingIndex };
+				float fXTextureTileHit{ ceilingHitCoords.X - ceilingHitIndex.X };
+				float fYTextureTileHit{ ceilingHitCoords.Y - ceilingHitIndex.Y };
 
 
 				// char to draw 'shade'
@@ -175,7 +172,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				int nDetailLevel = GetMipmapDetailLevel(fDistanceToCeiling);
 
 				// texture to use
-				int nCeilingType = GetMapValue(nXCeilingIndex, nYCeilingIndex, mapCeilingTiles);
+				int nCeilingType = GetMapValue(ceilingHitIndex.X, ceilingHitIndex.Y, mapCeilingTiles);
 
 				// draw corresponding pixel per ceiling tile
 				if (ceilingTextures[nCeilingType] == nullptr) // handle nullptr
@@ -679,35 +676,39 @@ void KablamGame3D::SetVerticalWallCollisionValues(float rayAngle, float& xDistan
 	} // end of VERTICAL line checking
 }
 
-void KablamGame3D::SetHorizontalSurfaceHitCoords(int yColumn, FloatCoord& hitCoords, COORD& indexCoords, bool lookingUp)
+void KablamGame3D::SetHorizontalSurfaceHitCoords(int yColumn, float rayAngle, FloatCoord& hitCoords, COORD& indexCoords, bool lookingUp)
 {
-	float dy = y - GetConsoleHeight() / 2.0f + fPlayerTilt;
+	float dy = yColumn - GetConsoleHeight() / 2.0f + fPlayerTilt;
 
 	// handle dy == 0;
 	if (dy == 0)
 		dy = 1;
 
 	// 'fisheye' correction
-	float fRayFix = cosf(fRayAngle - fPlayerA);
+	float fRayFix = cosf(rayAngle - fPlayerA);
 
-	// calculate ceiling textile 'hit' x & y - looking up so * fPlayerH - fWallHUnit
-	float fXCeilingHit = fPlayerX + cosf(fRayAngle) * (GetConsoleHeight() * fWallHUnit * (fPlayerH - fWallHUnit)) / dy / fRayFix;
-	float fYCeilingHit = fPlayerY + sinf(fRayAngle) * (GetConsoleHeight() * fWallHUnit * (fPlayerH - fWallHUnit)) / dy / fRayFix;
+	if (lookingUp)
+	{	
+		// calculate ceiling textile 'hit' x & y - looking up so * fPlayerH - fWallHUnit
+		hitCoords.X = fPlayerX + cosf(rayAngle) * (GetConsoleHeight() * fWallHUnit * (fPlayerH - fWallHUnit)) / dy / fRayFix;
+		hitCoords.Y = fPlayerY + sinf(rayAngle) * (GetConsoleHeight() * fWallHUnit * (fPlayerH - fWallHUnit)) / dy / fRayFix;
+	}
+	else
+	{
 
-	// get index for texture ceiling map
-	int nXCeilingIndex;
-	int nYCeilingIndex;
+	}
+
 
 	// as casting a negative float to an integer truncates towards zero rather than continuing along scale.
-	if (fXCeilingHit < 0)
-		nXCeilingIndex = (int)fXCeilingHit - 1;
+	if (hitCoords.X < 0)
+		indexCoords.X = (int)hitCoords.X - 1;
 	else
-		nXCeilingIndex = (int)fXCeilingHit;
+		indexCoords.X = (int)hitCoords.X;
 
-	if (fYCeilingHit < 0)
-		nYCeilingIndex = (int)fYCeilingHit - 1;
+	if (hitCoords.Y < 0)
+		indexCoords.Y = (int)hitCoords.Y - 1;
 	else
-		nYCeilingIndex = (int)fYCeilingHit;
+		indexCoords.Y = (int)hitCoords.Y;
 }
 
 

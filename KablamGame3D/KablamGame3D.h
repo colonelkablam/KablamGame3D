@@ -125,7 +125,7 @@ private:
 
 	void SetVerticalWallCollisionValues(float rayAngle, float& yDistanceToWall, float& yTileHit, int& yWallType);	
 
-	void SetHorizontalSurfaceHitCoords(int yColumn, FloatCoord& hitCoords, COORD& indexCoords, bool lookingUp);
+	void SetHorizontalSurfaceHitCoords(int yColumn, float rayAngle, FloatCoord& hitCoords, COORD& indexCoords, bool lookingUp);
 
 	// get ray length from opposite and adjacent sides of ray vector
 	float RayLength(float px, float py, float rx, float ry) const;
