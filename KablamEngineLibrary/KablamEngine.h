@@ -35,6 +35,7 @@
 #include <condition_variable>
 #include <vector>
 #include <atomic>
+#include <deque>
 
 #include "Texture.h"
 
@@ -69,6 +70,8 @@ protected:
     // timing points
     std::chrono::system_clock::time_point tp1;
     std::chrono::system_clock::time_point tp2;
+    std::deque<float> elapsedTimeDeque;
+    const size_t MAX_SIZE_DEQUE = 50; // Maximum size of the deque list
 
     std::wstring sConsoleTitle;
     std::wstring sCurrentFileName;
@@ -198,6 +201,8 @@ protected:
     int CleanUp();
 
     void DisplayAlertMessage(const std::wstring& message);
+
+    float GetAverageFPS(float elapsedTimeValue);
     
     void WaitForKeyPress();
 

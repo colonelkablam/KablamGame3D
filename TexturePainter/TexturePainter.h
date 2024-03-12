@@ -72,7 +72,7 @@ private:
     // only draw if in canvas
     void DrawPointOnTexture(int mouse_x, int mouse_y, short colour = FG_WHITE, short glyph = 0x2588);
 
-    bool HandleKeyPress(float fElapsedTime);
+    bool HandleKeyPress();
 
     bool CheckFolderExist(const std::wstring& folderPath);
 

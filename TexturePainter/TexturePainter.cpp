@@ -39,7 +39,7 @@ bool TexturePainter::OnGameCreate()
 
 bool TexturePainter::OnGameUpdate(float fElapsedTime) {
 
-    HandleKeyPress(fElapsedTime);
+    HandleKeyPress();
 
     currentCanvas = &canvases.at(nCurrentCanvas);
 
@@ -229,7 +229,7 @@ bool TexturePainter::CheckFolderExist(const std::wstring& folderPath) {
 }
 
 
-bool TexturePainter::HandleKeyPress(float fElapsedTime)
+bool TexturePainter::HandleKeyPress()
 {
     //controls
     if (keyArray[VK_LBUTTON].bHeld)
@@ -255,10 +255,12 @@ bool TexturePainter::HandleKeyPress(float fElapsedTime)
 
         if (keyArray[num].bHeld)
         {
+            DisplayAlertMessage(L"No canvas loaded at position " + i);
+
             if (i < canvases.size())
                 nCurrentCanvas = i;
             else
-                DisplayAlertMessage(L"Test Input Error!...");
+                DisplayAlertMessage(L"No canvas loaded at position " + i);
         }
     }
 

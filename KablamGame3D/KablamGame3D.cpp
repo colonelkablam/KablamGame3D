@@ -162,7 +162,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 			{
 				// default sky pixel
 				CHAR_INFO pixel;
-				pixel.Attributes = FG_BLUE | BG_RED;
+				pixel.Attributes = FG_BLUE | BG_DARK_BLUE;
 				pixel.Char.UnicodeChar = PIXEL_HALF;
 
 				// declare storage for ceiling ray hit

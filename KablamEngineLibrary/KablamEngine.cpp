@@ -14,10 +14,9 @@
 KablamEngine::KablamEngine()
     :nScreenWidth{ 30 }, nScreenHeight{ 10 }, nFontWidth{ 5 }, nFontHeight{ 10 }, hConsoleWindow{ GetConsoleWindow() },
     hOGBuffer{ GetStdHandle(STD_OUTPUT_HANDLE) }, hConsoleInput{ GetStdHandle(STD_INPUT_HANDLE) }, hNewBuffer{ INVALID_HANDLE_VALUE },
-    dwPreviousConsoleMode{ 0 }, screen{ nullptr }, screenBilinear{ nullptr }, bBilinearApplied{ false }, nScreenArrayLength {
-    0
-}, windowSize{ 0, 0, 1, 1 }, mouseCoords{ 0,0 },
-    sConsoleTitle{ L"no_name_given" }, bConsoleFocus{ true }, bGameUpdatePaused{ false }, bFocusPause{ false }, bFullScreen{ false } {
+    dwPreviousConsoleMode{ 0 }, screen{ nullptr }, screenBilinear{ nullptr }, bBilinearApplied{ false }, nScreenArrayLength { 0 }, 
+    windowSize{ 0, 0, 1, 1 }, mouseCoords{ 0,0 }, sConsoleTitle{ L"no_name_given" }, bConsoleFocus{ true }, bGameUpdatePaused{ false },
+    bFocusPause{ false }, bFullScreen{ false } {
 
     // initialise storage of input events - key and mouse
     // use standard library fill
@@ -265,7 +264,7 @@ int KablamEngine::GameThread()
 
             // Update Title
             wchar_t title[256];
-            swprintf_s(title, 256, L"%s - FPS: %3.2f", sConsoleTitle.c_str(), 1.0f / fElapsedTime);
+            swprintf_s(title, 256, L"%s (%i x %i) FPS: %3.1f", sConsoleTitle.c_str(), nScreenWidth, nScreenHeight, GetAverageFPS(fElapsedTime));
             SetConsoleTitle(title);
 
             // Update Console Buffer with screen buffer
@@ -862,6 +861,26 @@ void KablamEngine::DisplayAlertMessage(const std::wstring& message)
     PauseGameUpdate();
     WaitForKeyPress();
     UnPauseGameUpdate();
+}
+
+float KablamEngine::GetAverageFPS(float anotherTimeValue)
+{
+    float total{ 0.0f };
+
+    // add new value
+    elapsedTimeDeque.push_back(anotherTimeValue);
+
+    // If the deque exceeds the maximum size, remove the oldest element
+    if (elapsedTimeDeque.size() > MAX_SIZE_DEQUE) {
+        elapsedTimeDeque.pop_front();
+    }
+
+    // get total
+    for (float &time : elapsedTimeDeque)
+        total += time;
+
+    // return average FPS
+    return 1.0f / (total / elapsedTimeDeque.size());
 }
 
 void KablamEngine::WaitForKeyPress()
