@@ -121,7 +121,7 @@ public:
 	CHAR_INFO SamplePixel(float x, float y) const;
 
 	// mipmap
-	short SampleColourWithMipmap(float x, float y, float detail) const;
+	CHAR_INFO SamplePixelWithMipmap(float x, float y, float detail) const;
 
 private:
 	MipmapLevel* GetMipmapLevel(float detail) const;

@@ -98,6 +98,21 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 		SetVerticalWallCollisionValues(fRayAngle, fXDistanceToWall, fXTileHit, nWallTypeX);
 
 
+		// threading experiment - doesn't seem to add value
+		// 
+		//std::thread horizontalThread([this, fRayAngle, &fYDistanceToWall, &fYTileHit, &nWallTypeY]() {
+		//	this->SetHorizontalWallCollisionValues(fRayAngle, fYDistanceToWall, fYTileHit, nWallTypeY);
+		//	});
+
+		//std::thread verticalThread([this, fRayAngle, &fXDistanceToWall, &fXTileHit, &nWallTypeX]() {
+		//	this->SetVerticalWallCollisionValues(fRayAngle, fXDistanceToWall, fXTileHit, nWallTypeX);
+		//	});
+
+		//// Wait for both threads to complete their execution
+		//horizontalThread.join();
+		//verticalThread.join();
+
+
 		// decalare variables to store final results
 		float fDistanceToWall{ 1000.0f };
 		float fTileHit{ -1.0f };
@@ -122,7 +137,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 
 
 		// get ratios of wall to ceiling and floor
-		// - how much of the screen to draw as ceiling/wall/floor
+		// - how much of the column to draw as ceiling/wall/floor
 
 		// height of wall calculated as a ratio of ScreenHeight() / distance, * fWallUnit means height of top of wall
 		float fWall{ (GetConsoleHeight() / fDistanceToWall) * fWallHUnit };
@@ -165,13 +180,13 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				float fYTextureTileHit{ ceilingHitCoords.Y - ceilingHitIndex.Y };
 
 				// char to draw 'shade'
-				short nCeilingShadeGlyph = GetGlyphShadeByDistance(fDistanceToCeiling);
+				short nCeilingShadeGlyph{ GetGlyphShadeByDistance(fDistanceToCeiling) };
 
 				// detail level (if mipmapping used)
-				int nDetailLevel = GetMipmapDetailLevel(fDistanceToCeiling);
+				int nDetailLevel{ GetMipmapDetailLevel(fDistanceToCeiling) };
 
 				// texture to use
-				int nCeilingType = GetMapValue(ceilingHitIndex.X, ceilingHitIndex.Y, mapCeilingTiles);
+				int nCeilingType{ GetMapValue(ceilingHitIndex.X, ceilingHitIndex.Y, mapCeilingTiles) };
 
 				// draw corresponding pixel per ceiling tile
 				if (ceilingTextures[nCeilingType] == nullptr) // handle nullptr
@@ -201,22 +216,20 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				int nMipmapDetailLevel = GetMipmapDetailLevel(fDistanceToWall);
 
 				// calculate Y sample of texture tile (ratio of y value and wall height in pixels)
-				float fSampleY = ((float)y - (float)nCeiling) / ((float)nFloor - (float)nCeiling);
+				float fSampleY = ((float)y - (float)nCeiling) / ((float)nFloor + 1 - (float)nCeiling );
 
 				if (fDistanceToWall < 0)
 				{
 					DrawPoint(x, y, wallTextures[nWallType]->SampleColour(fTileHit, fSampleY), PIXEL_SOLID);
 				}
 				else {
-					// pixel = wallTextures[nWallType]->LinearInterpolationWithGlyphShading(fTileHit, fSampleY);
-					pixel.Attributes = wallTextures[nWallType]->SampleColourWithMipmap(fTileHit, fSampleY, nMipmapDetailLevel);
-
+					pixel = wallTextures[nWallType]->LinearInterpolationWithGlyphShading(fTileHit, fSampleY);
+					//pixel = wallTextures[nWallType]->SamplePixelWithMipmap(fTileHit, fSampleY, nMipmapDetailLevel);
 					//pixel = wallTextures[nWallType]->SamplePixel(fTileHit, fSampleY);
 
 					DrawPoint(x, y, pixel);
 				}
 
-				
 			}
 			// draw a FLOOR character
 			else if (y >= nFloor && y <= GetConsoleHeight())
@@ -271,38 +284,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 
 	DisplayAim();
 	
-	// display map and player
-	if (nMapDisplayStatus != 0)
-	{
-		for (int x{ 0 }; x < nMapWidth; x++)
-			for (int y{ 0 }; y < nMapHeight; y++)
-			{
-				short wcMapPixelColour = FG_BLACK;
-				if (mapWalls[y * nMapWidth + x] == 1)
-					wcMapPixelColour = FG_YELLOW;
-
-				// draw an enlaged map
-				if (nMapDisplayStatus > 0)
-				{
-					// draw player position
-					int pX{ (int)fPlayerX };
-					int pY{ (int)fPlayerY };
-					DrawLine((pX + pX) + 1, (pY + pY) + 1, (pX + pX) + 1 + cosf(fPlayerA) * 4, (pY + pY) + 1 + sinf(fPlayerA) * 4);
-					DrawPoint((pX + pX) + 1, (pY + pY) + 1, FG_DARK_RED, PIXEL_SOLID);
-
-					// draw top partial map
-					DrawPoint((x + x) + 1, (y + y) + 1, wcMapPixelColour, PIXEL_SOLID);
-
-				}
-				if (nMapDisplayStatus > 1)
-				{
-					// draw full map
-					DrawPoint((x + x + 1) + 1, (y + y + 1) + 1, wcMapPixelColour, PIXEL_SOLID);
-					DrawPoint((x + x) + 1, (y + y + 1) + 1, wcMapPixelColour, PIXEL_SOLID);
-					DrawPoint((x + x + 1) + 1, (y + y) + 1, wcMapPixelColour, PIXEL_SOLID);
-				}
-			}
-	}
+	DisplayMap(5, 5, 5);
 
 	return true;
 } // end of OnGameUpdate
@@ -695,6 +677,38 @@ void KablamGame3D::DisplayAim(short colour, short glyph)
 		}
 }
 
+// display map and player
+void KablamGame3D::DisplayMap(int xPos, int yPos, int scale) {
+	if (nMapDisplayStatus != 0) {
+		for (int x{ 0 }; x < nMapWidth; x++) {
+			for (int y{ 0 }; y < nMapHeight; y++) {
+				short wcMapPixelColour = FG_BLACK;
+				if (mapWalls[y * nMapWidth + x] == 1) {
+					wcMapPixelColour = FG_YELLOW;
+				}
+
+				// Calculate the actual screen position based on the starting point (xPos, yPos)
+				int screenX = xPos + (x * scale);
+				int screenY = yPos + (y * scale);
+
+				// Draw top partial map or an enlarged map based on nMapDisplayStatus
+				DrawPoint(screenX + (int)(scale/2), screenY + (int)(scale / 2), wcMapPixelColour, PIXEL_SOLID);
+
+				if (nMapDisplayStatus > 1) {
+					// Draw full map
+					DrawSquare(screenX, screenY, scale, wcMapPixelColour, PIXEL_SOLID, true, 1);
+				}
+			}
+		}
+
+		// Draw player position and orientation
+		int pX = xPos + (int)(fPlayerX * scale);
+		int pY = yPos + (int)(fPlayerY * scale);
+		DrawLine(pX, pY, pX + cosf(fPlayerA) * scale*2, pY + sinf(fPlayerA) * scale*2, FG_DARK_RED);
+		DrawPoint(pX, pY, FG_WHITE, PIXEL_SOLID);
+	}
+}
+
 short KablamGame3D::GetGlyphShadeByDistance(float distance)
 {
 	if (distance > 18) {
@@ -713,13 +727,13 @@ short KablamGame3D::GetGlyphShadeByDistance(float distance)
 
 int KablamGame3D::GetMipmapDetailLevel(float distance)
 {
-	if (distance > 18) {
+	if (distance > 36) {
 		return 3;
 	}
-	else if (distance > 10) {
+	else if (distance > 24) {
 		return 2;
 	}
-	else if (distance > 6) {
+	else if (distance > 12) {
 		return 1;
 	}
 	else {

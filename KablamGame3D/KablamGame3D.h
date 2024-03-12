@@ -138,6 +138,8 @@ private:
 
 	void DisplayAim(short colour = FG_WHITE, short glyph = PIXEL_SOLID);
 
+	void DisplayMap(int xPos, int yPos, int scale);
+
 	short GetGlyphShadeByDistance(float distance);
 
 	int GetMipmapDetailLevel(float distance);

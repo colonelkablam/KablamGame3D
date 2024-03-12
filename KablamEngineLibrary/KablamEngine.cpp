@@ -353,16 +353,24 @@ void KablamEngine::DrawLine(int x0, int y0, int x1, int y1, short colour, short 
     }
 }
 
-void KablamEngine::DrawSquare(int x, int y, int sideLength, short colour, short glyph, int lineWidth, bool filled)
+void KablamEngine::DrawSquare(int x, int y, int sideLength, short colour, short glyph, bool filled, int lineWidth)
 {
-    // Top side
-    DrawLine(x, y, x + sideLength, y, colour, glyph);
-    // Right side
-    DrawLine(x + sideLength, y, x + sideLength, y + sideLength, colour, glyph);
-    // Bottom side
-    DrawLine(x, y + sideLength, x + sideLength, y + sideLength, colour, glyph);
-    // Left side
-    DrawLine(x, y, x, y + sideLength, colour, glyph);
+    if (filled)
+    {
+        for (int i{ 0 }; i < sideLength; i++)
+            DrawLine(x, y + i, x + sideLength, y + i, colour, glyph);
+    }
+    else
+    {
+        // Top side
+        DrawLine(x, y, x + sideLength, y, colour, glyph);
+        // Right side
+        DrawLine(x + sideLength, y, x + sideLength, y + sideLength, colour, glyph);
+        // Bottom side
+        DrawLine(x, y + sideLength, x + sideLength, y + sideLength, colour, glyph);
+        // Left side
+        DrawLine(x, y, x, y + sideLength, colour, glyph);
+    }
 }
 
 // top left and bottom right coords

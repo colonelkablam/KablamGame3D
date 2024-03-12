@@ -136,6 +136,7 @@ void Texture::Downsample(MipmapLevel* currentLevel, MipmapLevel* nextLevel) {
 
 			// Set dominant colour in the next level with BG as second colour
 			nextLevel->colourArray[y * nextWidth + x] = firstColour.first;
+			nextLevel->glyphArray[y * nextWidth + x] = PIXEL_SOLID;
 		}
 	}
 }
@@ -269,7 +270,7 @@ CHAR_INFO Texture::SamplePixel(float x, float y) const
 	int iy = static_cast<int>(y * (m_height)) % m_height;
 
 	// Calculate the index in the glyph array
-	int index = iy * m_width + ix;
+	size_t index = iy * m_width + ix;
 
 	CHAR_INFO pixel{ 0 };
 	pixel.Attributes = m_colourArray[index];
@@ -279,7 +280,7 @@ CHAR_INFO Texture::SamplePixel(float x, float y) const
 }
 
 // MIPMAPPING
-short Texture::SampleColourWithMipmap(float x, float y, float detail) const {
+CHAR_INFO Texture::SamplePixelWithMipmap(float x, float y, float detail) const {
 
 	// Determine appropriate mipmap level based on detail 
 	// (0 is the OG texture, 1 is halved res, 2 is halved again and so on...)
@@ -293,7 +294,13 @@ short Texture::SampleColourWithMipmap(float x, float y, float detail) const {
 	int iy = std::min(static_cast<int>(y), level->height - 1);
 
 	// Return colour from the selected mipmap level
-	return level->colourArray[iy * level->width + ix];
+	size_t index = iy * level->width + ix;
+
+	CHAR_INFO pixel{ 0 };
+	pixel.Attributes = level->colourArray[index];
+	pixel.Char.UnicodeChar = level->glyphArray[index];
+
+	return pixel;
 }
 
 // looks at 4 closest texels and picks dominant (c00) and secondary (c01) colour
@@ -308,7 +315,7 @@ CHAR_INFO Texture::LinearInterpolationWithGlyphShading(float x, float y) {
 	float fx = x * m_width, fy = y * m_height;
 
 	// get grid index (integer part) of TEXEL to be sampled
-	int ix = static_cast<int>(fx) % m_width, iy = static_cast<int>(fy) % m_height;
+	int ix = static_cast<int>(fx) % m_width , iy = static_cast<int>(fy) % m_height;
 
 	// get the fractional part within the TEXEL
 	float dx = fx - ix, dy = fy - iy;
@@ -328,7 +335,7 @@ CHAR_INFO Texture::LinearInterpolationWithGlyphShading(float x, float y) {
 	short glyph{ GetGlyphFromDelta(delta) };
 
 	// assign values to pixel to display pixel
-	pixel.Attributes = c00 | (c01 << 4);
+	pixel.Attributes = c00 | (c01 << 4 );
 	pixel.Char.UnicodeChar = glyph;
 
 	return pixel;
