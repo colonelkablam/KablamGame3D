@@ -208,8 +208,10 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 					DrawPoint(x, y, wallTextures[nWallType]->SampleColour(fTileHit, fSampleY), PIXEL_SOLID);
 				}
 				else {
-					pixel = wallTextures[nWallType]->LinearInterpolationWithGlyphShading(fTileHit, fSampleY);
-					//short colour = wallTextures[nWallType]->SampleColour(fTileHit, fSampleY);
+					// pixel = wallTextures[nWallType]->LinearInterpolationWithGlyphShading(fTileHit, fSampleY);
+					pixel.Attributes = wallTextures[nWallType]->SampleColourWithMipmap(fTileHit, fSampleY, nMipmapDetailLevel);
+
+					//pixel = wallTextures[nWallType]->SamplePixel(fTileHit, fSampleY);
 
 					DrawPoint(x, y, pixel);
 				}

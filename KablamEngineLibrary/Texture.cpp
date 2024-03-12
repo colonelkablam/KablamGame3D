@@ -36,12 +36,15 @@ Texture::Texture(std::wstring filePath)
 Texture::~Texture()
 {
 	delete[] m_colourArray;
+	m_colourArray = nullptr;
 	delete[] m_glyphArray;
+	m_glyphArray = nullptr;
 
 	MipmapLevel* current = topMipmap;
 	while (current != nullptr) {
 		MipmapLevel* next = current->next;
-		delete current;
+		delete[] current->colourArray;
+		delete[] current->glyphArray;
 		current = next;
 	}
 }
@@ -66,21 +69,25 @@ bool Texture::Initialise(int width, int height, bool illumination, short colour)
 // populate texture instance with full complement of mipmaps
 void Texture::GenerateMipmaps() {
 
-	topMipmap = new MipmapLevel(m_width, m_height);
-
-	// populate top mipmap with original texture 
-	topMipmap->colourArray = m_colourArray;
-	topMipmap->glyphArray = m_glyphArray;
-	topMipmap->height = m_height;
-	topMipmap->width = m_width;
+	// define top mipmap level
+	topMipmap = new MipmapLevel(m_width, m_height, m_illuminated);
+	// size of arrays in bytes for memcpy_s
+	size_t arraySizeBytes = m_width * m_height * sizeof(m_colourArray[0]);
+	// populate top mipmap with copy of original texture 
+	topMipmap->colourArray = new short[m_width * m_height];
+	memcpy_s(topMipmap->colourArray, arraySizeBytes, m_colourArray, arraySizeBytes);
+	topMipmap->glyphArray = new short[m_width * m_height];
+	memcpy_s(topMipmap->glyphArray, arraySizeBytes, m_glyphArray, arraySizeBytes);
+	// link to next mipmap
 	topMipmap->next = nullptr;
 
+	// generate mipmaps until 1*1 texture
 	MipmapLevel* currentLevel = topMipmap;
 	while (currentLevel->width > 1 && currentLevel->height > 1) {
 		int nextWidth = currentLevel->width / 2;
 		int nextHeight = currentLevel->height / 2;
 
-		MipmapLevel* nextLevel = new MipmapLevel(nextWidth, nextHeight);
+		MipmapLevel* nextLevel = new MipmapLevel(nextWidth, nextHeight, m_illuminated);
 
 		// lower res sample into next level
 		Downsample(currentLevel, nextLevel);

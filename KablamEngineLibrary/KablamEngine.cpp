@@ -206,7 +206,7 @@ void KablamEngine::Start()
     AddToLog(L"Exiting Start().");
 
     // send contents of outputLog to outoutLog.txt
-    OutputLogFile();
+   // OutputLogFile();
 
     // notify the condition variable that CleanUp/tidy-up/log report has finished 
     KablamEngine::bGracefulExitCompleted = true;
@@ -240,7 +240,7 @@ int KablamEngine::GameThread()
         {
             AddToLog(L"ESCAPE key pressed, exiting program.");
             bGameThreadRunning = false;
-            bGameUpdatePaused = false;
+            bGameUpdatePaused = true;
         }
 
         // toggle FULL SCREEN with F12
@@ -537,7 +537,7 @@ void KablamEngine::ApplyBilinearFilterScreen()
 
     // copy mem accross in screen from screenBilinear
     // easier than setting flags and managing two screen arrays but possibly more costly - seems fast on testing
-    std::memcpy(screen, screenBilinear, nScreenWidth * nScreenHeight * sizeof(screen[0]));
+    memcpy_s(screen, nScreenWidth * nScreenHeight * sizeof(screen[0]), screenBilinear, nScreenWidth * nScreenHeight * sizeof(screen[0]));
 }
 
 // 

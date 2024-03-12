@@ -65,20 +65,23 @@ private:
 
 	// linked list to lower res textures
 	struct MipmapLevel {
+		int width, height;
+		bool illuminated;
 		short* colourArray;
 		short* glyphArray;
-		int width, height;
 		MipmapLevel* next;  // Pointer to the next mipmap level (lower resolution)
 
-		MipmapLevel(int w, int h) : width(w), height(h), next(nullptr) {
-			colourArray = new short[w * h];
-			glyphArray = new short[w * h];
+		MipmapLevel(int w, int h, bool illum) : width(w), height(h), illuminated(illum), next(nullptr) {
 			// Initialize arrays, e.g., with default color and glyph
+			colourArray = new short[w * h] {FG_DARK_MAGENTA};
+			glyphArray = new short[w * h] {L'X'};
 		}
 
 		~MipmapLevel() {
 			delete[] colourArray;
+			colourArray = nullptr;
 			delete[] glyphArray;
+			glyphArray = nullptr;
 		}
 	};
 
