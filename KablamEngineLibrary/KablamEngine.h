@@ -194,6 +194,8 @@ protected:
 
     int SetFullScreen(bool state);
 
+    void FillScreenBuffer(short colour = FG_BLACK, short glyph = PIXEL_SOLID);
+
     std::wstring GetFormattedDateTime();
 
     int Error(const wchar_t* msg, short errorCode = 1);

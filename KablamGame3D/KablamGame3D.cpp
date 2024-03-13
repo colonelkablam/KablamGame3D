@@ -196,7 +196,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				else
 				{
 					short colour = ceilingTextures[nCeilingType]->SampleColour(fXTextureTileHit, fYTextureTileHit);
-					if (ceilingTextures.at(nCeilingType)->IsIlluminated())
+					if (ceilingTextures.at(nCeilingType)->GetIllumination() != 0)
 						nCeilingShadeGlyph = PIXEL_QUARTER;
 
 					DrawPoint(x, y, colour, nCeilingShadeGlyph);
@@ -270,7 +270,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				else
 				{
 					short colour = floorTextures[nFloorType]->SampleColour(fXTextureTileHit, fYTextureTileHit);
-					if (floorTextures.at(nFloorType)->IsIlluminated())
+					if (floorTextures.at(nFloorType)->GetIllumination() != 0)
 						nFloorShadeGlyph = PIXEL_SOLID;
 
 					DrawPoint(x, y, colour, nFloorShadeGlyph);

@@ -7,7 +7,7 @@
 #undef max
 #undef min
 
-Texture::Texture(int w, int h, bool illum)
+Texture::Texture(int w, int h, int illum)
 	: m_colourArray{ nullptr }, m_glyphArray{ nullptr }, topMipmap{ nullptr }
 {
 	Initialise(w, h, illum);
@@ -22,7 +22,7 @@ Texture::Texture(std::wstring filePath)
 	if (!LoadFrom(filePath))
 	{
 		// if failed to load make a 32*32 dark red canvas
-		Initialise(32, 32, false, FG_DARK_MAGENTA);
+		Initialise(32, 32, 0, FG_DARK_MAGENTA);
 	}
 	// populate linked list of mipmaps
 	GenerateMipmaps();
@@ -53,7 +53,7 @@ bool Texture::Initialise(int width, int height, bool illumination, short colour)
 {
 	m_width = width;
 	m_height = height;
-	m_illuminated = illumination;
+	m_illumination = illumination;
 	m_colourArray = new short[width * height];
 	m_glyphArray = new short[width * height];
 
@@ -70,7 +70,7 @@ bool Texture::Initialise(int width, int height, bool illumination, short colour)
 void Texture::GenerateMipmaps() {
 
 	// define top mipmap level
-	topMipmap = new MipmapLevel(m_width, m_height, m_illuminated);
+	topMipmap = new MipmapLevel(m_width, m_height, m_illumination);
 	// size of arrays in bytes for memcpy_s
 	size_t arraySizeBytes = m_width * m_height * sizeof(m_colourArray[0]);
 	// populate top mipmap with copy of original texture 
@@ -87,7 +87,7 @@ void Texture::GenerateMipmaps() {
 		int nextWidth = currentLevel->width / 2;
 		int nextHeight = currentLevel->height / 2;
 
-		MipmapLevel* nextLevel = new MipmapLevel(nextWidth, nextHeight, m_illuminated);
+		MipmapLevel* nextLevel = new MipmapLevel(nextWidth, nextHeight, m_illumination);
 
 		// lower res sample into next level
 		Downsample(currentLevel, nextLevel);
@@ -179,7 +179,7 @@ bool Texture::SaveAs(const std::wstring& filePath)
 	// write attributes into the file
 	fwrite(&m_width, sizeof(int), 1, file);
 	fwrite(&m_height, sizeof(int), 1, file);
-	fwrite(&m_illuminated, sizeof(bool), 1, file);
+	fwrite(&m_illumination, sizeof(int), 1, file);
 	// write array data into the file
 	fwrite(m_colourArray, sizeof(short), m_width * m_height, file);
 	fwrite(m_glyphArray, sizeof(short), m_width * m_height, file);
@@ -194,7 +194,7 @@ bool Texture::LoadFrom(const std::wstring& filePath)
 	// initialise attributes
 	m_width = 0;
 	m_height = 0;
-	m_illuminated = false;
+	m_illumination = 0;
 	delete[] m_colourArray;
 	delete[] m_glyphArray;
 
@@ -206,10 +206,10 @@ bool Texture::LoadFrom(const std::wstring& filePath)
 	// read characteristics of saved texture
 	std::fread(&m_width, sizeof(int), 1, file);
 	std::fread(&m_height, sizeof(int), 1, file);
-	std::fread(&m_illuminated, sizeof(bool), 1, file);
+	std::fread(&m_illumination, sizeof(int), 1, file);
 
 	// create an empty texture from loaded data
-	Initialise(m_width, m_height, m_illuminated);
+	Initialise(m_width, m_height, m_illumination);
 
 	// read colours/glyphs into texture
 	std::fread(m_colourArray, sizeof(short), m_width * m_height, file);
@@ -447,9 +447,9 @@ short Texture::GetGlyphFromDelta(float delta) {
 		return PIXEL_HALF;
 }
 
-bool Texture::IsIlluminated() const
+int Texture::GetIllumination() const
 {
-	return m_illuminated;
+	return m_illumination;
 }
 
 bool Texture::SetColour(int x, int y, short colour)

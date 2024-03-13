@@ -3,18 +3,20 @@
 
 // constructor stuff...
 TexturePainter::TexturePainter(std::wstring title)
+    : currentPixel{ PIXEL_SOLID, FG_BLUE }, deletePixel{ L' ', 0}
 {
     sConsoleTitle = title;
     eventLog.push_back(GetFormattedDateTime() + L" - Output of Error Log of last " + sConsoleTitle + L" session" + L":\n");
-
 }
 
 TexturePainter::~TexturePainter()
 {
-    for (Canvas canvas: canvases)
+    for (Canvas* canvas: canvases)
     {
-        delete canvas.texture;
-        canvas.texture = nullptr;
+        delete canvas->texture;
+        canvas->texture = nullptr;
+        delete canvas;
+        canvas = nullptr;
     }
 }
 
@@ -26,12 +28,15 @@ bool TexturePainter::OnGameCreate()
         return Error(L"No textures loaded; unable to continue.");
     }
 
-
     // start at 1st canvas
     nCurrentCanvas = 0;
 
     // set current canvas pointer 
-    currentCanvas = &canvases.at(nCurrentCanvas);
+    currentCanvas = canvases.at(nCurrentCanvas);
+
+    SetResizeWindowLock(true);
+    SetConsoleFocusPause(true);
+    SetWindowPosition(50, 50);
 
     return true;
 }
@@ -40,22 +45,39 @@ bool TexturePainter::OnGameCreate()
 bool TexturePainter::OnGameUpdate(float fElapsedTime) {
 
     HandleKeyPress();
-
-    currentCanvas = &canvases.at(nCurrentCanvas);
+    FillScreenBuffer();
 
     // square around canvas position
-    DrawRectangleEdgeLength(currentCanvas->xPos - 1, currentCanvas->xPos - 1, currentCanvas->width + 2, currentCanvas->height + 2, FG_RED);
+
+    WriteStringToBuffer(currentCanvas->xPos - 1, currentCanvas->yPos - 2, L"COORDS X: -");
+    WriteStringToBuffer(currentCanvas->xPos + 12, currentCanvas->yPos - 2, L"Y: -");
+
+    // if coords withing canvas diplay (index starting from 1 for user)
+    if (MouseWithinCanvas(mouseCoords.X, mouseCoords.Y))
+    {
+        WriteStringToBuffer(currentCanvas->xPos + 9, currentCanvas->yPos - 2, std::to_wstring(GetCanvasCoords().X + 1));
+        WriteStringToBuffer(currentCanvas->xPos + 15, currentCanvas->yPos - 2, std::to_wstring(GetCanvasCoords().Y + 1));
+    }
+
+    DrawRectangleEdgeLength(currentCanvas->xPos - 1, currentCanvas->yPos - 1, currentCanvas->width + 2, currentCanvas->height + 2, FG_RED);
 
     // add texture to screen buffer
     DrawTextureToScreen(currentCanvas->texture, currentCanvas->xPos, currentCanvas->yPos, 1);
 
 
     // update info display
-    WriteStringToBuffer(1, 1, L"Current File Name: " + currentCanvas->fileName, FG_WHITE);
-    WriteStringToBuffer(1, 3, L"Dimentions: " + std::to_wstring(currentCanvas->width) + L" x " + std::to_wstring(currentCanvas->height));
-    WriteStringToBuffer(1, 5, L"                                                    "); // hack to clear mouse position info
-    WriteStringToBuffer(1, 5, L"Canvas COORDS X: " + std::to_wstring(mouseCoords.X - currentCanvas->xPos) +
-        L", Y: " + std::to_wstring(mouseCoords.Y - currentCanvas->yPos));
+    // texture info
+    WriteStringToBuffer(1, 1, L"Current File Name:  " + currentCanvas->fileName, FG_CYAN);
+    WriteStringToBuffer(1, 2, L"File Path:          " + currentCanvas->filePath, FG_CYAN);
+    WriteStringToBuffer(1, 4, L"Dimentions:         " + std::to_wstring(currentCanvas->width) + L" x " + std::to_wstring(currentCanvas->height));
+    WriteStringToBuffer(1, 5, L"Illuminatation:     " + std::to_wstring(currentCanvas-> illumination));
+
+    // instructions
+    WriteStringToBuffer(60, 1, L"Save Current Canvas    F5", FG_GREEN);
+    WriteStringToBuffer(60, 2, L"Load Current Canvas    F9", FG_GREEN);
+    WriteStringToBuffer(60, 3, L"Select Canvas          0-9", FG_GREEN);
+    WriteStringToBuffer(60, 4, L"Zoom in/out            +/-", FG_GREEN);
+    WriteStringToBuffer(60, 5, L"Exit                   ESC", FG_GREEN);
 
 
     return true;
@@ -121,7 +143,7 @@ bool TexturePainter::GetUserStartInput()
                 // get new dimentions
                 GetDimensionInput(L"\nPlease enter an integer value for the new texture width: ", inputWidth, MIN_TEXTURE_SIZE, MAX_TEXTURE_SIZE);
                 GetDimensionInput(L"\nPlease enter an integer value for the new texture height: ", inputHeight, MIN_TEXTURE_SIZE, MAX_TEXTURE_SIZE);
-                GetDimensionInput(L"\nPlease enter illumination value 0 or 1 (off/on) for the new texture: ", inputIllumination, 0, 1);
+                GetDimensionInput(L"\nPlease enter illumination value 0 to 255 for the new texture: ", inputIllumination, 0, 255);
 
 
                 // create and save new .txr file in saves path
@@ -135,11 +157,11 @@ bool TexturePainter::GetUserStartInput()
 
 
     // Output the entered textures (optional, for verification)
-    for (Canvas canvas : canvases)
+    for (Canvas* canvas : canvases)
     {
-        std::wcout << L"\nFile Name:      " << canvas.fileName;
-        std::wcout << L"\nSize (w * h):   " << canvas.width << L" x " << canvas.height;
-        std::wcout << L"\nIlluminated:    " << canvas.illumination << std::endl << std::endl;
+        std::wcout << L"\nFile Name:      " << canvas->fileName;
+        std::wcout << L"\nSize (w * h):   " << canvas->width << L" x " << canvas->height;
+        std::wcout << L"\nIllumination:    " << canvas->illumination << std::endl << std::endl;
     }
 
 
@@ -151,22 +173,23 @@ bool TexturePainter::GetUserStartInput()
     return true;
 }
 
-bool TexturePainter::InitCanvasNewTexture(int width, int height, bool illuminated, const std::wstring& fileName)
+bool TexturePainter::InitCanvasNewTexture(int width, int height, int illumination, const std::wstring& fileName)
 {
     // create new canvas
-    Canvas canvas;
-    canvas.fileName = fileName;
-    canvas.filePath = SAVE_FOLDER + fileName;
-    canvas.xPos = CANVAS_XPOS;
-    canvas.yPos = CANVAS_YPOS;
-    canvas.width = width;
-    canvas.height = height;
-    canvas.illumination = illuminated;
-    canvas.texture = new Texture(width, height, false);
+    Canvas* canvas = new Canvas;
+    canvas->zoomLevel = ZOOM_X1;
+    canvas->fileName = fileName;
+    canvas->filePath = SAVE_FOLDER + fileName;
+    canvas->xPos = CANVAS_XPOS;
+    canvas->yPos = CANVAS_YPOS;
+    canvas->width = width;
+    canvas->height = height;
+    canvas->illumination = illumination;
+    canvas->texture = new Texture(width, height, illumination);
 
     // save the new texture to save folder (create an empty file)
-    canvas.texture->SaveAs(canvas.filePath);
-
+    canvas->texture->SaveAs(canvas->filePath);
+    // add to current selection of canvases to edit
     canvases.push_back(canvas);
 
     return true;
@@ -174,23 +197,27 @@ bool TexturePainter::InitCanvasNewTexture(int width, int height, bool illuminate
 
 void TexturePainter::ChangeCanvas(size_t index)
 {
-    currentCanvas = &canvases.at(index);
+    currentCanvas = canvases.at(index);
 }
+
 
 bool TexturePainter::InitCanvasExistingTexture(const std::wstring& fileName)
 {
     // create new canvas
-    Canvas canvas;
-    canvas.texture = new Texture(SAVE_FOLDER + fileName);
-    canvas.fileName = fileName;
-    canvas.filePath = SAVE_FOLDER + fileName;
-    canvas.xPos = CANVAS_XPOS;
-    canvas.yPos = CANVAS_YPOS;
-    canvas.width = canvas.texture->GetWidth();
-    canvas.height = canvas.texture->GetWidth();
-    canvas.illumination = canvas.texture->IsIlluminated();
+    Canvas* canvas = new Canvas;
+    canvas->zoomLevel = ZOOM_X1;
+    // load up existing texture
+    canvas->texture = new Texture(SAVE_FOLDER + fileName);
+    canvas->fileName = fileName;
+    canvas->filePath = SAVE_FOLDER + fileName;
+    canvas->xPos = CANVAS_XPOS;
+    canvas->yPos = CANVAS_YPOS;
+    canvas->width = canvas->texture->GetWidth();
+    canvas->height = canvas->texture->GetWidth();
+    canvas->illumination = canvas->texture->GetIllumination();
 
     // no need to save a file as texture already exists
+    // add to current selection of canvases to edit
     canvases.push_back(canvas);
 
     return true;
@@ -198,17 +225,34 @@ bool TexturePainter::InitCanvasExistingTexture(const std::wstring& fileName)
 
 
 // check if within canvas
-bool TexturePainter::WithinCanvas(int x, int y)
+bool TexturePainter::MouseWithinCanvas(int x, int y)
 {
-    if (x >= canvases.at(nCurrentCanvas).xPos && x <= canvases.at(nCurrentCanvas).xPos + canvases.at(nCurrentCanvas).width
-     && y >= canvases.at(nCurrentCanvas).yPos && y <= canvases.at(nCurrentCanvas).yPos + canvases.at(nCurrentCanvas).height )
+    // Check if the mouse coordinates are within the zoom-adjusted canvas boundaries
+    if (x >= currentCanvas->xPos && x < currentCanvas->xPos && y >= currentCanvas->yPos && y < currentCanvas->yPos)
+    {
         return true;
+    }
     else
+    {
         return false;
+    }
 }
 
-void TexturePainter::DrawPointOnTexture(int mouse_x, int mouse_y, short colour, short glyph)
+COORD TexturePainter::GetCanvasCoords(int scale)
 {
+    COORD coords{};
+
+    if (MouseWithinCanvas(mouseCoords.X, mouseCoords.Y))
+    {
+        coords.X = (mouseCoords.X - (short)currentCanvas->xPos) * scale;
+        coords.Y = (mouseCoords.X - (short)currentCanvas->xPos) * scale;
+    }
+    else
+    {
+        coords.X = -1;
+        coords.Y = -1;
+    }
+    return coords;
 }
 
 bool TexturePainter::CheckFolderExist(const std::wstring& folderPath) {
@@ -234,18 +278,16 @@ bool TexturePainter::HandleKeyPress()
     //controls
     if (keyArray[VK_LBUTTON].bHeld)
     {
-        currentCanvas->texture->SetColour(mouseCoords.X - currentCanvas->xPos,
-        mouseCoords.Y - currentCanvas->xPos, currentColour);
-        currentCanvas->texture->SetGlyph(mouseCoords.X - currentCanvas->xPos,
-        mouseCoords.Y - currentCanvas->xPos, currentGlyph);
+        currentCanvas->texture->SetPixel(mouseCoords.X - currentCanvas->xPos,
+        mouseCoords.Y - currentCanvas->xPos, currentPixel);
+
     }
 
     if (keyArray[VK_RBUTTON].bHeld)
     {
-        currentCanvas->texture->SetColour(mouseCoords.X - currentCanvas->xPos,
-        mouseCoords.Y - currentCanvas->xPos, FG_BLACK);
-        currentCanvas->texture->SetGlyph(mouseCoords.X - currentCanvas->xPos,
-        mouseCoords.Y - currentCanvas->xPos, L' ');
+        currentCanvas->texture->SetPixel(mouseCoords.X - currentCanvas->xPos,
+        mouseCoords.Y - currentCanvas->xPos, deletePixel);
+
 
     }
 
@@ -253,15 +295,27 @@ bool TexturePainter::HandleKeyPress()
     {
         wchar_t num = L'0' + i; // Convert the digit to its corresponding wchar_t character
 
-        if (keyArray[num].bHeld)
+        if (keyArray[num].bPressed)
         {
-            DisplayAlertMessage(L"No canvas loaded at position " + i);
-
             if (i < canvases.size())
+            {
+                std::wstring message = L"Loading Canvas " + std::to_wstring(i) + L". " + canvases.at(i)->fileName;
+                DisplayAlertMessage(message);
                 nCurrentCanvas = i;
+            }
             else
-                DisplayAlertMessage(L"No canvas loaded at position " + i);
+                DisplayAlertMessage(L"No canvas loaded at position " + std::to_wstring(i));
         }
+    }
+
+    if (keyArray[VK_F5].bPressed)
+    {
+        currentCanvas->texture->SaveAs(currentCanvas->filePath);
+    }
+
+    if (keyArray[VK_F6].bPressed)
+    {
+        currentCanvas->texture->LoadFrom(currentCanvas->filePath);
     }
 
     return true;

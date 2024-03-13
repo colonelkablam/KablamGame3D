@@ -474,16 +474,19 @@ void KablamEngine::DrawCircle(int xCenter, int yCenter, int radius, short colour
 
 int KablamEngine::DrawTextureToScreen(const Texture* texture, int xScreen, int yScreen, float scale)
 {
-    // need to handle scale...TBC
-
     for (int x{ 0 }; x < texture->GetWidth(); x++)
-    {
-        for (int y{ 0 }; y < texture->GetHeight(); y++)
-        {
-            DrawPoint(xScreen + x, yScreen + y, texture->GetColour(x, y), texture->GetGlyph(x, y));
-        }
-    }
-    return 0;
+   {
+       for (int y = 0; y < texture->GetHeight(); y++)
+       {
+           // Find the corresponding texture coordinates
+           int texX = static_cast<int>(x / scale);
+           int texY = static_cast<int>(y / scale);
+
+           // Draw scaled pixel
+           DrawPoint(xScreen + x, yScreen + y, texture->GetColour(texX, texY), texture->GetGlyph(texX, texY));
+       }
+   }
+   return 0; 
 }
 
 // goes through screen[] and applies linear glyph shading
@@ -779,6 +782,16 @@ int KablamEngine::SetFullScreen(bool state)
     return 0;
 }
 
+void KablamEngine::FillScreenBuffer(short colour, short glyph)
+{
+    for (size_t i{ 0 }; i < nScreenWidth * nScreenHeight; i++)
+    {
+        screen[i].Attributes = colour;
+        screen[i].Char.UnicodeChar = glyph;
+    }
+}
+
+
 std::wstring KablamEngine::GetFormattedDateTime() {
 
     // Get current time as time_point
@@ -888,6 +901,14 @@ void KablamEngine::WaitForKeyPress()
     // Flush the console input buffer to clear out any prior key presses
     FlushConsoleInputBuffer(hConsoleInput);
 
+    // Save the current console mode
+    DWORD prevConsoleMode;
+    GetConsoleMode(hConsoleInput, &prevConsoleMode);
+
+    // Disable echo input (to prevent showing typed characters) and line input
+    DWORD newConsoleMode = prevConsoleMode & ~(ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT);
+    SetConsoleMode(hConsoleInput, newConsoleMode);
+
     INPUT_RECORD ir;
     DWORD numRead;
     while (bGameThreadRunning) {
@@ -903,6 +924,9 @@ void KablamEngine::WaitForKeyPress()
         }
         Sleep(100);
     }
+
+    // Restore the original console mode
+    SetConsoleMode(hConsoleInput, prevConsoleMode);
 }
 
 // STATIC MEMBERS

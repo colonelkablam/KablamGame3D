@@ -59,19 +59,19 @@ class Texture
 private:
 	int m_width;
 	int m_height;
-	bool m_illuminated;
+	int m_illumination;
 	short* m_colourArray;
 	short* m_glyphArray;
 
 	// linked list to lower res textures
 	struct MipmapLevel {
 		int width, height;
-		bool illuminated;
+		int illuminated;
 		short* colourArray;
 		short* glyphArray;
 		MipmapLevel* next;  // Pointer to the next mipmap level (lower resolution)
 
-		MipmapLevel(int w, int h, bool illum) : width(w), height(h), illuminated(illum), next(nullptr) {
+		MipmapLevel(int w, int h, int illum) : width(w), height(h), illuminated(illum), next(nullptr) {
 			// Initialize arrays, e.g., with default color and glyph
 			colourArray = new short[w * h] {FG_DARK_MAGENTA};
 			glyphArray = new short[w * h] {L'X'};
@@ -90,7 +90,7 @@ private:
 public:
 
 	// constructors
-	Texture(int w = 32, int h = 32, bool illuminated = false);
+	Texture(int w = 32, int h = 32, int illumination = 0);
 
 	// from saved file
 	Texture(std::wstring sFilePath = L".\\Textures\\Untitled.txr");
@@ -135,7 +135,7 @@ private:
 	short GetGlyphFromDelta(float delta);
 
 public:
-	bool IsIlluminated() const;
+	int GetIllumination() const;
 
 	bool SetColour(int x, int y, short colour);
 
