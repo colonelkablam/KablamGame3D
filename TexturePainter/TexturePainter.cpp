@@ -3,7 +3,7 @@
 
 // constructor stuff...
 TexturePainter::TexturePainter(std::wstring title)
-    : currentPixel{ PIXEL_SOLID, FG_BLUE }, deletePixel{ L' ', 0}
+    : currentPixel{ PIXEL_SOLID, FG_BLUE }, deletePixel{ L' ', 0 }, currentBrushType{ BrushType::BRUSH_POINT }, brushSize{ 1 }
 {
     sConsoleTitle = title;
     eventLog.push_back(GetFormattedDateTime() + L" - Output of Error Log of last " + sConsoleTitle + L" session" + L":\n");
@@ -262,6 +262,30 @@ COORD TexturePainter::ConvertMouseCoordsToTextureCoords()
     return coords;
 }
 
+void TexturePainter::ApplyBrush(int x, int y)
+{
+    switch (currentBrushType) {
+    case BrushType::BRUSH_POINT:
+        currentCanvas->texture->SetPixel(x, y, currentPixel); // Draws a single pixel
+        break;
+    case BrushType::BRUSH_SQUARE:
+        DrawSquare(x, y, brushSize, currentPixel.Attributes, currentPixel.Char.UnicodeChar, true); // Draws a square
+        break;
+    case BrushType::BRUSH_LINE:
+         //For a line, you'll likely need to store the initial click position
+         //and then draw the line to the current mouse position
+        //if (initialClick) {
+        //    initialX = x;
+        //    initialY = y;
+        //    initialClick = false; // Reset after the initial click is recorded
+        //}
+        //else {
+        //    DrawLine(initialX, initialY, x, y, currentPixel); // Draws a line
+        //}
+        break;
+    }
+}
+
 bool TexturePainter::CheckFolderExist(const std::wstring& folderPath) {
     DWORD fileAttributes = GetFileAttributes(folderPath.c_str());
 
@@ -286,7 +310,7 @@ bool TexturePainter::HandleKeyPress()
     if (keyArray[VK_LBUTTON].bHeld)
     {
         COORD textureCoord = ConvertMouseCoordsToTextureCoords();
-        currentCanvas->texture->SetPixel(textureCoord.X, textureCoord.Y, currentPixel);
+        ApplyBrush(textureCoord.X, textureCoord.Y);
     }
 
     if (keyArray[VK_RBUTTON].bHeld)

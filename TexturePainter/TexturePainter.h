@@ -2,6 +2,7 @@
 
 #include "Utility.h"
 #include "KablamEngine.h"
+#include "Canvas.h"
 
 class TexturePainter : public KablamEngine
 {
@@ -19,6 +20,15 @@ private:
     short currentGlyph = PIXEL_SOLID;
     CHAR_INFO currentPixel;
     CHAR_INFO deletePixel;
+
+    enum class BrushType {
+        BRUSH_POINT,  // For single pixel drawing
+        BRUSH_SQUARE, // For drawing squares
+        BRUSH_LINE    // For drawing lines
+    };
+
+    BrushType currentBrushType;
+    int brushSize;
 
     // display
     struct Canvas {
@@ -84,6 +94,8 @@ private:
     bool IsMouseWithinCanvas(int x, int y);
 
     COORD ConvertMouseCoordsToTextureCoords();
+
+    void ApplyBrush(int x, int y);
 
     bool HandleKeyPress();
 

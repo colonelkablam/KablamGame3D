@@ -117,7 +117,7 @@ int KablamEngine::BuildConsole(int screenWidth, int screenHeight, int fontWidth,
     }
 
     // Set the console font size
-    CONSOLE_FONT_INFOEX cfi;
+    CONSOLE_FONT_INFOEX cfi{};
     cfi.cbSize = sizeof(cfi);
     cfi.nFont = 0;
     cfi.dwFontSize.X = nFontWidth;   // Width of each character in pixels
@@ -205,7 +205,7 @@ void KablamEngine::Start()
     AddToLog(L"Exiting Start().");
 
     // send contents of outputLog to outoutLog.txt
-   // OutputLogFile();
+    OutputLogFile();
 
     // notify the condition variable that CleanUp/tidy-up/log report has finished 
     KablamEngine::bGracefulExitCompleted = true;
@@ -317,7 +317,7 @@ void KablamEngine::DrawPoint(int x, int y, short colour, short glyph)
     }
     else
     {
-        AddToLog(L"Attempting to DrawPoint() outside of screen array.");
+        //AddToLog(L"Attempting to DrawPoint() outside of screen array.");
     }
 }
 
@@ -330,7 +330,7 @@ void KablamEngine::DrawPoint(int x, int y, const CHAR_INFO& pixel)
     }
     else
     {
-        AddToLog(L"Attempting to DrawPoint() outside of screen array.");
+        //AddToLog(L"Attempting to DrawPoint() outside of screen array.");
     }
 }
 
@@ -762,7 +762,7 @@ int KablamEngine::SetFullScreen(bool state)
 
 
     // Initialize the CONSOLE_FONT_INFOEX structure
-    CONSOLE_FONT_INFOEX cfi;
+    CONSOLE_FONT_INFOEX cfi{};
     cfi.cbSize = sizeof(cfi);
     cfi.nFont = 0; // Use the default font
     cfi.dwFontSize.X = newFontWidth; // Width of each character
