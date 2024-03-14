@@ -474,9 +474,9 @@ void KablamEngine::DrawCircle(int xCenter, int yCenter, int radius, short colour
 
 int KablamEngine::DrawTextureToScreen(const Texture* texture, int xScreen, int yScreen, float scale)
 {
-    for (int x{ 0 }; x < texture->GetWidth(); x++)
-   {
-       for (int y = 0; y < texture->GetHeight(); y++)
+    for (int x{ 0 }; x < texture->GetWidth() * scale; x++)
+    {
+       for (int y = 0; y < texture->GetHeight() * scale; y++)
        {
            // Find the corresponding texture coordinates
            int texX = static_cast<int>(x / scale);
@@ -485,8 +485,8 @@ int KablamEngine::DrawTextureToScreen(const Texture* texture, int xScreen, int y
            // Draw scaled pixel
            DrawPoint(xScreen + x, yScreen + y, texture->GetColour(texX, texY), texture->GetGlyph(texX, texY));
        }
-   }
-   return 0; 
+    }
+    return 0; 
 }
 
 // goes through screen[] and applies linear glyph shading

@@ -20,13 +20,6 @@ private:
     CHAR_INFO currentPixel;
     CHAR_INFO deletePixel;
 
-    enum ZoomLevel {
-        ZOOM_X1 = 1,
-        ZOOM_X2 = 2,
-        ZOOM_X3 = 3,
-        ZOOM_LEVEL_COUNT
-    };
-
     // display
     struct Canvas {
         std::wstring fileName;
@@ -36,7 +29,7 @@ private:
         int yPos;
         int width; 
         int height;
-        ZoomLevel zoomLevel;
+        int zoomLevel;
         Texture* texture;
 
         ~Canvas()
@@ -44,9 +37,10 @@ private:
             delete texture;
         }
 
-        // Function to cycle to the next zoom level
+        // Method to cycle to the next zoom level
         void IncreaseZoomLevel() {
-            zoomLevel = static_cast<ZoomLevel>((zoomLevel + 1) % ZOOM_LEVEL_COUNT);
+            // Increment zoom level, wrapping around back to ZOOM_X1 after ZOOM_X3
+            zoomLevel = (zoomLevel % 3) + 1;
         }
     };
 
@@ -87,9 +81,9 @@ private:
 
     void ChangeCanvas(size_t index);
 
-    bool MouseWithinCanvas(int x, int y);
+    bool IsMouseWithinCanvas(int x, int y);
 
-    COORD GetCanvasCoords(int scale = 1);
+    COORD ConvertMouseCoordsToTextureCoords();
 
     bool HandleKeyPress();
 
