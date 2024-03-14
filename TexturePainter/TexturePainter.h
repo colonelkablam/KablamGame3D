@@ -16,44 +16,6 @@ private:
     const size_t CANVAS_XPOS = 16;
     const size_t CANVAS_YPOS = 16;
 
-    short currentColour = FG_WHITE;
-    short currentGlyph = PIXEL_SOLID;
-    CHAR_INFO currentPixel;
-    CHAR_INFO deletePixel;
-
-    enum class BrushType {
-        BRUSH_POINT,  // For single pixel drawing
-        BRUSH_SQUARE, // For drawing squares
-        BRUSH_LINE    // For drawing lines
-    };
-
-    BrushType currentBrushType;
-    int brushSize;
-
-    // display
-    struct Canvas {
-        std::wstring fileName;
-        std::wstring filePath;
-        int illumination;
-        int xPos;
-        int yPos;
-        int width; 
-        int height;
-        int zoomLevel;
-        Texture* texture;
-
-        ~Canvas()
-        {
-            delete texture;
-        }
-
-        // Method to cycle to the next zoom level
-        void IncreaseZoomLevel() {
-            // Increment zoom level, wrapping around back to ZOOM_X1 after ZOOM_X3
-            zoomLevel = (zoomLevel % 3) + 1;
-        }
-    };
-
     // vector for storing canvases and textures together for editing
     std::vector<Canvas*> canvases;
 
