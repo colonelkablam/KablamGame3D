@@ -354,13 +354,16 @@ void KablamEngine::DrawLine(int x0, int y0, int x1, int y1, short colour, short 
 
 void KablamEngine::DrawSquare(int x, int y, int sideLength, short colour, short glyph, bool filled, int lineWidth)
 {
+
     if (filled)
     {
         for (int i{ 0 }; i < sideLength; i++)
-            DrawLine(x, y + i, x + sideLength, y + i, colour, glyph);
+            DrawLine(x, y + i, x + sideLength - 1, y + i, colour, glyph);
     }
     else
     {
+        sideLength -= 1;
+
         // Top side
         DrawLine(x, y, x + sideLength, y, colour, glyph);
         // Right side

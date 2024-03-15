@@ -1,12 +1,13 @@
 #pragma once
 
+#include<functional>
 #include "Utility.h"
 #include "KablamEngine.h"
 #include "Canvas.h"
 
 class TexturePainter : public KablamEngine
 {
-    // member attributes for KablamEngine
+    // member attributes TexturePainter
 private:
     static const int MIN_TEXTURE_SIZE = 4;
     static const int MAX_TEXTURE_SIZE = 64;
@@ -18,11 +19,41 @@ private:
 
     // vector for storing canvases and textures together for editing
     std::vector<Canvas*> canvases;
-
     int nCurrentCanvas = -1;
-
     // ptrs to manage current selected canvas and texture
     Canvas* currentCanvas;
+
+    struct Button {
+
+        int xPos;
+        int yPos;
+        int size;
+        short colour;
+        // Function pointer type that takes no arguments and returns void
+        std::function<void()> OnClick;
+
+        // Constructor that allows setting the onClick function during button creation
+        Button(int x, int y, int s, short c, std::function<void()> onClickFunction)
+            : xPos{ x }, yPos{ y }, size{ s }, colour {c}, OnClick(onClickFunction)
+        {
+        
+        }
+
+        // Simulate the button being clicked
+        void Clicked() {
+            if (OnClick) { // Check if the function pointer is not null
+                OnClick(); // Call the function
+            }
+        }
+
+        // Determine if a mouse click is on the button
+        bool IsMouseClickOnButton(int x, int y) {
+            return x >= xPos && x <= (xPos + size) && y >= yPos && y <= (yPos + size);
+        }
+    };
+
+    std::vector<Button> buttons;
+
 
 
 public:
@@ -52,6 +83,15 @@ private:
     bool InitCanvasNewTexture(int width, int height, int illuminated, const std::wstring& fileName);
 
     void ChangeCanvas(size_t index);
+
+    void DrawCanvas();
+
+    void DrawHeadingInfo();
+
+    void DrawToolInfo();
+
+    void DrawButtons();
+
 
     bool IsMouseWithinCanvas(int x, int y);
 
