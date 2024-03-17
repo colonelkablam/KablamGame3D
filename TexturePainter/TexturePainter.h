@@ -15,7 +15,17 @@ private:
     const std::wstring SAVE_FOLDER = L"Textures\\"; // relative path to subDir
     const std::wstring TEXTURE_EXTENSION = L".txr";
     const size_t CANVAS_XPOS = 16;
-    const size_t CANVAS_YPOS = 16;
+    const size_t CANVAS_YPOS = 22;
+
+    const size_t COLOUR_BUTTON_XPOS = 2;
+    const size_t COLOUR_BUTTON_YPOS = 20;
+    const size_t COLOUR_BUTTON_SIZE = 5;
+
+    const size_t BRUSH_BUTTON_XPOS = 2;
+    const size_t BRUSH_BUTTON_YPOS = 10;
+    const size_t BRUSH_BUTTON_SIZE = 5;
+
+
 
     // vector for storing canvases and textures together for editing
     std::vector<Canvas*> canvases;
@@ -86,18 +96,15 @@ private:
 
     void DrawCanvas();
 
-    void DrawHeadingInfo();
+    void DrawHeadingInfo(size_t x, size_t y);
 
-    void DrawToolInfo();
+    void DrawToolInfo(size_t x, size_t y);
 
     void DrawButtons();
 
+    bool IsMouseWithinCanvas(size_t x, size_t y);
 
-    bool IsMouseWithinCanvas(int x, int y);
-
-    COORD ConvertMouseCoordsToTextureCoords();
-
-    void ApplyBrush(int x, int y);
+    void ApplyBrush(size_t x, size_t y);
 
     bool HandleKeyPress();
 

@@ -19,27 +19,42 @@ TexturePainter::~TexturePainter()
 
 bool TexturePainter::OnGameCreate() 
 {
-
     if (canvases.empty())
     {
         return Error(L"No textures loaded; unable to continue.");
     }
 
-    // start at 1st canvas
     nCurrentCanvas = 0;
-
-    // set current canvas pointer 
     currentCanvas = canvases.at(nCurrentCanvas);
 
     SetResizeWindowLock(true);
     SetConsoleFocusPause(true);
     SetWindowPosition(50, 50);
 
-    buttons.push_back(Button(1, 20, 4, FG_RED, [this]() {currentCanvas->SetBrushColour(FG_RED); }));
-    buttons.push_back(Button(6, 20, 4, FG_GREEN, [this]() {currentCanvas->SetBrushColour(FG_GREEN); }));
-    buttons.push_back(Button(1, 25, 4, FG_BLUE, [this]() {currentCanvas->SetBrushColour(FG_BLUE); }));
-    buttons.push_back(Button(6, 25, 4, FG_WHITE, [this]() {currentCanvas->SetBrushColour(FG_WHITE); }));
+    int rowId{ 0 };
+    // less intense colours
+    for (short colour = 0; colour < 8; ++colour) // For simplicity directly using the index as the color here.
 
+    {
+        // Calculate position based on buttonId
+        int x = COLOUR_BUTTON_XPOS;
+        int y = COLOUR_BUTTON_YPOS + rowId * (COLOUR_BUTTON_SIZE + 1); // vertical spacing
+
+        buttons.push_back(Button(x, y, COLOUR_BUTTON_SIZE, colour, [this, colour]() { currentCanvas->SetBrushColour(colour); }));
+        rowId++;
+    }
+
+    // intense colours
+    rowId = 0;
+    for (short colour = 8; colour < 16; ++colour)
+    {
+        // Calculate position based on buttonId
+        int x = COLOUR_BUTTON_XPOS + COLOUR_BUTTON_SIZE + 1; // one pixel gap between columns
+        int y = 20 + rowId * (COLOUR_BUTTON_SIZE + 1); // Change '5' to adjust vertical spacing
+
+        buttons.push_back(Button(x, y, COLOUR_BUTTON_SIZE, colour, [this, colour]() { currentCanvas->SetBrushColour(colour); }));
+        rowId++;
+    }
     return true;
 }
 
@@ -49,10 +64,10 @@ bool TexturePainter::OnGameUpdate(float fElapsedTime) {
     HandleKeyPress();
     FillScreenBuffer(); // clear screen before next frame
 
-    DrawHeadingInfo();
+    DrawHeadingInfo(1, 1);
     DrawCanvas();
 
-    DrawToolInfo();
+    DrawToolInfo(1, 8);
     DrawButtons();
 
     return true;
@@ -201,32 +216,32 @@ void TexturePainter::DrawCanvas()
     DrawRectangleEdgeLength(coords.X - 1, coords.Y - 1, (currentCanvas->GetTextureWidth() * zoom) + 2, (currentCanvas->GetTextureHeight() * zoom) + 2, FG_RED);
 
     // add texture to screen buffer
-    DrawTextureToScreen(currentCanvas->GetTexture(), coords.X, coords.Y, zoom);
+    DrawTextureToScreen(currentCanvas->GetTexture(), coords.X, coords.Y, zoom, true);
 }
 
-void TexturePainter::DrawHeadingInfo()
+void TexturePainter::DrawHeadingInfo(size_t x, size_t y)
 {
     // texture info
-    WriteStringToBuffer(1, 1, L"Current File Name:  " + currentCanvas->GetFileName(), FG_CYAN);
-    WriteStringToBuffer(1, 2, L"File Path:          " + currentCanvas->GetFilePath(), FG_CYAN);
-    WriteStringToBuffer(1, 4, L"Dimentions:         " + std::to_wstring(currentCanvas->GetTextureWidth()) + L" x " + std::to_wstring(currentCanvas->GetTextureHeight()));
-    WriteStringToBuffer(1, 5, L"Illuminatation:     " + std::to_wstring(currentCanvas->GetIllumination()));
+    WriteStringToBuffer(x, y,     L"Current File Name:  " + currentCanvas->GetFileName(), FG_CYAN);
+    WriteStringToBuffer(x, y + 1, L"File Path:          " + currentCanvas->GetFilePath(), FG_CYAN);
+    WriteStringToBuffer(x, y + 3, L"Dimentions:         " + std::to_wstring(currentCanvas->GetTextureWidth()) + L" x " + std::to_wstring(currentCanvas->GetTextureHeight()));
+    WriteStringToBuffer(x, y + 4, L"Illuminatation:     " + std::to_wstring(currentCanvas->GetIllumination()));
 
     // instructions
-    WriteStringToBuffer(60, 1, L"Save Current Canvas    F5", FG_GREEN);
-    WriteStringToBuffer(60, 2, L"Load Current Canvas    F9", FG_GREEN);
-    WriteStringToBuffer(60, 3, L"Select Canvas          1-9", FG_GREEN);
-    WriteStringToBuffer(60, 3, L"Untitled Canvas        0", FG_GREEN);
-    WriteStringToBuffer(60, 4, L"Change Zoom            +  ", FG_GREEN);
-    WriteStringToBuffer(60, 5, L"Exit                   ESC", FG_GREEN);
+    WriteStringToBuffer(x + 60, y,     L"Save Current Canvas    F5", FG_GREEN);
+    WriteStringToBuffer(x + 60, y + 1, L"Load Current Canvas    F9", FG_GREEN);
+    WriteStringToBuffer(x + 60, y + 2, L"Select Canvas          1-9", FG_GREEN);
+    WriteStringToBuffer(x + 60, y + 3, L"Untitled Canvas        0", FG_GREEN);
+    WriteStringToBuffer(x + 60, y + 4, L"Change Zoom            +  ", FG_GREEN);
+    WriteStringToBuffer(x + 60, y + 5, L"Exit                   ESC", FG_GREEN);
 }
 
-void TexturePainter::DrawToolInfo()
+void TexturePainter::DrawToolInfo(size_t x, size_t y)
 {
-    WriteStringToBuffer(1, 8,  L"    Brush Size: " + std::to_wstring(currentCanvas->GetBrushSize()), FG_GREEN);
-    WriteStringToBuffer(1, 9,  L" Current Brush: " + std::to_wstring(currentCanvas->GetBrushTypeInt()), FG_GREEN);
-    WriteStringToBuffer(1, 10, L"Current Colour: ");
-    DrawPoint(17, 10, currentCanvas->GetBrushColour(), PIXEL_SOLID);
+    WriteStringToBuffer(x, y,     L"    Brush Size: " + std::to_wstring(currentCanvas->GetBrushSize()), FG_GREEN);
+    WriteStringToBuffer(x, y + 1, L" Current Brush: " + std::to_wstring(currentCanvas->GetBrushTypeInt()), FG_GREEN);
+    WriteStringToBuffer(x, y + 2, L"Current Colour: ");
+    DrawPoint(x + 17, y + 2, currentCanvas->GetBrushColour(), PIXEL_SOLID);
 
 }
 

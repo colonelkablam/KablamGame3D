@@ -18,7 +18,7 @@ int main()
 
 	if (texturePainter.GetUserStartInput())
 	{
-		texturePainter.BuildConsole(96, 96, 10, 10);
+		texturePainter.BuildConsole(96, 96, 8, 8);
 		texturePainter.Start();
 	}
 
