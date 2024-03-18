@@ -1,6 +1,7 @@
 #include <iostream>
 #include "TexturePainter.h"
 
+
 // constructor stuff...
 TexturePainter::TexturePainter(std::wstring newTitle)
 {
@@ -31,30 +32,16 @@ bool TexturePainter::OnGameCreate()
     SetConsoleFocusPause(true);
     SetWindowPosition(50, 50);
 
-    int rowId{ 0 };
-    // less intense colours
-    for (short colour = 0; colour < 8; ++colour) // For simplicity directly using the index as the color here.
+    colourButtonsContainer = new ButtonContainer(*this, COLOUR_BUTTON_XPOS, COLOUR_BUTTON_YPOS, 2, 8);
+    brushButtonsContainer =  new ButtonContainer(*this, BRUSH_BUTTON_XPOS, BRUSH_BUTTON_YPOS, 8, 2);
+ 
 
+    for (short colour = 0; colour < 8; ++colour) // For simplicity directly using the index as the color here and OR with FG_INTENSITY.
     {
-        // Calculate position based on buttonId
-        int x = COLOUR_BUTTON_XPOS;
-        int y = COLOUR_BUTTON_YPOS + rowId * (COLOUR_BUTTON_SIZE + 1); // vertical spacing
-
-        buttons.push_back(Button(x, y, COLOUR_BUTTON_SIZE, colour, [this, colour]() { currentCanvas->SetBrushColour(colour); }));
-        rowId++;
+        colourButtonsContainer->AddButton(5, 5, colour, [this, colour]() { currentCanvas->SetBrushColour(colour); });
+        colourButtonsContainer->AddButton(5, 5, colour | FG_INTENSITY, [this, colour]() { currentCanvas->SetBrushColour(colour | FG_INTENSITY); });
     }
 
-    // intense colours
-    rowId = 0;
-    for (short colour = 8; colour < 16; ++colour)
-    {
-        // Calculate position based on buttonId
-        int x = COLOUR_BUTTON_XPOS + COLOUR_BUTTON_SIZE + 1; // one pixel gap between columns
-        int y = 20 + rowId * (COLOUR_BUTTON_SIZE + 1); // Change '5' to adjust vertical spacing
-
-        buttons.push_back(Button(x, y, COLOUR_BUTTON_SIZE, colour, [this, colour]() { currentCanvas->SetBrushColour(colour); }));
-        rowId++;
-    }
     return true;
 }
 
@@ -176,7 +163,6 @@ bool TexturePainter::InitCanvasNewTexture(int width, int height, int illuminatio
     return true;
 }
 
-
 bool TexturePainter::InitCanvasExistingTexture(const std::wstring& fileName)
 {
     // load up an existing texture
@@ -190,6 +176,7 @@ bool TexturePainter::InitCanvasExistingTexture(const std::wstring& fileName)
 
     return true;
 }
+
 
 void TexturePainter::ChangeCanvas(size_t index)
 {
@@ -247,11 +234,7 @@ void TexturePainter::DrawToolInfo(size_t x, size_t y)
 
 void TexturePainter::DrawButtons()
 {
-    for (const Button& button : buttons)
-    {
-        DrawSquare(button.xPos, button.yPos, button.size, button.colour, PIXEL_SOLID, true);
-    }
-
+    colourButtonsContainer->DrawButtons();
 }
 
 
@@ -282,9 +265,8 @@ bool TexturePainter::HandleKeyPress()
             currentCanvas->ApplyBrush(mouseCoords.X, mouseCoords.Y);
 
         // check if over any of the buttons
-        for (Button& button : buttons)
-            if (button.IsMouseClickOnButton(mouseCoords.X, mouseCoords.Y))
-                button.Clicked();
+        colourButtonsContainer->HandleMouseClick(mouseCoords.X, mouseCoords.Y);
+
     }
 
     if (keyArray[VK_RBUTTON].bHeld)

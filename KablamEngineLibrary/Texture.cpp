@@ -518,12 +518,12 @@ CHAR_INFO Texture::GetPixel(int x, int y ) const
 	}
 }
 
-short Texture::GetWidth() const
+int Texture::GetWidth() const
 {
 	return m_width;
 }
 
-short Texture::GetHeight() const
+int Texture::GetHeight() const
 {
 	return m_height;
 }

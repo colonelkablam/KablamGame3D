@@ -149,9 +149,9 @@ public:
 
 	CHAR_INFO GetPixel(int x, int y) const;
 
-	short GetWidth() const;
+	int GetWidth() const;
 
-	short GetHeight() const;
+	int GetHeight() const;
 };
 
 

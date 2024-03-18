@@ -4,6 +4,7 @@
 #include "Utility.h"
 #include "KablamEngine.h"
 #include "Canvas.h"
+#include "ButtonContainer.h"
 
 class TexturePainter : public KablamEngine
 {
@@ -33,36 +34,10 @@ private:
     // ptrs to manage current selected canvas and texture
     Canvas* currentCanvas;
 
-    struct Button {
+    // button containers
+    ButtonContainer* colourButtonsContainer;
+    ButtonContainer* brushButtonsContainer;
 
-        int xPos;
-        int yPos;
-        int size;
-        short colour;
-        // Function pointer type that takes no arguments and returns void
-        std::function<void()> OnClick;
-
-        // Constructor that allows setting the onClick function during button creation
-        Button(int x, int y, int s, short c, std::function<void()> onClickFunction)
-            : xPos{ x }, yPos{ y }, size{ s }, colour {c}, OnClick(onClickFunction)
-        {
-        
-        }
-
-        // Simulate the button being clicked
-        void Clicked() {
-            if (OnClick) { // Check if the function pointer is not null
-                OnClick(); // Call the function
-            }
-        }
-
-        // Determine if a mouse click is on the button
-        bool IsMouseClickOnButton(int x, int y) {
-            return x >= xPos && x <= (xPos + size) && y >= yPos && y <= (yPos + size);
-        }
-    };
-
-    std::vector<Button> buttons;
 
 
 
@@ -91,6 +66,8 @@ private:
     bool InitCanvasExistingTexture(const std::wstring& fileName);
 
     bool InitCanvasNewTexture(int width, int height, int illuminated, const std::wstring& fileName);
+
+    void SetupButtonContainer(ButtonContainer& container);
 
     void ChangeCanvas(size_t index);
 

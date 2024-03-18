@@ -208,6 +208,7 @@ protected:
     
     void WaitForKeyPress();
 
+public:
     static void AddToLog(std::wstring message);
 
 private:
