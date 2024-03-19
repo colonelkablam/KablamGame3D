@@ -73,9 +73,5 @@ private:
 
     bool HandleKeyPress();
 
-    bool CheckFolderExist(const std::wstring& folderPath);
-
-    bool CreateFolder(const std::wstring& folderPath);
-
 }; // end of TexturePainter class definition
 

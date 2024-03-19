@@ -9,7 +9,9 @@ class Canvas {
 public:
     enum class BrushType {
         BRUSH_POINT,  // For single pixel drawing
-        BRUSH_SQUARE, // For drawing squares
+        BRUSH_BLOCK,
+        BRUSH_RECT, // For drawing squares
+        BRUSH_RECT_FILLED,
         BRUSH_LINE    // For drawing lines
     };
 
@@ -96,6 +98,8 @@ public:
     void PaintSquare(int x, int y, int sideLength, bool filled = true, int lineWidth = 1);
 
     void DrawCanvas();
+
+    void DrawBrush();
 
     void IncreaseZoomLevel();
 };

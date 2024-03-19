@@ -1,7 +1,8 @@
 #include <iostream>
 
-#include "TexturePainter.h"
 #include "Utility.h"
+
+#include "TexturePainter.h"
 
 // constructor stuff...
 TexturePainter::TexturePainter(std::wstring newTitle)
@@ -43,13 +44,20 @@ bool TexturePainter::OnGameCreate()
 
     brushButtonsContainer = new ButtonContainer(*this, BRUSH_BUTTON_XPOS, BRUSH_BUTTON_YPOS, 8, 1);
 
+
+    Texture* pointToolIcon = new Texture(L"./ToolIcons/point_tool_icon.txr");
+    Texture* blockToolIcon = new Texture(L"./ToolIcons/block_tool_icon.txr");
+    Texture* rectToolIcon = new Texture(L"./ToolIcons/rect_tool_icon.txr");
+    Texture* rectFillToolIcon = new Texture(L"./ToolIcons/rect_fill_tool_icon.txr");
     Texture* lineToolIcon = new Texture(L"./ToolIcons/line_tool_icon.txr");
-    Texture* squareToolIcon = new Texture(L"./ToolIcons/square_tool_icon.txr");
 
 
+
+    brushButtonsContainer->AddButton(pointToolIcon, [this]() { currentCanvas->SetBrushType(Canvas::BrushType::BRUSH_POINT); });
+    brushButtonsContainer->AddButton(blockToolIcon, [this]() { currentCanvas->SetBrushType(Canvas::BrushType::BRUSH_BLOCK); });
+    brushButtonsContainer->AddButton(rectToolIcon, [this]() { currentCanvas->SetBrushType(Canvas::BrushType::BRUSH_RECT); });
+    brushButtonsContainer->AddButton(rectFillToolIcon, [this]() { currentCanvas->SetBrushType(Canvas::BrushType::BRUSH_RECT_FILLED); });
     brushButtonsContainer->AddButton(lineToolIcon, [this]() { currentCanvas->SetBrushType(Canvas::BrushType::BRUSH_LINE); });
-    brushButtonsContainer->AddButton(squareToolIcon, [this]() { currentCanvas->SetBrushType(Canvas::BrushType::BRUSH_SQUARE); });
-
 
     return true;
 }
@@ -64,6 +72,8 @@ bool TexturePainter::OnGameUpdate(float fElapsedTime) {
     DrawHeadingInfo(1, 1);
     DrawToolInfo(1, 8);
     DrawButtons();
+    //currentCanvas->DrawBrush();
+
 
     return true;
 }
@@ -231,24 +241,6 @@ void TexturePainter::DrawButtons()
 }
 
 
-bool TexturePainter::CheckFolderExist(const std::wstring& folderPath) {
-    DWORD fileAttributes = GetFileAttributes(folderPath.c_str());
-
-    if (fileAttributes == INVALID_FILE_ATTRIBUTES) {
-        // The path does not exist or there is an error
-        return false;
-    }
-
-    if (fileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-        // The path exists and is a directory
-        return true;
-    }
-
-    // The path exists but is not a directory (it's a file)
-    return false;
-}
-
-
 bool TexturePainter::HandleKeyPress()
 {
     //controls
@@ -281,7 +273,7 @@ bool TexturePainter::HandleKeyPress()
 
     if (keyArray[L'P'].bPressed)
     {
-        currentCanvas->ChangeBrushType(Canvas::BrushType::BRUSH_SQUARE);
+        currentCanvas->ChangeBrushType(Canvas::BrushType::BRUSH_RECT);
     }
 
 
@@ -313,16 +305,4 @@ bool TexturePainter::HandleKeyPress()
     }
 
     return true;
-}
-
-bool TexturePainter::CreateFolder(const std::wstring& folderPath) {
-    if (!CreateDirectory(folderPath.c_str(), NULL)) {
-        if (GetLastError() == ERROR_ALREADY_EXISTS) {
-            return true; // The folder already exists
-        }
-        std::wcerr << L"Failed to create directory: " << folderPath << std::endl;
-        return false; // Failed to create the directory
-    }
-
-    return true; // Successfully created the directory
 }

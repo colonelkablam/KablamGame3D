@@ -148,7 +148,24 @@ void Canvas::ApplyBrush(int x, int y, bool erase)
     case BrushType::BRUSH_POINT:
         PaintPoint(coords.X, coords.Y);
         break;
-    case BrushType::BRUSH_SQUARE:
+    case BrushType::BRUSH_BLOCK:
+        PaintSquare(coords.X, coords.Y, brushSize); // Draws a filled square
+        break;
+    case BrushType::BRUSH_RECT:
+        // store the initial click position
+        if (!initialClick) {
+            initialClickCoords.X = coords.X;
+            initialClickCoords.Y = coords.Y;
+            initialClick = true; // Reset after the initial click is recorded
+        }
+        else {
+            PaintSquare(coords.X, coords.Y, brushSize); // Draws a filled square
+            initialClick = false; // Reset after the initial click is recorded
+            initialClickCoords.X = coords.X;
+            initialClickCoords.Y = coords.Y;
+        }
+        break;
+    case BrushType::BRUSH_RECT_FILLED:
         PaintSquare(coords.X, coords.Y, brushSize); // Draws a filled square
         break;
     case BrushType::BRUSH_LINE:
@@ -157,7 +174,6 @@ void Canvas::ApplyBrush(int x, int y, bool erase)
            initialClickCoords.X = coords.X;
            initialClickCoords.Y = coords.Y;
            initialClick = true; // Reset after the initial click is recorded
-           drawingClass.DrawLine(initialClickCoords.X + xPos, initialClickCoords.Y + yPos, x, y, currentPixel.Attributes);
        }
        else {
            PaintLine(initialClickCoords.X, initialClickCoords.Y, coords.X, coords.Y); // Draws a line
@@ -165,7 +181,7 @@ void Canvas::ApplyBrush(int x, int y, bool erase)
            initialClickCoords.X = coords.X;
            initialClickCoords.Y = coords.Y;
        }
-        break;
+       break;
     }
 }
 void Canvas::ChangeBrushType(BrushType newBrush)
@@ -242,6 +258,46 @@ void Canvas::DrawCanvas()
 
     // add texture to screen buffer
     drawingClass.DrawTextureToScreen(texture, xPos, yPos, zoomLevel, true);
+    // draw current brush (block, line, or square being drawn)
+    DrawBrush();
+}
+
+void Canvas::DrawBrush()
+{
+    // get appropriate coords for drawing to screen - will dynamically calc these
+    COORD mouseCoords = drawingClass.GetMousePosition();
+    COORD screenClickCoords = { initialClickCoords.X + xPos, initialClickCoords.X + xPos };
+
+    // draw appropriate brush
+    switch (currentBrushType) {
+    case BrushType::BRUSH_POINT:
+        drawingClass.DrawPoint(mouseCoords.X, mouseCoords.Y, drawPixel.Attributes);
+        break;
+    case BrushType::BRUSH_BLOCK:
+        drawingClass.DrawSquare(mouseCoords.X, mouseCoords.Y, brushSize, PIXEL_THREEQUARTERS, true);
+        break;
+    case BrushType::BRUSH_RECT:
+        if (initialClick)
+        {
+            drawingClass.DrawRectangleCoords(screenClickCoords.X, screenClickCoords.Y, mouseCoords.X, mouseCoords.Y, drawPixel.Attributes, PIXEL_THREEQUARTERS, false, brushSize);
+        }
+        break;
+    case BrushType::BRUSH_RECT_FILLED:
+        if (initialClick)
+        {
+            drawingClass.DrawRectangleCoords(screenClickCoords.X, screenClickCoords.Y, mouseCoords.X, mouseCoords.Y, drawPixel.Attributes, PIXEL_THREEQUARTERS, true);
+        }
+        break;        break;
+    case BrushType::BRUSH_LINE:
+        if (initialClick)
+        {
+            drawingClass.DrawLine(screenClickCoords.X, screenClickCoords.Y, mouseCoords.X, mouseCoords.Y, currentPixel.Attributes);
+            drawingClass.DrawPoint(screenClickCoords.X, screenClickCoords.Y, FG_RED, PIXEL_THREEQUARTERS);
+            drawingClass.DrawPoint(mouseCoords.X, mouseCoords.Y, FG_RED, PIXEL_THREEQUARTERS);
+        }
+        break;
+    }
+
 }
 
 void Canvas::IncreaseZoomLevel()

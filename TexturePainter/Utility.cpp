@@ -149,3 +149,32 @@ bool GetYesNoInput(const std::wstring& prompt) {
         }
     }
 }
+
+bool CheckFolderExist(const std::wstring& folderPath) {
+    DWORD fileAttributes = GetFileAttributes(folderPath.c_str());
+
+    if (fileAttributes == INVALID_FILE_ATTRIBUTES) {
+        // The path does not exist or there is an error
+        return false;
+    }
+
+    if (fileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+        // The path exists and is a directory
+        return true;
+    }
+
+    // The path exists but is not a directory (it's a file)
+    return false;
+}
+
+bool CreateFolder(const std::wstring& folderPath) {
+    if (!CreateDirectory(folderPath.c_str(), NULL)) {
+        if (GetLastError() == ERROR_ALREADY_EXISTS) {
+            return true; // The folder already exists
+        }
+        std::wcerr << L"Failed to create directory: " << folderPath << std::endl;
+        return false; // Failed to create the directory
+    }
+
+    return true; // Successfully created the directory
+}
