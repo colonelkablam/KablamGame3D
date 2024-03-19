@@ -186,8 +186,6 @@ protected:
 
     KeyState GetKeyState(short key);
 
-    COORD GetMousePosition();
-
     int SetResizeWindowLock(bool state);
 
     int SetWindowPosition(int x, int y);
@@ -209,6 +207,8 @@ protected:
     void WaitForKeyPress();
 
 public:
+    COORD GetMousePosition();
+
     static void AddToLog(std::wstring message);
 
 private:

@@ -12,11 +12,12 @@ class ButtonContainer
 {
 private:
     // poition of container
-    int xPos{ 0 };
-    int yPos{ 0 };
-    int columns{ 0 };
-    int rows{ 0 };
-    int spacing{ 0 };
+    int xPos;
+    int yPos;
+    int columns;
+    int rows;
+    int spacing;
+    short background;
 
     struct Button
     {
@@ -60,13 +61,13 @@ private:
         }
     };
 
-    std::vector<Button*> buttons{};
+    std::vector<Button*> buttons;
 
     // Dependency Injection Pattern chosen...
     TexturePainter& drawingClass;
 
 public:
-    ButtonContainer(TexturePainter& drawer, int x, int y, int col, int row, int space);
+    ButtonContainer(TexturePainter& drawer, int x, int y, int col, int row, short background = FG_DARK_GREY, int space = 1 );
 
     // Deleted copy constructor and copy assignment operator as not needed
     ButtonContainer(const ButtonContainer&) = delete;

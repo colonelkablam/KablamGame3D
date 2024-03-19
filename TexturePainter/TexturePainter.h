@@ -15,7 +15,7 @@ private:
     const std::wstring SAVE_FOLDER = L"Textures\\"; // relative path to subDir
     const std::wstring TEXTURE_EXTENSION = L".txr";
     const size_t CANVAS_XPOS = 16;
-    const size_t CANVAS_YPOS = 22;
+    const size_t CANVAS_YPOS = 23;
 
     const size_t COLOUR_BUTTON_XPOS = 2;
     const size_t COLOUR_BUTTON_YPOS = 20;
@@ -35,7 +35,7 @@ private:
 
     // button containers
     ButtonContainer* colourButtonsContainer;
-    //ButtonContainer* brushButtonsContainer;
+    ButtonContainer* brushButtonsContainer;
 
 public:
     // constructor
@@ -65,17 +65,11 @@ private:
 
     void ChangeCanvas(size_t index);
 
-    void DrawCanvas();
-
     void DrawHeadingInfo(size_t x, size_t y);
 
     void DrawToolInfo(size_t x, size_t y);
 
     void DrawButtons();
-
-    bool IsMouseWithinCanvas(size_t x, size_t y);
-
-    void ApplyBrush(size_t x, size_t y);
 
     bool HandleKeyPress();
 

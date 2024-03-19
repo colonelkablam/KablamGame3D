@@ -1,5 +1,7 @@
 #include <Windows.h>
 
+// need to include full header here to use class methods from DI
+#include "TexturePainter.h"
 // need to #include Texture.h in Canvas.h before here
 #include "Canvas.h"
 
@@ -7,14 +9,12 @@
 Canvas::Canvas(TexturePainter& drawer, Texture* tex, std::wstring fn, std::wstring fp, int x, int y)
     : drawingClass{ drawer }, texture { tex }, fileName{ fn }, filePath{ fp }, xPos{ x }, yPos{ y }
 {
-    currentBrushType = startingBrush;
-    brushSize = startingBrushSize;
-    zoomLevel = startingZoomLevel;
+    currentBrushType = STARTING_BRUSH;
+    brushSize = START_BRUSH_SIZE;
+    zoomLevel = START_ZOOM_LEVEL;
 
-    currentColour = startingColour;
-    currentGlyph = startingGlyph;
-    currentPixel = { startingGlyph, startingColour };
-    drawPixel = { startingGlyph, startingColour };
+    currentPixel = { STARTING_GLYPH, STARTING_COLOUR };
+    drawPixel = { STARTING_GLYPH, STARTING_COLOUR };
     deletePixel = { L' ', 0 };
 }
 
@@ -81,7 +81,7 @@ int Canvas::GetBrushTypeInt()
 
 short Canvas::GetBrushColour()
 {
-    return currentColour;
+    return drawPixel.Attributes;
 }
 
 void Canvas::SetBrushColour(short newColour)
@@ -211,6 +211,27 @@ void Canvas::PaintSquare(int x, int y, int sideLength, bool filled, int lineWidt
         // Left side
         PaintLine(x, y, x, y + sideLength);
     }
+}
+
+void Canvas::DrawCanvas()
+{
+    drawingClass.WriteStringToBuffer(xPos - 1, yPos - 3, L"ZOOM: " + std::to_wstring(zoomLevel) + L'. ');
+    drawingClass.WriteStringToBuffer(xPos + 8, yPos - 3, L"X: -   Y: -");
+
+    COORD mouseCoords = drawingClass.GetMousePosition();
+
+    // if coords withing canvas diplay (index starting from 1 for user)
+    if (IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y))
+    {
+        COORD textureCoords = ConvertMouseCoordsToTextureCoords(mouseCoords.X, mouseCoords.Y);
+        drawingClass.WriteStringToBuffer(xPos + 11, yPos - 3, std::to_wstring(textureCoords.X + 1));
+        drawingClass.WriteStringToBuffer(xPos + 18, yPos - 3, std::to_wstring(textureCoords.Y + 1));
+    }
+
+    drawingClass.DrawRectangleEdgeLength(xPos - 1, yPos - 1, (texture->GetWidth() * zoomLevel) + 2, (texture->GetHeight() * zoomLevel) + 2, FG_RED);
+
+    // add texture to screen buffer
+    drawingClass.DrawTextureToScreen(texture, xPos, yPos, zoomLevel, true);
 }
 
 void Canvas::IncreaseZoomLevel()

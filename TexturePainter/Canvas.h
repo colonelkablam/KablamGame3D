@@ -14,12 +14,12 @@ public:
     };
 
 private:
-    static const short startingColour = FG_WHITE;
-    static const short startingGlyph = PIXEL_SOLID;
-    static const int startingZoomLevel = 1;
-    static const int startingBrushSize = 1;
+    static const short STARTING_COLOUR = FG_WHITE;
+    static const short STARTING_GLYPH = PIXEL_SOLID;
+    static const int START_ZOOM_LEVEL = 1;
+    static const int START_BRUSH_SIZE = 1;
 
-    static const BrushType startingBrush = BrushType::BRUSH_POINT;
+    static const BrushType STARTING_BRUSH = BrushType::BRUSH_POINT;
 
     BrushType currentBrushType;
     int brushSize;
@@ -90,6 +90,8 @@ public:
     void PaintLine(int x0, int y0, int x1, int y1);
 
     void PaintSquare(int x, int y, int sideLength, bool filled = true, int lineWidth = 1);
+
+    void DrawCanvas();
 
     void IncreaseZoomLevel();
 };

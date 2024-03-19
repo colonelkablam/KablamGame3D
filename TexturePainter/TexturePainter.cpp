@@ -34,7 +34,7 @@ bool TexturePainter::OnGameCreate()
     SetWindowPosition(50, 50);
 
     colourButtonsContainer = new ButtonContainer(*this, COLOUR_BUTTON_XPOS, COLOUR_BUTTON_YPOS, 2, 8, 1);
-    //brushButtonsContainer =  new ButtonContainer(*this, BRUSH_BUTTON_XPOS, BRUSH_BUTTON_YPOS, 8, 2);
+    brushButtonsContainer =  new ButtonContainer(*this, BRUSH_BUTTON_XPOS, BRUSH_BUTTON_YPOS, 8, 2, 1);
  
 
     for (short colour = 0; colour < 8; ++colour) // For simplicity directly using the index as the color here and OR with FG_INTENSITY.
@@ -53,7 +53,7 @@ bool TexturePainter::OnGameUpdate(float fElapsedTime) {
     FillScreenBuffer(); // clear screen before next frame
 
     DrawHeadingInfo(1, 1);
-    DrawCanvas();
+    currentCanvas->DrawCanvas();
 
     DrawToolInfo(1, 8);
     DrawButtons();
@@ -184,29 +184,6 @@ void TexturePainter::ChangeCanvas(size_t index)
     currentCanvas = canvases.at(index);
 }
 
-void TexturePainter::DrawCanvas()
-{
-    COORD coords = currentCanvas->GetPositionCoords();
-    int zoom = currentCanvas->GetZoomLevel();
-
-    WriteStringToBuffer(coords.X - 1, coords.Y - 4, L"ZOOM LEVEL: " + std::to_wstring(zoom));
-    WriteStringToBuffer(coords.X - 1, coords.Y - 2, L"COORDS X: -");
-    WriteStringToBuffer(coords.X + 12, coords.Y - 2, L"Y: -");
-
-    // if coords withing canvas diplay (index starting from 1 for user)
-    if (currentCanvas->IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y))
-    {
-        COORD textureCoords = currentCanvas->ConvertMouseCoordsToTextureCoords(mouseCoords.X, mouseCoords.Y);
-        WriteStringToBuffer(coords.X + 9, coords.Y - 2, std::to_wstring(textureCoords.X + 1));
-        WriteStringToBuffer(coords.X + 15, coords.Y - 2, std::to_wstring(textureCoords.Y + 1));
-    }
-
-    DrawRectangleEdgeLength(coords.X - 1, coords.Y - 1, (currentCanvas->GetTextureWidth() * zoom) + 2, (currentCanvas->GetTextureHeight() * zoom) + 2, FG_RED);
-
-    // add texture to screen buffer
-    DrawTextureToScreen(currentCanvas->GetTexture(), coords.X, coords.Y, zoom, true);
-}
-
 void TexturePainter::DrawHeadingInfo(size_t x, size_t y)
 {
     // texture info
@@ -229,7 +206,7 @@ void TexturePainter::DrawToolInfo(size_t x, size_t y)
     WriteStringToBuffer(x, y,     L"    Brush Size: " + std::to_wstring(currentCanvas->GetBrushSize()), FG_GREEN);
     WriteStringToBuffer(x, y + 1, L" Current Brush: " + std::to_wstring(currentCanvas->GetBrushTypeInt()), FG_GREEN);
     WriteStringToBuffer(x, y + 2, L"Current Colour: ");
-    DrawPoint(x + 17, y + 2, currentCanvas->GetBrushColour(), PIXEL_SOLID);
+    DrawPoint(x + 16, y + 2, currentCanvas->GetBrushColour(), PIXEL_SOLID);
 
 }
 
