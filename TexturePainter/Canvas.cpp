@@ -7,7 +7,8 @@
 
 
 Canvas::Canvas(TexturePainter& drawer, Texture* tex, std::wstring fn, std::wstring fp, int x, int y)
-    : drawingClass{ drawer }, texture { tex }, fileName{ fn }, filePath{ fp }, xPos{ x }, yPos{ y }
+    : drawingClass{ drawer }, texture{ tex }, fileName{ fn }, filePath{ fp }, xPos{ x }, yPos{ y },
+    initialClick{ false }, initialClickCoords{ 0, 0 }
 {
     currentBrushType = STARTING_BRUSH;
     brushSize = START_BRUSH_SIZE;
@@ -79,6 +80,12 @@ int Canvas::GetBrushTypeInt()
     return static_cast<int>(currentBrushType);
 }
 
+void Canvas::SetBrushType(BrushType newBrushType)
+{
+    currentBrushType = newBrushType;
+}
+
+
 short Canvas::GetBrushColour()
 {
     return drawPixel.Attributes;
@@ -145,16 +152,19 @@ void Canvas::ApplyBrush(int x, int y, bool erase)
         PaintSquare(coords.X, coords.Y, brushSize); // Draws a filled square
         break;
     case BrushType::BRUSH_LINE:
-        //For a line, you'll likely need to store the initial click position
-        //and then draw the line to the current mouse position
-       //if (initialClick) {
-       //    initialX = x;
-       //    initialY = y;
-       //    initialClick = false; // Reset after the initial click is recorded
-       //}
-       //else {
-       //    DrawLine(initialX, initialY, x, y, currentPixel); // Draws a line
-       //}
+        // store the initial click position
+       if (!initialClick) {
+           initialClickCoords.X = coords.X;
+           initialClickCoords.Y = coords.Y;
+           initialClick = true; // Reset after the initial click is recorded
+           drawingClass.DrawLine(initialClickCoords.X + xPos, initialClickCoords.Y + yPos, x, y, currentPixel.Attributes);
+       }
+       else {
+           PaintLine(initialClickCoords.X, initialClickCoords.Y, coords.X, coords.Y); // Draws a line
+           initialClick = false; // Reset after the initial click is recorded
+           initialClickCoords.X = coords.X;
+           initialClickCoords.Y = coords.Y;
+       }
         break;
     }
 }

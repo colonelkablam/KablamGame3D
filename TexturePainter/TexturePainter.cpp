@@ -33,9 +33,7 @@ bool TexturePainter::OnGameCreate()
     SetConsoleFocusPause(true);
     SetWindowPosition(50, 50);
 
-    colourButtonsContainer = new ButtonContainer(*this, COLOUR_BUTTON_XPOS, COLOUR_BUTTON_YPOS, 2, 8, 1);
-    brushButtonsContainer =  new ButtonContainer(*this, BRUSH_BUTTON_XPOS, BRUSH_BUTTON_YPOS, 8, 2, 1);
- 
+    colourButtonsContainer = new ButtonContainer(*this, COLOUR_BUTTON_XPOS, COLOUR_BUTTON_YPOS, 2, 8); 
 
     for (short colour = 0; colour < 8; ++colour) // For simplicity directly using the index as the color here and OR with FG_INTENSITY.
     {
@@ -43,18 +41,27 @@ bool TexturePainter::OnGameCreate()
         colourButtonsContainer->AddButton(5, 5, colour | FG_INTENSITY, [this, colour]() { currentCanvas->SetBrushColour(colour | FG_INTENSITY); });
     }
 
+    brushButtonsContainer = new ButtonContainer(*this, BRUSH_BUTTON_XPOS, BRUSH_BUTTON_YPOS, 8, 1);
+
+    Texture* lineToolIcon = new Texture(L"./ToolIcons/line_tool_icon.txr");
+    Texture* squareToolIcon = new Texture(L"./ToolIcons/square_tool_icon.txr");
+
+
+    brushButtonsContainer->AddButton(lineToolIcon, [this]() { currentCanvas->SetBrushType(Canvas::BrushType::BRUSH_LINE); });
+    brushButtonsContainer->AddButton(squareToolIcon, [this]() { currentCanvas->SetBrushType(Canvas::BrushType::BRUSH_SQUARE); });
+
+
     return true;
 }
 
 
 bool TexturePainter::OnGameUpdate(float fElapsedTime) {
-
-    HandleKeyPress();
     FillScreenBuffer(); // clear screen before next frame
+    HandleKeyPress();
 
-    DrawHeadingInfo(1, 1);
     currentCanvas->DrawCanvas();
 
+    DrawHeadingInfo(1, 1);
     DrawToolInfo(1, 8);
     DrawButtons();
 
@@ -107,7 +114,6 @@ bool TexturePainter::GetUserStartInput()
         {
             // load texture from existing file
             InitCanvasExistingTexture(fileList->at(userSelection - 1));
-            break;
         }
         else // else test to see if file exists
         {
@@ -122,7 +128,6 @@ bool TexturePainter::GetUserStartInput()
                 GetDimensionInput(L"\nPlease enter an integer value for the new texture width: ", inputWidth, MIN_TEXTURE_SIZE, MAX_TEXTURE_SIZE);
                 GetDimensionInput(L"\nPlease enter an integer value for the new texture height: ", inputHeight, MIN_TEXTURE_SIZE, MAX_TEXTURE_SIZE);
                 GetDimensionInput(L"\nPlease enter illumination value 0 to 255 for the new texture: ", inputIllumination, 0, 255);
-
 
                 // create and save new .txr file in saves path
                 InitCanvasNewTexture(inputWidth, inputHeight, inputIllumination, userFileName + TEXTURE_EXTENSION);
@@ -179,12 +184,21 @@ bool TexturePainter::InitCanvasExistingTexture(const std::wstring& fileName)
 }
 
 
-void TexturePainter::ChangeCanvas(size_t index)
+bool TexturePainter::ChangeCanvas(size_t index)
 {
-    currentCanvas = canvases.at(index);
+    if (index < canvases.size())
+    {
+        currentCanvas = canvases.at(index);
+        return true;
+    }
+    else
+    {
+        AddToLog(L"Attempted to access non existent canvas.");
+        return false;
+    }
 }
 
-void TexturePainter::DrawHeadingInfo(size_t x, size_t y)
+void TexturePainter::DrawHeadingInfo(int x, int y)
 {
     // texture info
     WriteStringToBuffer(x, y,     L"Current File Name:  " + currentCanvas->GetFileName(), FG_CYAN);
@@ -201,7 +215,7 @@ void TexturePainter::DrawHeadingInfo(size_t x, size_t y)
     WriteStringToBuffer(x + 60, y + 5, L"Exit                   ESC", FG_GREEN);
 }
 
-void TexturePainter::DrawToolInfo(size_t x, size_t y)
+void TexturePainter::DrawToolInfo(int x, int y)
 {
     WriteStringToBuffer(x, y,     L"    Brush Size: " + std::to_wstring(currentCanvas->GetBrushSize()), FG_GREEN);
     WriteStringToBuffer(x, y + 1, L" Current Brush: " + std::to_wstring(currentCanvas->GetBrushTypeInt()), FG_GREEN);
@@ -213,6 +227,7 @@ void TexturePainter::DrawToolInfo(size_t x, size_t y)
 void TexturePainter::DrawButtons()
 {
     colourButtonsContainer->DrawButtons();
+    brushButtonsContainer->DrawButtons();
 }
 
 
@@ -237,13 +252,15 @@ bool TexturePainter::CheckFolderExist(const std::wstring& folderPath) {
 bool TexturePainter::HandleKeyPress()
 {
     //controls
-    if (keyArray[VK_LBUTTON].bHeld)
+    if ( keyArray[VK_LBUTTON].bPressed)
     {
         if (currentCanvas->IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y))
             currentCanvas->ApplyBrush(mouseCoords.X, mouseCoords.Y);
 
         // check if over any of the buttons when clicked
         colourButtonsContainer->HandleMouseClick(mouseCoords.X, mouseCoords.Y);
+        brushButtonsContainer->HandleMouseClick(mouseCoords.X, mouseCoords.Y);
+
 
     }
 
@@ -278,7 +295,7 @@ bool TexturePainter::HandleKeyPress()
             {
                 std::wstring message = L"Loading Canvas " + std::to_wstring(i) + L". " + canvases.at(i)->GetFileName();
                 DisplayAlertMessage(message);
-                nCurrentCanvas = i;
+                ChangeCanvas(i);
             }
             else
                 DisplayAlertMessage(L"No canvas loaded at position " + std::to_wstring(i));

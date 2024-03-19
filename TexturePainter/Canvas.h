@@ -23,8 +23,8 @@ private:
 
     BrushType currentBrushType;
     int brushSize;
-    short currentColour;
-    short currentGlyph;
+    bool initialClick;
+    COORD initialClickCoords;
     CHAR_INFO currentPixel;
     CHAR_INFO drawPixel;
     CHAR_INFO deletePixel;
@@ -66,6 +66,10 @@ public:
     int GetBrushSize();
 
     int GetBrushTypeInt();
+
+    BrushType GetBrushType();
+
+    void SetBrushType(BrushType brushType);
 
     short GetBrushColour();
 

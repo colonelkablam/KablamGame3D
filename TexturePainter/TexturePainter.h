@@ -14,16 +14,16 @@ private:
 
     const std::wstring SAVE_FOLDER = L"Textures\\"; // relative path to subDir
     const std::wstring TEXTURE_EXTENSION = L".txr";
-    const size_t CANVAS_XPOS = 16;
-    const size_t CANVAS_YPOS = 23;
+    const int CANVAS_XPOS = 16;
+    const int CANVAS_YPOS = 23;
 
-    const size_t COLOUR_BUTTON_XPOS = 2;
-    const size_t COLOUR_BUTTON_YPOS = 20;
-    const size_t COLOUR_BUTTON_SIZE = 5;
+    const int COLOUR_BUTTON_XPOS = 2;
+    const int COLOUR_BUTTON_YPOS = 20;
+    const int COLOUR_BUTTON_SIZE = 5;
 
-    const size_t BRUSH_BUTTON_XPOS = 2;
-    const size_t BRUSH_BUTTON_YPOS = 10;
-    const size_t BRUSH_BUTTON_SIZE = 5;
+    const int BRUSH_BUTTON_XPOS = 15;
+    const int BRUSH_BUTTON_YPOS = 13;
+    const int BRUSH_BUTTON_SIZE = 5;
 
 
 
@@ -63,11 +63,11 @@ private:
 
     bool InitCanvasNewTexture(int width, int height, int illuminated, const std::wstring& fileName);
 
-    void ChangeCanvas(size_t index);
+    bool ChangeCanvas(size_t index);
 
-    void DrawHeadingInfo(size_t x, size_t y);
+    void DrawHeadingInfo(int x, int y);
 
-    void DrawToolInfo(size_t x, size_t y);
+    void DrawToolInfo(int x, int y);
 
     void DrawButtons();
 

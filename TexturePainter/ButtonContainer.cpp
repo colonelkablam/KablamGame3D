@@ -38,6 +38,32 @@ bool ButtonContainer::AddButton(int width, int height, short colour, std::functi
     }
 }
 
+bool ButtonContainer::AddButton(Texture* iconTexture, std::function<void()> onClickFunction)
+{
+    int buttonId = buttons.size();
+    if (buttonId >= rows * columns)
+    {
+        drawingClass.AddToLog(L"Too many buttons added to ButtonContainer.");
+        return false;
+    }
+    else
+    {
+        // Calculate the column and row position for this button based on its ID
+        int columnPosition = buttonId % columns;
+        int rowPosition = buttonId / columns;  // Integer division will naturally floor the result
+
+        // Calculate the actual x and y positions based on the column and row positions
+        int x = xPos + (columnPosition * (iconTexture->GetWidth() + spacing));
+        int y = yPos + (rowPosition * (iconTexture->GetHeight() + spacing));
+
+        Button* newButton = new Button(x, y, iconTexture, onClickFunction);
+        buttons.push_back(newButton);
+
+        return true;
+    }
+}
+
+
 void ButtonContainer::HandleMouseClick(int mouseX, int mouseY)
 {
     for (Button* button : buttons)

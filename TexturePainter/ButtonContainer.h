@@ -36,8 +36,9 @@ private:
             : xPos{ x }, yPos{ y }, texture{ nullptr }, width{ w }, height{ h }, colour{ c }, OnClick(onClickFunction) { }
 
         // Constructor with texture
-        Button(int x, int y, Texture* tex, short c, std::function<void()> onClickFunction)
-            : xPos{ x }, yPos{ y }, texture{ tex }, width{ tex->GetWidth() }, height{ tex->GetHeight() }, colour{ c }, OnClick(onClickFunction) { }
+        Button(int x, int y, Texture* iconTexture, std::function<void()> onClickFunction)
+            : xPos{ x }, yPos{ y }, texture{ iconTexture }, width{ iconTexture->GetWidth() }, 
+                height{ iconTexture->GetHeight() }, colour{ FG_DARK_BLUE }, OnClick(onClickFunction) { }
 
         // Deleted copy constructor and copy assignment operator as not needed
         Button(const Button&) = delete;
@@ -76,6 +77,8 @@ public:
     ~ButtonContainer();
 
     bool AddButton(int width, int height, short colour, std::function<void()> onClickFunction);
+
+    bool AddButton(Texture* texture, std::function<void()> onClickFunction);
 
     void HandleMouseClick(int mouseX, int mouseY);
 
