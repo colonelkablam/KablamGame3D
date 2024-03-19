@@ -1,6 +1,7 @@
+#include "TexturePainter.h" // need to include full class declaration here (only forward dec. in ButtonContainer.h file)
 #include "ButtonContainer.h"
 
-ButtonContainer::ButtonContainer(TexturePainter& drawer, int x, int y, int col, int row, int space = 1)
+ButtonContainer::ButtonContainer(TexturePainter& drawer, int x, int y, int col, int row, int space)
     : drawingClass{ drawer }, xPos{ x }, yPos{ y }, columns{ col }, rows{ row }, spacing{ space } {}
 
 ButtonContainer::~ButtonContainer()

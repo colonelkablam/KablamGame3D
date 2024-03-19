@@ -1,10 +1,11 @@
 #pragma once
 
-#include <vector>
 #include <functional>
+#include <vector>
 
 #include "Texture.h"
-#include "TexturePainter.h"
+
+class TexturePainter; // forward declaration rather than header file (creates circular dependency)
 
 // holds the buttons in related groups
 class ButtonContainer
@@ -17,11 +18,6 @@ private:
     int rows{ 0 };
     int spacing{ 0 };
 
-public:
-    std::function<void(int, int, int, int, short)> DrawRectangle;
-    std::function<void(int, int, Texture*)> DrawTexture;
-
-private:
     struct Button
     {
         int xPos;
@@ -63,15 +59,20 @@ private:
             return x >= xPos && x < (xPos + width) && y >= yPos && y < (yPos + height);
         }
     };
+
     std::vector<Button*> buttons{};
+
+    // Dependency Injection Pattern chosen...
     TexturePainter& drawingClass;
 
 public:
-    ButtonContainer(TexturePainter& drawer, int x, int y, int col, int row, int space = 1);
+    ButtonContainer(TexturePainter& drawer, int x, int y, int col, int row, int space);
 
     // Deleted copy constructor and copy assignment operator as not needed
     ButtonContainer(const ButtonContainer&) = delete;
     ButtonContainer& operator=(const ButtonContainer&) = delete;
+
+    ~ButtonContainer();
 
     bool AddButton(int width, int height, short colour, std::function<void()> onClickFunction);
 

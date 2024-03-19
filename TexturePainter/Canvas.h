@@ -2,6 +2,7 @@
 
 #include "Texture.h"
 
+class TexturePainter; // forwawrd decleration for DI
 
 class Canvas {
 
@@ -35,10 +36,12 @@ private:
     int zoomLevel;
     Texture* texture;
 
+    TexturePainter& drawingClass;
+
 public:
 
 // constructors.destructors etc
-    Canvas(Texture* texture, std::wstring fileName, std::wstring filePath, int xPos, int yPos);
+    Canvas(TexturePainter& drawer, Texture* texture, std::wstring fileName, std::wstring filePath, int xPos, int yPos);
 
     ~Canvas();
 

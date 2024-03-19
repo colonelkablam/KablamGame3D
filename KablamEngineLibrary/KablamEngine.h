@@ -153,7 +153,7 @@ protected:
 
     // Optional for clean up 
     //virtual bool OnGameDestroy() { return true; }
-
+public:
     int GetConsoleWidth();
     int GetConsoleHeight();
     void WriteStringToBuffer(int x, int y, const std::wstring& string, short colour = FG_WHITE);

@@ -1,6 +1,7 @@
 #include <iostream>
-#include "TexturePainter.h"
 
+#include "TexturePainter.h"
+#include "Utility.h"
 
 // constructor stuff...
 TexturePainter::TexturePainter(std::wstring newTitle)
@@ -32,8 +33,8 @@ bool TexturePainter::OnGameCreate()
     SetConsoleFocusPause(true);
     SetWindowPosition(50, 50);
 
-    colourButtonsContainer = new ButtonContainer(*this, COLOUR_BUTTON_XPOS, COLOUR_BUTTON_YPOS, 2, 8);
-    brushButtonsContainer =  new ButtonContainer(*this, BRUSH_BUTTON_XPOS, BRUSH_BUTTON_YPOS, 8, 2);
+    colourButtonsContainer = new ButtonContainer(*this, COLOUR_BUTTON_XPOS, COLOUR_BUTTON_YPOS, 2, 8, 1);
+    //brushButtonsContainer =  new ButtonContainer(*this, BRUSH_BUTTON_XPOS, BRUSH_BUTTON_YPOS, 8, 2);
  
 
     for (short colour = 0; colour < 8; ++colour) // For simplicity directly using the index as the color here and OR with FG_INTENSITY.
@@ -153,7 +154,7 @@ bool TexturePainter::GetUserStartInput()
 bool TexturePainter::InitCanvasNewTexture(int width, int height, int illumination, const std::wstring& fileName)
 {
     // create new canvas
-    Canvas* canvas = new Canvas(new Texture(width, height, illumination), fileName, SAVE_FOLDER + fileName, CANVAS_XPOS, CANVAS_YPOS);
+    Canvas* canvas = new Canvas(*this, new Texture(width, height, illumination), fileName, SAVE_FOLDER + fileName, CANVAS_XPOS, CANVAS_YPOS);
 
     // save the new texture to save folder (create an empty file)
     canvas->SaveTexture(SAVE_FOLDER + fileName);
@@ -168,7 +169,7 @@ bool TexturePainter::InitCanvasExistingTexture(const std::wstring& fileName)
     // load up an existing texture
     Texture* existingTexture = new Texture(SAVE_FOLDER + fileName);
     // create new canvas with existing texture
-    Canvas* canvas = new Canvas(existingTexture, fileName, SAVE_FOLDER + fileName, CANVAS_XPOS, CANVAS_YPOS);
+    Canvas* canvas = new Canvas(*this, existingTexture, fileName, SAVE_FOLDER + fileName, CANVAS_XPOS, CANVAS_YPOS);
 
     // no need to save a file as texture already exists
     // add to current selection of canvases to edit
@@ -264,7 +265,7 @@ bool TexturePainter::HandleKeyPress()
         if (currentCanvas->IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y))
             currentCanvas->ApplyBrush(mouseCoords.X, mouseCoords.Y);
 
-        // check if over any of the buttons
+        // check if over any of the buttons when clicked
         colourButtonsContainer->HandleMouseClick(mouseCoords.X, mouseCoords.Y);
 
     }

@@ -1,13 +1,12 @@
-#pragma once
-
 #include <Windows.h>
+
+// need to #include Texture.h in Canvas.h before here
 #include "Canvas.h"
 
 
-Canvas::Canvas(Texture* tex, std::wstring fn, std::wstring fp, int x, int y)
-    : texture {tex}, fileName {fn}, filePath { fp}, xPos{ x }, yPos{ y }
+Canvas::Canvas(TexturePainter& drawer, Texture* tex, std::wstring fn, std::wstring fp, int x, int y)
+    : drawingClass{ drawer }, texture { tex }, fileName{ fn }, filePath{ fp }, xPos{ x }, yPos{ y }
 {
-
     currentBrushType = startingBrush;
     brushSize = startingBrushSize;
     zoomLevel = startingZoomLevel;
@@ -17,7 +16,6 @@ Canvas::Canvas(Texture* tex, std::wstring fn, std::wstring fp, int x, int y)
     currentPixel = { startingGlyph, startingColour };
     drawPixel = { startingGlyph, startingColour };
     deletePixel = { L' ', 0 };
-
 }
 
 Canvas::~Canvas()

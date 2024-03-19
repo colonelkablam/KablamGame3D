@@ -1,12 +1,6 @@
 #include <windows.h>
 #include <iostream>
-//#include <vector>
-#include <string>
-#include <cmath>
-//#include <limits> // For std::numeric_limits - max()
 #include <sstream> // For std::wstringstream
-#include <locale> // For std::wstring_convert
-#include <cctype> // For std::isdigit and std::isalnum
 
 #include "Utility.h"
 

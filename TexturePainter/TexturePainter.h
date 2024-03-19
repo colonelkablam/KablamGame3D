@@ -1,8 +1,7 @@
 #pragma once
 
-#include<functional>
-#include "Utility.h"
 #include "KablamEngine.h"
+
 #include "Canvas.h"
 #include "ButtonContainer.h"
 
@@ -36,10 +35,7 @@ private:
 
     // button containers
     ButtonContainer* colourButtonsContainer;
-    ButtonContainer* brushButtonsContainer;
-
-
-
+    //ButtonContainer* brushButtonsContainer;
 
 public:
     // constructor
@@ -67,8 +63,6 @@ private:
 
     bool InitCanvasNewTexture(int width, int height, int illuminated, const std::wstring& fileName);
 
-    void SetupButtonContainer(ButtonContainer& container);
-
     void ChangeCanvas(size_t index);
 
     void DrawCanvas();
@@ -88,7 +82,6 @@ private:
     bool CheckFolderExist(const std::wstring& folderPath);
 
     bool CreateFolder(const std::wstring& folderPath);
-
 
 }; // end of TexturePainter class definition
 
