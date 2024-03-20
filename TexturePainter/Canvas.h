@@ -99,7 +99,7 @@ public:
 
     void DrawCanvas();
 
-    void DrawBrush();
+    void DisplayBrush();
 
     void IncreaseZoomLevel();
 };

@@ -259,10 +259,10 @@ void Canvas::DrawCanvas()
     // add texture to screen buffer
     drawingClass.DrawTextureToScreen(texture, xPos, yPos, zoomLevel, true);
     // draw current brush (block, line, or square being drawn)
-    DrawBrush();
+    DisplayBrush();
 }
 
-void Canvas::DrawBrush()
+void Canvas::DisplayBrush()
 {
     // get appropriate coords for drawing to screen - will dynamically calc these
     COORD mouseCoords = drawingClass.GetMousePosition();
@@ -274,7 +274,7 @@ void Canvas::DrawBrush()
         drawingClass.DrawPoint(mouseCoords.X, mouseCoords.Y, drawPixel.Attributes);
         break;
     case BrushType::BRUSH_BLOCK:
-        drawingClass.DrawSquare(mouseCoords.X, mouseCoords.Y, brushSize, PIXEL_THREEQUARTERS, true);
+        drawingClass.DrawSquare(mouseCoords.X, mouseCoords.Y, brushSize, drawPixel.Attributes, PIXEL_THREEQUARTERS, true);
         break;
     case BrushType::BRUSH_RECT:
         if (initialClick)
