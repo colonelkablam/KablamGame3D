@@ -2,7 +2,8 @@
 #include "ButtonContainer.h"
 
 ButtonContainer::ButtonContainer(TexturePainter& drawer, int x, int y, int col, int row, short colour, int space)
-    : drawingClass{ drawer }, xPos{ x }, yPos{ y }, columns{ col }, rows{ row }, background{ colour }, spacing { space } {}
+    : drawingClass{ drawer }, xPos{ x }, yPos{ y }, lastClicked{ 0 }, columns{ col }, rows{ row },
+        background{ colour }, spacing{ space } {}
 
 ButtonContainer::~ButtonContainer()
 {
@@ -13,6 +14,7 @@ ButtonContainer::~ButtonContainer()
     }
 }
 
+// button made with dimentions and colour
 bool ButtonContainer::AddButton(int width, int height, short colour, std::function<void()> onClickFunction)
 {
     int buttonId = buttons.size();
@@ -38,6 +40,7 @@ bool ButtonContainer::AddButton(int width, int height, short colour, std::functi
     }
 }
 
+// button made with a texture
 bool ButtonContainer::AddButton(Texture* iconTexture, std::function<void()> onClickFunction)
 {
     int buttonId = buttons.size();
@@ -66,21 +69,32 @@ bool ButtonContainer::AddButton(Texture* iconTexture, std::function<void()> onCl
 
 void ButtonContainer::HandleMouseClick(int mouseX, int mouseY)
 {
+    int count{ 0 };
     for (Button* button : buttons)
+    {
         if (button->IsMouseClickOnButton(mouseX, mouseY))
         {
             button->Clicked();
+            lastClicked = count;
             break;
         }
+        count++;
+    }
 }
 
 void ButtonContainer::DrawButtons()
 {
+    int count{ 0 };
     for (const Button* button : buttons)
     {
         if (button->texture == nullptr)
             drawingClass.DrawRectangleEdgeLength(button->xPos, button->yPos, button->width, button->height, button->colour, true, PIXEL_SOLID);
         else
             drawingClass.DrawTextureToScreen(button->texture, button->xPos, button->yPos, 1);
+
+        if (count == lastClicked)
+            drawingClass.DrawRectangleEdgeLength(button->xPos - 1, button->yPos - 1, button->width + 2, button->height + 2, TexturePainter::HIGHLIGHT_COLOUR, false, PIXEL_QUARTER);
+        
+        count++;
     }
 }

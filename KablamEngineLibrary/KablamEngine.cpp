@@ -334,6 +334,15 @@ void KablamEngine::DrawPoint(int x, int y, const CHAR_INFO& pixel)
     }
 }
 
+void KablamEngine::DrawBlock(int x, int y, int size, short colour, short glyph)
+{
+    for (int xp{ 0 }; xp < size; xp++)
+        for (int yp{ 0 }; yp < size; yp++)
+            DrawPoint(x + xp, y + yp, colour, glyph);
+
+}
+
+
 //// Bresenham's line algorithm
 //void KablamEngine::DrawLine(int x0, int y0, int x1, int y1, short colour, short glyph)
 //{
@@ -375,29 +384,6 @@ void KablamEngine::DrawLine(int x0, int y0, int x1, int y1, short colour, short 
         e2 = 2 * err;
         if (e2 >= dy) { err += dy; x0 += sx; }
         if (e2 <= dx) { err += dx; y0 += sy; }
-    }
-}
-
-void KablamEngine::DrawSquare(int x, int y, int sideLength, short colour, short glyph, bool filled, int lineWidth)
-{
-
-    if (filled)
-    {
-        for (int i{ 0 }; i < sideLength; i++)
-            DrawLine(x, y + i, x + sideLength - 1, y + i, colour, glyph);
-    }
-    else
-    {
-        sideLength -= 1;
-
-        // Top side
-        DrawLine(x, y, x + sideLength, y, colour, glyph);
-        // Right side
-        DrawLine(x + sideLength, y, x + sideLength, y + sideLength, colour, glyph);
-        // Bottom side
-        DrawLine(x, y + sideLength, x + sideLength, y + sideLength, colour, glyph);
-        // Left side
-        DrawLine(x, y, x, y + sideLength, colour, glyph);
     }
 }
 

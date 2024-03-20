@@ -14,6 +14,7 @@ private:
     // poition of container
     int xPos;
     int yPos;
+    int lastClicked;
     int columns;
     int rows;
     int spacing;

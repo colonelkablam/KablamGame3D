@@ -696,7 +696,7 @@ void KablamGame3D::DisplayMap(int xPos, int yPos, int scale) {
 
 				if (nMapDisplayStatus > 1) {
 					// Draw full map
-					DrawSquare(screenX, screenY, scale, wcMapPixelColour, PIXEL_SOLID, true, 1);
+					DrawRectangleEdgeLength(screenX, screenY, scale, scale, wcMapPixelColour, true);
 				}
 			}
 		}

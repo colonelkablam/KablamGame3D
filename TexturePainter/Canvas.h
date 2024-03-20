@@ -16,11 +16,10 @@ public:
     };
 
 private:
-    static const short STARTING_COLOUR = FG_WHITE;
+    static const short STARTING_COLOUR = FG_BLACK;
     static const short STARTING_GLYPH = PIXEL_SOLID;
     static const int START_ZOOM_LEVEL = 1;
     static const int START_BRUSH_SIZE = 1;
-
     static const BrushType STARTING_BRUSH = BrushType::BRUSH_POINT;
 
     BrushType currentBrushType;
@@ -85,6 +84,8 @@ public:
 
     COORD ConvertMouseCoordsToTextureCoords(int x, int y);
 
+    COORD ConvertTextureCoordsToScreenCoords(int x, int y);
+
     void ApplyBrush(int x, int y, bool erase = false);
 
     void ChangeBrushType(BrushType newBrush);
@@ -102,6 +103,10 @@ public:
     void DrawCanvas();
 
     void DisplayBrush();
+
+    void DisplayRectangleOnCanvas(int x0, int y0, int x1, int y1, short colour, bool filled, short glyph, int width);
+
+    void DisplayPixelOnCanvas(int x, int y);
 
     void IncreaseZoomLevel();
 };

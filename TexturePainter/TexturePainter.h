@@ -8,6 +8,9 @@
 class TexturePainter : public KablamEngine
 {
     // member attributes TexturePainter
+
+public:
+    static const short HIGHLIGHT_COLOUR = FG_RED;
 private:
     static const int MIN_TEXTURE_SIZE = 4;
     static const int MAX_TEXTURE_SIZE = 64;
@@ -18,7 +21,7 @@ private:
     const int CANVAS_YPOS = 23;
 
     const int COLOUR_BUTTON_XPOS = 2;
-    const int COLOUR_BUTTON_YPOS = 20;
+    const int COLOUR_BUTTON_YPOS = 22;
     const int COLOUR_BUTTON_SIZE = 5;
 
     const int BRUSH_BUTTON_XPOS = 15;

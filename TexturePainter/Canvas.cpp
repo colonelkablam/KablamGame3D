@@ -139,6 +139,18 @@ COORD Canvas::ConvertMouseCoordsToTextureCoords(int x, int y)
     return coords;
 }
 
+COORD Canvas::ConvertTextureCoordsToScreenCoords(int x, int y)
+{
+    COORD screenCoords{};
+
+    // reverse transformation used in ConvertMouseCoordsToTextureCoords
+    // Consider the canvas position (xPos, yPos) and the zoom level
+    screenCoords.X = xPos + (x * zoomLevel);
+    screenCoords.Y = yPos + (y * zoomLevel);
+
+    return screenCoords;
+}
+
 void Canvas::ApplyBrush(int x, int y, bool erase)
 { 
     COORD coords = ConvertMouseCoordsToTextureCoords(x, y);
@@ -305,50 +317,64 @@ void Canvas::DrawCanvas()
 
 void Canvas::DisplayBrush()
 {
-    short highlightColour = FG_RED;
     // get appropriate coords for drawing to screen - will dynamically calc these
-    COORD mouseCoords = drawingClass.GetMousePosition();
-    COORD screenClickCoords = { initialClickCoords.X + xPos, initialClickCoords.Y + yPos };
+    COORD mouseTexPosition = ConvertMouseCoordsToTextureCoords(drawingClass.GetMousePosition().X, drawingClass.GetMousePosition().Y);
+    COORD mouseCoords = ConvertTextureCoordsToScreenCoords(mouseTexPosition.X, mouseTexPosition.Y);
+    COORD ScreenInitClickCoords = ConvertTextureCoordsToScreenCoords(initialClickCoords.X, initialClickCoords.Y);
 
     // draw appropriate brush
     switch (currentBrushType) {
     case BrushType::BRUSH_POINT:
-        drawingClass.DrawPoint(mouseCoords.X, mouseCoords.Y, drawPixel.Attributes, PIXEL_THREEQUARTERS);
+        drawingClass.DrawBlock(mouseCoords.X, mouseCoords.Y, 1 * zoomLevel, drawPixel.Attributes, PIXEL_THREEQUARTERS);
         break;
     case BrushType::BRUSH_BLOCK:
-        drawingClass.DrawSquare(mouseCoords.X, mouseCoords.Y, brushSize, drawPixel.Attributes, PIXEL_THREEQUARTERS, true);
+        drawingClass.DrawBlock(mouseCoords.X, mouseCoords.Y, brushSize * zoomLevel, drawPixel.Attributes, PIXEL_THREEQUARTERS);
         break;
     case BrushType::BRUSH_RECT:
-        drawingClass.DrawPoint(mouseCoords.X, mouseCoords.Y, drawPixel.Attributes, PIXEL_THREEQUARTERS);
+        drawingClass.DrawBlock(mouseCoords.X, mouseCoords.Y, zoomLevel, drawPixel.Attributes, PIXEL_THREEQUARTERS);
         if (initialClick)
         {
-            drawingClass.DrawRectangleCoords(screenClickCoords.X, screenClickCoords.Y, mouseCoords.X, mouseCoords.Y, drawPixel.Attributes, false, PIXEL_THREEQUARTERS, brushSize);
-            drawingClass.DrawPoint(screenClickCoords.X, screenClickCoords.Y, highlightColour, PIXEL_THREEQUARTERS);
-            drawingClass.DrawPoint(mouseCoords.X, mouseCoords.Y, highlightColour, PIXEL_THREEQUARTERS);
+            drawingClass.DrawRectangleCoords(ScreenInitClickCoords.X, ScreenInitClickCoords.Y, mouseCoords.X, mouseCoords.Y, drawPixel.Attributes, false, PIXEL_THREEQUARTERS);
+            drawingClass.DrawBlock(ScreenInitClickCoords.X, ScreenInitClickCoords.Y, zoomLevel, TexturePainter::HIGHLIGHT_COLOUR, PIXEL_THREEQUARTERS);
+            drawingClass.DrawBlock(mouseCoords.X, mouseCoords.Y, zoomLevel, TexturePainter::HIGHLIGHT_COLOUR, PIXEL_THREEQUARTERS);
 
         }
         break;
     case BrushType::BRUSH_RECT_FILLED:
-        drawingClass.DrawPoint(mouseCoords.X, mouseCoords.Y, drawPixel.Attributes, PIXEL_THREEQUARTERS);
+        drawingClass.DrawBlock(mouseCoords.X, mouseCoords.Y, zoomLevel, drawPixel.Attributes, PIXEL_THREEQUARTERS);
         if (initialClick)
         {
-            drawingClass.DrawRectangleCoords(screenClickCoords.X, screenClickCoords.Y, mouseCoords.X, mouseCoords.Y, drawPixel.Attributes, true, PIXEL_THREEQUARTERS);
-            drawingClass.DrawPoint(screenClickCoords.X, screenClickCoords.Y, highlightColour, PIXEL_THREEQUARTERS);
-            drawingClass.DrawPoint(mouseCoords.X, mouseCoords.Y, highlightColour, PIXEL_THREEQUARTERS);
+            drawingClass.DrawRectangleCoords(ScreenInitClickCoords.X, ScreenInitClickCoords.Y, mouseCoords.X, mouseCoords.Y, drawPixel.Attributes, true, PIXEL_THREEQUARTERS);
+            drawingClass.DrawBlock(ScreenInitClickCoords.X, ScreenInitClickCoords.Y, zoomLevel, TexturePainter::HIGHLIGHT_COLOUR, PIXEL_THREEQUARTERS);
+            drawingClass.DrawBlock(mouseCoords.X, mouseCoords.Y, zoomLevel, TexturePainter::HIGHLIGHT_COLOUR, PIXEL_THREEQUARTERS);
         }
         break;        break;
     case BrushType::BRUSH_LINE:
         drawingClass.DrawPoint(mouseCoords.X, mouseCoords.Y, drawPixel.Attributes, PIXEL_THREEQUARTERS);
         if (initialClick)
         {
-            drawingClass.DrawLine(screenClickCoords.X, screenClickCoords.Y, mouseCoords.X, mouseCoords.Y, currentPixel.Attributes, PIXEL_THREEQUARTERS, brushSize);
-            drawingClass.DrawPoint(screenClickCoords.X, screenClickCoords.Y, highlightColour, PIXEL_THREEQUARTERS);
-            drawingClass.DrawPoint(mouseCoords.X, mouseCoords.Y, highlightColour, PIXEL_THREEQUARTERS);
+            drawingClass.DrawLine(ScreenInitClickCoords.X, ScreenInitClickCoords.Y, mouseCoords.X, mouseCoords.Y, currentPixel.Attributes, PIXEL_THREEQUARTERS, brushSize);
+            drawingClass.DrawBlock(ScreenInitClickCoords.X, ScreenInitClickCoords.Y, brushSize * zoomLevel, TexturePainter::HIGHLIGHT_COLOUR, PIXEL_THREEQUARTERS);
+            drawingClass.DrawBlock(mouseCoords.X, mouseCoords.Y, brushSize * zoomLevel, TexturePainter::HIGHLIGHT_COLOUR, PIXEL_THREEQUARTERS);
         }
         break;
     }
 
 }
+
+void Canvas::DisplayRectangleOnCanvas(int x0, int y0, int x1, int y1, short colour, bool filled, short glyph, int width)
+{
+    DisplayPixelOnCanvas(x, y);
+
+}
+
+void Canvas::DisplayPixelOnCanvas(int x, int y)
+{
+    COORD canvasPosition = ConvertMouseCoordsToTextureCoords(x, y);
+    drawingClass.DrawBlock(canvasPosition.X, canvasPosition.Y, zoomLevel, TexturePainter::HIGHLIGHT_COLOUR, PIXEL_THREEQUARTERS);
+}
+
+
 
 void Canvas::IncreaseZoomLevel()
 {
