@@ -1,5 +1,9 @@
 #include <Windows.h>
 
+// undefine the macros from windows.h
+#undef max
+#undef min
+
 // need to include full header here to use class methods from DI
 #include "TexturePainter.h"
 // need to #include Texture.h in Canvas.h before here
@@ -149,7 +153,7 @@ void Canvas::ApplyBrush(int x, int y, bool erase)
         PaintPoint(coords.X, coords.Y);
         break;
     case BrushType::BRUSH_BLOCK:
-        PaintSquare(coords.X, coords.Y, brushSize); // Draws a filled square
+        PaintBlock(coords.X, coords.Y, brushSize); // Draws a filled block
         break;
     case BrushType::BRUSH_RECT:
         // store the initial click position
@@ -159,15 +163,26 @@ void Canvas::ApplyBrush(int x, int y, bool erase)
             initialClick = true; // Reset after the initial click is recorded
         }
         else {
-            PaintSquare(coords.X, coords.Y, brushSize); // Draws a filled square
+            PaintRectangleCoords(initialClickCoords.X, initialClickCoords.Y, coords.X, coords.Y, false, brushSize);
             initialClick = false; // Reset after the initial click is recorded
             initialClickCoords.X = coords.X;
             initialClickCoords.Y = coords.Y;
         }
         break;
     case BrushType::BRUSH_RECT_FILLED:
-        PaintSquare(coords.X, coords.Y, brushSize); // Draws a filled square
-        break;
+        // store the initial click position
+        if (!initialClick) {
+            initialClickCoords.X = coords.X;
+            initialClickCoords.Y = coords.Y;
+            initialClick = true; // Reset after the initial click is recorded
+        }
+        else {
+            PaintRectangleCoords(initialClickCoords.X, initialClickCoords.Y, coords.X, coords.Y);
+            initialClick = false; // Reset after the initial click is recorded
+            initialClickCoords.X = coords.X;
+            initialClickCoords.Y = coords.Y;
+        }
+        break;    
     case BrushType::BRUSH_LINE:
         // store the initial click position
        if (!initialClick) {
@@ -176,7 +191,7 @@ void Canvas::ApplyBrush(int x, int y, bool erase)
            initialClick = true; // Reset after the initial click is recorded
        }
        else {
-           PaintLine(initialClickCoords.X, initialClickCoords.Y, coords.X, coords.Y); // Draws a line
+           PaintLine(initialClickCoords.X, initialClickCoords.Y, coords.X, coords.Y, brushSize); // Draws a line
            initialClick = false; // Reset after the initial click is recorded
            initialClickCoords.X = coords.X;
            initialClickCoords.Y = coords.Y;
@@ -201,14 +216,23 @@ void Canvas::PaintPoint(int x, int y)
 }
 
 // Bresenham's line algorithm
-void Canvas::PaintLine(int x0, int y0, int x1, int y1)
+void Canvas::PaintLine(int x0, int y0, int x1, int y1, int lineThickness)
 {
     int dx = std::abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
     int dy = -std::abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
     int err = dx + dy, e2; /* error value e_xy */
 
+    // Adjust the start point for even thickness to ensure symmetric distribution
+    int offset = lineThickness % 2 == 0 ? 1 : 0;
+
     while (true) {
-        PaintPoint(x0, y0); // Set the character at the current position
+        // Draw a square of thickness around the current point
+        for (int i = -lineThickness / 2; i <= lineThickness / 2 - offset; ++i) {
+            for (int j = -lineThickness / 2; j <= lineThickness / 2 - offset; ++j) {
+                PaintPoint(x0 + i, y0 + j);
+            }
+        }
+
         if (x0 == x1 && y0 == y1) break;
         e2 = 2 * err;
         if (e2 >= dy) { err += dy; x0 += sx; }
@@ -216,26 +240,43 @@ void Canvas::PaintLine(int x0, int y0, int x1, int y1)
     }
 }
 
-void Canvas::PaintSquare(int x, int y, int sideLength, bool filled, int lineWidth)
+void Canvas::PaintBlock(int x, int y, int sideLength)
 {
-    if (filled)
-    {
-        for (size_t i{ 0 }; i < sideLength; i++)
-            for (size_t j{ 0 }; j < sideLength; j++)
-                PaintPoint(x + i, y + j);
-    }
-    else
-    {
-        sideLength -= 1;
+    for (size_t i{ 0 }; i < sideLength; i++)
+        for (size_t j{ 0 }; j < sideLength; j++)
+            PaintPoint(x + i, y + j);
 
-        // Top side
-        PaintLine(x, y, x + sideLength, y);
-        // Right side
-        PaintLine(x + sideLength, y, x + sideLength, y + sideLength);
-        // Bottom side
-        PaintLine(x, y + sideLength, x + sideLength, y + sideLength);
-        // Left side
-        PaintLine(x, y, x, y + sideLength);
+}
+
+void Canvas::PaintRectangleCoords(int x0, int y0, int x1, int y1, bool filled, int lineWidth) {
+    // Normalize coordinates
+    int left = std::min(x0, x1);
+    int top = std::min(y0, y1);
+    int right = std::max(x0, x1);
+    int bottom = std::max(y0, y1);
+
+    if (filled) {
+        for (int y = top; y <= bottom; ++y) {
+            for (int x = left; x <= right; ++x) {
+                PaintPoint(x, y);
+            }
+        }
+    }
+    else {
+        // Top and bottom sides
+        for (int i = 0; i < lineWidth; ++i) {
+            for (int x = left; x <= right; ++x) {
+                PaintPoint(x, top + i); // Top side
+                PaintPoint(x, bottom - i); // Bottom side
+            }
+        }
+        // Left and right sides
+        for (int i = 0; i < lineWidth; ++i) {
+            for (int y = top; y <= bottom; ++y) {
+                PaintPoint(left + i, y); // Left side
+                PaintPoint(right - i, y); // Right side
+            }
+        }
     }
 }
 
@@ -264,36 +305,45 @@ void Canvas::DrawCanvas()
 
 void Canvas::DisplayBrush()
 {
+    short highlightColour = FG_RED;
     // get appropriate coords for drawing to screen - will dynamically calc these
     COORD mouseCoords = drawingClass.GetMousePosition();
-    COORD screenClickCoords = { initialClickCoords.X + xPos, initialClickCoords.X + xPos };
+    COORD screenClickCoords = { initialClickCoords.X + xPos, initialClickCoords.Y + yPos };
 
     // draw appropriate brush
     switch (currentBrushType) {
     case BrushType::BRUSH_POINT:
-        drawingClass.DrawPoint(mouseCoords.X, mouseCoords.Y, drawPixel.Attributes);
+        drawingClass.DrawPoint(mouseCoords.X, mouseCoords.Y, drawPixel.Attributes, PIXEL_THREEQUARTERS);
         break;
     case BrushType::BRUSH_BLOCK:
         drawingClass.DrawSquare(mouseCoords.X, mouseCoords.Y, brushSize, drawPixel.Attributes, PIXEL_THREEQUARTERS, true);
         break;
     case BrushType::BRUSH_RECT:
+        drawingClass.DrawPoint(mouseCoords.X, mouseCoords.Y, drawPixel.Attributes, PIXEL_THREEQUARTERS);
         if (initialClick)
         {
-            drawingClass.DrawRectangleCoords(screenClickCoords.X, screenClickCoords.Y, mouseCoords.X, mouseCoords.Y, drawPixel.Attributes, PIXEL_THREEQUARTERS, false, brushSize);
+            drawingClass.DrawRectangleCoords(screenClickCoords.X, screenClickCoords.Y, mouseCoords.X, mouseCoords.Y, drawPixel.Attributes, false, PIXEL_THREEQUARTERS, brushSize);
+            drawingClass.DrawPoint(screenClickCoords.X, screenClickCoords.Y, highlightColour, PIXEL_THREEQUARTERS);
+            drawingClass.DrawPoint(mouseCoords.X, mouseCoords.Y, highlightColour, PIXEL_THREEQUARTERS);
+
         }
         break;
     case BrushType::BRUSH_RECT_FILLED:
+        drawingClass.DrawPoint(mouseCoords.X, mouseCoords.Y, drawPixel.Attributes, PIXEL_THREEQUARTERS);
         if (initialClick)
         {
-            drawingClass.DrawRectangleCoords(screenClickCoords.X, screenClickCoords.Y, mouseCoords.X, mouseCoords.Y, drawPixel.Attributes, PIXEL_THREEQUARTERS, true);
+            drawingClass.DrawRectangleCoords(screenClickCoords.X, screenClickCoords.Y, mouseCoords.X, mouseCoords.Y, drawPixel.Attributes, true, PIXEL_THREEQUARTERS);
+            drawingClass.DrawPoint(screenClickCoords.X, screenClickCoords.Y, highlightColour, PIXEL_THREEQUARTERS);
+            drawingClass.DrawPoint(mouseCoords.X, mouseCoords.Y, highlightColour, PIXEL_THREEQUARTERS);
         }
         break;        break;
     case BrushType::BRUSH_LINE:
+        drawingClass.DrawPoint(mouseCoords.X, mouseCoords.Y, drawPixel.Attributes, PIXEL_THREEQUARTERS);
         if (initialClick)
         {
-            drawingClass.DrawLine(screenClickCoords.X, screenClickCoords.Y, mouseCoords.X, mouseCoords.Y, currentPixel.Attributes);
-            drawingClass.DrawPoint(screenClickCoords.X, screenClickCoords.Y, FG_RED, PIXEL_THREEQUARTERS);
-            drawingClass.DrawPoint(mouseCoords.X, mouseCoords.Y, FG_RED, PIXEL_THREEQUARTERS);
+            drawingClass.DrawLine(screenClickCoords.X, screenClickCoords.Y, mouseCoords.X, mouseCoords.Y, currentPixel.Attributes, PIXEL_THREEQUARTERS, brushSize);
+            drawingClass.DrawPoint(screenClickCoords.X, screenClickCoords.Y, highlightColour, PIXEL_THREEQUARTERS);
+            drawingClass.DrawPoint(mouseCoords.X, mouseCoords.Y, highlightColour, PIXEL_THREEQUARTERS);
         }
         break;
     }

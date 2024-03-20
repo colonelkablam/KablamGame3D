@@ -334,17 +334,43 @@ void KablamEngine::DrawPoint(int x, int y, const CHAR_INFO& pixel)
     }
 }
 
+//// Bresenham's line algorithm
+//void KablamEngine::DrawLine(int x0, int y0, int x1, int y1, short colour, short glyph)
+//{
+//    int dx = std::abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+//    int dy = -std::abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+//    int err = dx + dy, e2; /* error value e_xy */
+//
+//    while (true) {
+//        if (x0 >= 0 && x0 < nScreenWidth && y0 >= 0 && y0 < nScreenWidth) {
+//            DrawPoint(x0, y0, colour, glyph); // Set the character at the current position
+//        }
+//        if (x0 == x1 && y0 == y1) break;
+//        e2 = 2 * err;
+//        if (e2 >= dy) { err += dy; x0 += sx; }
+//        if (e2 <= dx) { err += dx; y0 += sy; }
+//    }
+//}
+
 // Bresenham's line algorithm
-void KablamEngine::DrawLine(int x0, int y0, int x1, int y1, short colour, short glyph)
+// ChatGPT used to add line thickness... draws a square along each point of the line
+void KablamEngine::DrawLine(int x0, int y0, int x1, int y1, short colour, short glyph, int lineThickness)
 {
     int dx = std::abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
     int dy = -std::abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
     int err = dx + dy, e2; /* error value e_xy */
 
+    // Adjust the start point for even thickness to ensure symmetric distribution
+    int offset = lineThickness % 2 == 0 ? 1 : 0;
+
     while (true) {
-        if (x0 >= 0 && x0 < nScreenWidth && y0 >= 0 && y0 < nScreenWidth) {
-            DrawPoint(x0, y0, colour, glyph); // Set the character at the current position
+        // Draw a square of thickness around the current point
+        for (int i = -lineThickness / 2; i <= lineThickness / 2 - offset; ++i) {
+            for (int j = -lineThickness / 2; j <= lineThickness / 2 - offset; ++j) {
+                DrawPoint(x0 + i, y0 + j, colour, glyph);
+            }
         }
+
         if (x0 == x1 && y0 == y1) break;
         e2 = 2 * err;
         if (e2 >= dy) { err += dy; x0 += sx; }
@@ -376,54 +402,66 @@ void KablamEngine::DrawSquare(int x, int y, int sideLength, short colour, short 
 }
 
 // top left and bottom right coords
-void KablamEngine::DrawRectangleCoords(int x0, int y0, int x1, int y1, short colour, bool filled, short glyph, int lineWidth)
-{
-    if (filled)
-    {
-        for (int i{ 0 }; i <= y1 - y0; i++)
-            DrawLine(x0, y0 + i, x1, y0 + i, colour, glyph);
+void KablamEngine::DrawRectangleCoords(int x0, int y0, int x1, int y1, short colour, bool filled, short glyph, int lineWidth) {
+    // Normalize coordinates
+    int left = std::min(x0, x1);
+    int top = std::min(y0, y1);
+    int right = std::max(x0, x1);
+    int bottom = std::max(y0, y1);
+
+    if (filled) {
+        for (int y = top; y <= bottom; ++y) {
+            for (int x = left; x <= right; ++x) {
+                DrawPoint(x, y, colour, glyph);
+            }
+        }
     }
-    else
-    {
-        // Top side
-        for (int i{ 0 }; i < lineWidth; i++)
-            DrawLine(x0, y0 + i, x1, y0 + i, colour, glyph);
-       // Right side
-        for (int i{ 0 }; i < lineWidth; i++)
-            DrawLine(x1 - i, y0, x1 - i, y1, colour, glyph);
-        // Bottom side
-        for (int i{ 0 }; i < lineWidth; i++)
-            DrawLine(x0, y1 - i, x1, y1 - i, colour, glyph);
-        // Left side
-        for (int i{ 0 }; i < lineWidth; i++)
-            DrawLine(x0 + i, y0, x0 + i, y1, colour, glyph);
+    else {
+        // Top and bottom sides
+        for (int i = 0; i < lineWidth; ++i) {
+            for (int x = left; x <= right; ++x) {
+                DrawPoint(x, top + i, colour, glyph); // Top side
+                DrawPoint(x, bottom - i, colour, glyph); // Bottom side
+            }
+        }
+        // Left and right sides
+        for (int i = 0; i < lineWidth; ++i) {
+            for (int y = top; y <= bottom; ++y) {
+                DrawPoint(left + i, y, colour, glyph); // Left side
+                DrawPoint(right - i, y, colour, glyph); // Right side
+            }
+        }
     }
 }
 
 // top left coords and width and height
-void KablamEngine::DrawRectangleEdgeLength(int x, int y, int width, int height, short colour, bool filled, short glyph, int lineWidth)
-{
-    if (filled)
-    {
-        for (int i{ 0 }; i < height; i++)
-            DrawLine(x, y + i, x + width - 1, y + i, colour, glyph);
+void KablamEngine::DrawRectangleEdgeLength(int x, int y, int width, int height, short colour, bool filled, short glyph, int lineWidth) {
+    // Calculate the right and bottom edges of the rectangle
+    int right = x + width - 1;  // Subtract 1 to include starting point
+    int bottom = y + height - 1;  // Subtract 1 to include starting point
+
+    if (filled) {
+        for (int yPos = y; yPos <= bottom; ++yPos) {
+            for (int xPos = x; xPos <= right; ++xPos) {
+                DrawPoint(xPos, yPos, colour, glyph);  // Assuming DrawPoint takes colour and glyph
+            }
+        }
     }
-    else
-    {
-        width -= 1;
-        height -= 1;
-        // Top side
-        for (int i{ 0 }; i < lineWidth; i++)
-            DrawLine(x, y + i, x + width, y + i, colour, glyph);
-        // Right side
-        for (int i{ 0 }; i < lineWidth; i++)
-            DrawLine(x + width - i, y, x + width - i, y + height, colour, glyph);
-        // Bottom side
-        for (int i{ 0 }; i < lineWidth; i++)
-            DrawLine(x, y + height - i, x + width, y + height - i, colour, glyph);
-        // Left side
-        for (int i{ 0 }; i < lineWidth; i++)
-            DrawLine(x + i, y, x + i, y + height, colour, glyph);
+    else {
+        // Top and bottom sides
+        for (int i = 0; i < lineWidth; ++i) {
+            for (int xPos = x; xPos <= right; ++xPos) {
+                DrawPoint(xPos, y + i, colour, glyph);  // Top side
+                DrawPoint(xPos, bottom - i, colour, glyph);  // Bottom side
+            }
+        }
+        // Left and right sides
+        for (int i = 0; i < lineWidth; ++i) {
+            for (int yPos = y + i; yPos <= bottom - i; ++yPos) {
+                DrawPoint(x + i, yPos, colour, glyph);  // Left side, adjusted for lineWidth
+                DrawPoint(right - i, yPos, colour, glyph);  // Right side, adjusted for lineWidth
+            }
+        }
     }
 }
 

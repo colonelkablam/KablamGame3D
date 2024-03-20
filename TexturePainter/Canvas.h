@@ -93,9 +93,11 @@ public:
 
     void PaintPoint(int x, int y);
 
-    void PaintLine(int x0, int y0, int x1, int y1);
+    void PaintLine(int x0, int y0, int x1, int y1, int lineThickness = 1);
 
-    void PaintSquare(int x, int y, int sideLength, bool filled = true, int lineWidth = 1);
+    void PaintBlock(int x, int y, int sideLength);
+
+    void PaintRectangleCoords(int x0, int y0, int x1, int y1, bool filled = true, int lineWidth = 1);
 
     void DrawCanvas();
 
