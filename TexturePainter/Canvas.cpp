@@ -121,7 +121,7 @@ bool Canvas::IsMouseWithinCanvas(int x, int y)
         return false;
 }
 
-COORD Canvas::ConvertMouseCoordsToTextureCoords(int x, int y)
+COORD Canvas::ConvertScreenCoordsToTextureCoords(int x, int y)
 {
     COORD coords{};
 
@@ -153,7 +153,7 @@ COORD Canvas::ConvertTextureCoordsToScreenCoords(int x, int y)
 
 void Canvas::ApplyBrush(int x, int y, bool erase)
 { 
-    COORD coords = ConvertMouseCoordsToTextureCoords(x, y);
+    COORD coords = ConvertScreenCoordsToTextureCoords(x, y);
 
     if (erase)
         currentPixel = deletePixel;
@@ -161,9 +161,6 @@ void Canvas::ApplyBrush(int x, int y, bool erase)
         currentPixel = drawPixel;
 
     switch (currentBrushType) {
-    case BrushType::BRUSH_POINT:
-        PaintPoint(coords.X, coords.Y);
-        break;
     case BrushType::BRUSH_BLOCK:
         PaintBlock(coords.X, coords.Y, brushSize); // Draws a filled block
         break;
@@ -218,7 +215,8 @@ void Canvas::ChangeBrushType(BrushType newBrush)
 
 void Canvas::ChangeBrushSize(int sizeChange)
 {
-    brushSize = (brushSize + sizeChange) % 5;
+    int newSize = (brushSize - 1 + sizeChange + 5) % 5 + 1;
+    brushSize = newSize;
 }
 
 
@@ -232,23 +230,21 @@ void Canvas::PaintLine(int x0, int y0, int x1, int y1, int lineThickness)
 {
     int dx = std::abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
     int dy = -std::abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
-    int err = dx + dy, e2; /* error value e_xy */
-
-    // Adjust the start point for even thickness to ensure symmetric distribution
-    int offset = lineThickness % 2 == 0 ? 1 : 0;
+    int err = dx + dy, e2; // error value e_xy
 
     while (true) {
-        // Draw a square of thickness around the current point
-        for (int i = -lineThickness / 2; i <= lineThickness / 2 - offset; ++i) {
-            for (int j = -lineThickness / 2; j <= lineThickness / 2 - offset; ++j) {
-                PaintPoint(x0 + i, y0 + j);
-            }
-        }
+        PaintBlock(x0, y0, brushSize); // Use DisplayBlockOnCanvas to draw a block at each point
 
-        if (x0 == x1 && y0 == y1) break;
+        if (x0 == x1 && y0 == y1) break; // Check if the end point is reached
         e2 = 2 * err;
-        if (e2 >= dy) { err += dy; x0 += sx; }
-        if (e2 <= dx) { err += dx; y0 += sy; }
+        if (e2 >= dy) {
+            err += dy;
+            x0 += sx;
+        }
+        if (e2 <= dx) {
+            err += dx;
+            y0 += sy;
+        }
     }
 }
 
@@ -302,7 +298,7 @@ void Canvas::DrawCanvas()
     // if coords withing canvas diplay (index starting from 1 for user)
     if (IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y))
     {
-        COORD textureCoords = ConvertMouseCoordsToTextureCoords(mouseCoords.X, mouseCoords.Y);
+        COORD textureCoords = ConvertScreenCoordsToTextureCoords(mouseCoords.X, mouseCoords.Y);
         drawingClass.WriteStringToBuffer(xPos + 11, yPos - 3, std::to_wstring(textureCoords.X + 1));
         drawingClass.WriteStringToBuffer(xPos + 18, yPos - 3, std::to_wstring(textureCoords.Y + 1));
     }
@@ -318,63 +314,112 @@ void Canvas::DrawCanvas()
 void Canvas::DisplayBrush()
 {
     // get appropriate coords for drawing to screen - will dynamically calc these
-    COORD mouseTexPosition = ConvertMouseCoordsToTextureCoords(drawingClass.GetMousePosition().X, drawingClass.GetMousePosition().Y);
+    COORD mouseTexPosition = ConvertScreenCoordsToTextureCoords(drawingClass.GetMousePosition().X, drawingClass.GetMousePosition().Y);
     COORD mouseCoords = ConvertTextureCoordsToScreenCoords(mouseTexPosition.X, mouseTexPosition.Y);
+
     COORD ScreenInitClickCoords = ConvertTextureCoordsToScreenCoords(initialClickCoords.X, initialClickCoords.Y);
 
     // draw appropriate brush
     switch (currentBrushType) {
-    case BrushType::BRUSH_POINT:
-        drawingClass.DrawBlock(mouseCoords.X, mouseCoords.Y, 1 * zoomLevel, drawPixel.Attributes, PIXEL_THREEQUARTERS);
-        break;
     case BrushType::BRUSH_BLOCK:
-        drawingClass.DrawBlock(mouseCoords.X, mouseCoords.Y, brushSize * zoomLevel, drawPixel.Attributes, PIXEL_THREEQUARTERS);
+        DisplayBlockOnCanvas(mouseCoords.X, mouseCoords.Y, brushSize, drawPixel.Attributes, PIXEL_THREEQUARTERS);
         break;
     case BrushType::BRUSH_RECT:
-        drawingClass.DrawBlock(mouseCoords.X, mouseCoords.Y, zoomLevel, drawPixel.Attributes, PIXEL_THREEQUARTERS);
         if (initialClick)
         {
-            drawingClass.DrawRectangleCoords(ScreenInitClickCoords.X, ScreenInitClickCoords.Y, mouseCoords.X, mouseCoords.Y, drawPixel.Attributes, false, PIXEL_THREEQUARTERS);
-            drawingClass.DrawBlock(ScreenInitClickCoords.X, ScreenInitClickCoords.Y, zoomLevel, TexturePainter::HIGHLIGHT_COLOUR, PIXEL_THREEQUARTERS);
-            drawingClass.DrawBlock(mouseCoords.X, mouseCoords.Y, zoomLevel, TexturePainter::HIGHLIGHT_COLOUR, PIXEL_THREEQUARTERS);
-
+            DisplayRectangleOnCanvas(ScreenInitClickCoords.X, ScreenInitClickCoords.Y, drawingClass.GetMousePosition().X, drawingClass.GetMousePosition().Y, drawPixel.Attributes, false, PIXEL_THREEQUARTERS, brushSize);
+            DisplayPixelOnCanvas(ScreenInitClickCoords.X, ScreenInitClickCoords.Y, TexturePainter::HIGHLIGHT_COLOUR, PIXEL_THREEQUARTERS);
         }
+        DisplayPixelOnCanvas(mouseCoords.X, mouseCoords.Y, TexturePainter::HIGHLIGHT_COLOUR, PIXEL_THREEQUARTERS);
         break;
     case BrushType::BRUSH_RECT_FILLED:
-        drawingClass.DrawBlock(mouseCoords.X, mouseCoords.Y, zoomLevel, drawPixel.Attributes, PIXEL_THREEQUARTERS);
         if (initialClick)
         {
-            drawingClass.DrawRectangleCoords(ScreenInitClickCoords.X, ScreenInitClickCoords.Y, mouseCoords.X, mouseCoords.Y, drawPixel.Attributes, true, PIXEL_THREEQUARTERS);
-            drawingClass.DrawBlock(ScreenInitClickCoords.X, ScreenInitClickCoords.Y, zoomLevel, TexturePainter::HIGHLIGHT_COLOUR, PIXEL_THREEQUARTERS);
-            drawingClass.DrawBlock(mouseCoords.X, mouseCoords.Y, zoomLevel, TexturePainter::HIGHLIGHT_COLOUR, PIXEL_THREEQUARTERS);
+            DisplayRectangleOnCanvas(ScreenInitClickCoords.X, ScreenInitClickCoords.Y, drawingClass.GetMousePosition().X, drawingClass.GetMousePosition().Y, drawPixel.Attributes, true, PIXEL_THREEQUARTERS);
+            DisplayPixelOnCanvas(ScreenInitClickCoords.X, ScreenInitClickCoords.Y, TexturePainter::HIGHLIGHT_COLOUR, PIXEL_THREEQUARTERS);
         }
-        break;        break;
+        DisplayPixelOnCanvas(mouseCoords.X, mouseCoords.Y, TexturePainter::HIGHLIGHT_COLOUR, PIXEL_THREEQUARTERS);
+
+        break;
     case BrushType::BRUSH_LINE:
-        drawingClass.DrawPoint(mouseCoords.X, mouseCoords.Y, drawPixel.Attributes, PIXEL_THREEQUARTERS);
         if (initialClick)
         {
-            drawingClass.DrawLine(ScreenInitClickCoords.X, ScreenInitClickCoords.Y, mouseCoords.X, mouseCoords.Y, currentPixel.Attributes, PIXEL_THREEQUARTERS, brushSize);
-            drawingClass.DrawBlock(ScreenInitClickCoords.X, ScreenInitClickCoords.Y, brushSize * zoomLevel, TexturePainter::HIGHLIGHT_COLOUR, PIXEL_THREEQUARTERS);
-            drawingClass.DrawBlock(mouseCoords.X, mouseCoords.Y, brushSize * zoomLevel, TexturePainter::HIGHLIGHT_COLOUR, PIXEL_THREEQUARTERS);
+            DisplayLineOnCanvas(ScreenInitClickCoords.X, ScreenInitClickCoords.Y, mouseCoords.X, mouseCoords.Y, currentPixel.Attributes, PIXEL_THREEQUARTERS, brushSize);
+            DisplayBlockOnCanvas(ScreenInitClickCoords.X, ScreenInitClickCoords.Y, brushSize, TexturePainter::HIGHLIGHT_COLOUR, PIXEL_THREEQUARTERS);
         }
+        DisplayBlockOnCanvas(mouseCoords.X, mouseCoords.Y, brushSize, TexturePainter::HIGHLIGHT_COLOUR, PIXEL_THREEQUARTERS);
         break;
     }
 
 }
 
-void Canvas::DisplayRectangleOnCanvas(int x0, int y0, int x1, int y1, short colour, bool filled, short glyph, int width)
-{
-    DisplayPixelOnCanvas(x, y);
+void Canvas::DisplayRectangleOnCanvas(int x0, int y0, int x1, int y1, short colour, bool filled, short glyph, int lineWidth)
+{   // Normalize coordinates
+    int left = std::min(x0, x1);
+    int top = std::min(y0, y1);
+    int right = std::max(x0, x1);
+    int bottom = std::max(y0, y1);
 
+    if (filled) {
+        for (int y = top; y <= bottom; ++y) {
+            for (int x = left; x <= right; ++x) {
+                DisplayPixelOnCanvas(x, y, colour, glyph);
+            }
+        }
+    } else {
+        for (int i = 0; i < lineWidth * zoomLevel; i+=zoomLevel) {
+            // Draw top and bottom sides of the current concentric rectangle
+            for (int x = left + i; x <= right - i; ++x) {
+                DisplayPixelOnCanvas(x, top + i, colour, glyph);
+                DisplayPixelOnCanvas(x, bottom - i, colour, glyph);
+            }
+            // Draw left and right sides of the current concentric rectangle
+            for (int y = top + i + 1; y <= bottom - i - 1; y++) { // Avoid redrawing corners
+                DisplayPixelOnCanvas(left + i, y, colour, glyph);
+                DisplayPixelOnCanvas(right - i, y, colour, glyph);
+            }
+        }
+    }
 }
 
-void Canvas::DisplayPixelOnCanvas(int x, int y)
+void Canvas::DisplayLineOnCanvas(int x0, int y0, int x1, int y1, short colour, short glyph, int lineWidth)
 {
-    COORD canvasPosition = ConvertMouseCoordsToTextureCoords(x, y);
-    drawingClass.DrawBlock(canvasPosition.X, canvasPosition.Y, zoomLevel, TexturePainter::HIGHLIGHT_COLOUR, PIXEL_THREEQUARTERS);
+    int dx = std::abs(x1 - x0), sx = x0 < x1 ? zoomLevel : -zoomLevel;
+    int dy = -std::abs(y1 - y0), sy = y0 < y1 ? zoomLevel : -zoomLevel;
+    int err = dx + dy, e2; // error value e_xy
+
+    while (true) {
+        DisplayBlockOnCanvas(x0, y0, lineWidth, colour, glyph); // Use DisplayBlockOnCanvas to draw a block at each point
+
+        if (x0 == x1 && y0 == y1) break; // Check if the end point is reached
+        e2 = 2 * err;
+        if (e2 >= dy) {
+            err += dy;
+            x0 += sx;
+        }
+        if (e2 <= dx) {
+            err += dx;
+            y0 += sy;
+        }
+    }
 }
 
+void Canvas::DisplayBlockOnCanvas(int x0, int y0, int size, short colour, short glyph)
+{
+    for (int x{ 0 }; x < size * zoomLevel; x++)
+        for (int y{ 0 }; y < size * zoomLevel; y++)
+            DisplayPixelOnCanvas(x0 + x, y0 + y, colour, glyph);
+}
 
+void Canvas::DisplayPixelOnCanvas(int x, int y, short colour, short glyph)
+{
+    // convert given screen coordinates to texture position
+    COORD texPosition = ConvertScreenCoordsToTextureCoords(x, y);
+    // then convert back to screen - this is needed to 'stick' to the texture pixels when zooming
+    COORD pixelCoords = ConvertTextureCoordsToScreenCoords(texPosition.X, texPosition.Y);
+    // display block on screen corresponding to pixel placed
+    drawingClass.DrawBlock(pixelCoords.X, pixelCoords.Y, zoomLevel, colour, glyph);
+}
 
 void Canvas::IncreaseZoomLevel()
 {

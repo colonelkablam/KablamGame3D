@@ -53,7 +53,6 @@ bool TexturePainter::OnGameCreate()
 
 
 
-    brushButtonsContainer->AddButton(pointToolIcon, [this]() { currentCanvas->SetBrushType(Canvas::BrushType::BRUSH_POINT); });
     brushButtonsContainer->AddButton(blockToolIcon, [this]() { currentCanvas->SetBrushType(Canvas::BrushType::BRUSH_BLOCK); });
     brushButtonsContainer->AddButton(rectToolIcon, [this]() { currentCanvas->SetBrushType(Canvas::BrushType::BRUSH_RECT); });
     brushButtonsContainer->AddButton(rectFillToolIcon, [this]() { currentCanvas->SetBrushType(Canvas::BrushType::BRUSH_RECT_FILLED); });

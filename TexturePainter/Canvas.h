@@ -8,7 +8,6 @@ class Canvas {
 
 public:
     enum class BrushType {
-        BRUSH_POINT,  // For single pixel drawing
         BRUSH_BLOCK,
         BRUSH_RECT, // For drawing squares
         BRUSH_RECT_FILLED,
@@ -20,7 +19,7 @@ private:
     static const short STARTING_GLYPH = PIXEL_SOLID;
     static const int START_ZOOM_LEVEL = 1;
     static const int START_BRUSH_SIZE = 1;
-    static const BrushType STARTING_BRUSH = BrushType::BRUSH_POINT;
+    static const BrushType STARTING_BRUSH = BrushType::BRUSH_BLOCK;
 
     BrushType currentBrushType;
     int brushSize;
@@ -82,7 +81,7 @@ public:
 
     bool IsMouseWithinCanvas(int x, int y);
 
-    COORD ConvertMouseCoordsToTextureCoords(int x, int y);
+    COORD ConvertScreenCoordsToTextureCoords(int x, int y);
 
     COORD ConvertTextureCoordsToScreenCoords(int x, int y);
 
@@ -104,9 +103,13 @@ public:
 
     void DisplayBrush();
 
-    void DisplayRectangleOnCanvas(int x0, int y0, int x1, int y1, short colour, bool filled, short glyph, int width);
+    void DisplayRectangleOnCanvas(int x0, int y0, int x1, int y1, short colour, bool filled = false, short glyph = PIXEL_SOLID, int lineWidth = 1);
 
-    void DisplayPixelOnCanvas(int x, int y);
+    void DisplayLineOnCanvas(int x0, int y0, int x1, int y1, short colour, short glyph = PIXEL_SOLID, int lineWidth = 1);
+
+    void DisplayBlockOnCanvas(int x, int y, int size, short colour, short glyph);
+
+    void DisplayPixelOnCanvas(int x, int y, short colour, short glyph);
 
     void IncreaseZoomLevel();
 };
