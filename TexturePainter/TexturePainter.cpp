@@ -9,6 +9,14 @@ TexturePainter::TexturePainter(std::wstring newTitle)
 {
     sConsoleTitle = newTitle;
     eventLog.push_back(GetFormattedDateTime() + L" - Output of Error Log of last " + sConsoleTitle + L" session" + L":\n");
+
+    deleteToolIcon = nullptr;
+    blockToolIcon = nullptr;
+    increaseToolIcon = nullptr;
+    decreaseToolIcon = nullptr;
+    rectToolIcon = nullptr;
+    rectFillToolIcon = nullptr;
+    lineToolIcon = nullptr;
 }
 
 TexturePainter::~TexturePainter()
@@ -18,6 +26,14 @@ TexturePainter::~TexturePainter()
         delete canvas;
         canvas = nullptr;
     }
+
+     delete deleteToolIcon;
+     delete blockToolIcon;
+     delete increaseToolIcon;
+     delete decreaseToolIcon;
+     delete rectToolIcon;
+     delete rectFillToolIcon;
+     delete lineToolIcon;
 }
 
 bool TexturePainter::OnGameCreate() 
@@ -34,26 +50,35 @@ bool TexturePainter::OnGameCreate()
     SetConsoleFocusPause(true);
     SetWindowPosition(50, 50);
 
-    colourButtonsContainer = new ButtonContainer(*this, COLOUR_BUTTON_XPOS, COLOUR_BUTTON_YPOS, 2, 8); 
+    // container for colour buttons
+    colourButtonsContainer = new ButtonContainer(*this, COLOUR_BUTTON_XPOS, COLOUR_BUTTON_YPOS, 2, 9); 
 
+    // populate it 
     for (short colour = 0; colour < 8; ++colour) // For simplicity directly using the index as the color here and OR with FG_INTENSITY.
     {
         colourButtonsContainer->AddButton(5, 5, colour, [this, colour]() { currentCanvas->SetBrushColour(colour); });
         colourButtonsContainer->AddButton(5, 5, colour | FG_INTENSITY, [this, colour]() { currentCanvas->SetBrushColour(colour | FG_INTENSITY); });
     }
+    deleteToolIcon = new Texture(L"./ToolIcons/delete_tool_icon.txr");
+    colourButtonsContainer->AddButton(11,3, 1, [this]() { currentCanvas->SetBrushToDelete(); });
 
+
+
+    // container for tool bottons
     brushButtonsContainer = new ButtonContainer(*this, BRUSH_BUTTON_XPOS, BRUSH_BUTTON_YPOS, 8, 1);
 
-
-    Texture* pointToolIcon = new Texture(L"./ToolIcons/point_tool_icon.txr");
-    Texture* blockToolIcon = new Texture(L"./ToolIcons/block_tool_icon.txr");
-    Texture* rectToolIcon = new Texture(L"./ToolIcons/rect_tool_icon.txr");
-    Texture* rectFillToolIcon = new Texture(L"./ToolIcons/rect_fill_tool_icon.txr");
-    Texture* lineToolIcon = new Texture(L"./ToolIcons/line_tool_icon.txr");
-
-
-
+    // load textures
+    blockToolIcon = new Texture(L"./ToolIcons/block_tool_icon.txr");
+    increaseToolIcon = new Texture(L"./ToolIcons/increase_tool_icon.txr");
+    decreaseToolIcon = new Texture(L"./ToolIcons/decrease_tool_icon.txr");
+    rectToolIcon = new Texture(L"./ToolIcons/rect_tool_icon.txr");
+    rectFillToolIcon = new Texture(L"./ToolIcons/rect_fill_tool_icon.txr");
+    lineToolIcon = new Texture(L"./ToolIcons/line_tool_icon.txr");
+    
+    // populate it
     brushButtonsContainer->AddButton(blockToolIcon, [this]() { currentCanvas->SetBrushType(Canvas::BrushType::BRUSH_BLOCK); });
+    brushButtonsContainer->AddButton(increaseToolIcon, [this]() { currentCanvas->ChangeBrushSize(1); });
+    brushButtonsContainer->AddButton(decreaseToolIcon, [this]() { currentCanvas->ChangeBrushSize(-1); });
     brushButtonsContainer->AddButton(rectToolIcon, [this]() { currentCanvas->SetBrushType(Canvas::BrushType::BRUSH_RECT); });
     brushButtonsContainer->AddButton(rectFillToolIcon, [this]() { currentCanvas->SetBrushType(Canvas::BrushType::BRUSH_RECT_FILLED); });
     brushButtonsContainer->AddButton(lineToolIcon, [this]() { currentCanvas->SetBrushType(Canvas::BrushType::BRUSH_LINE); });
@@ -69,10 +94,8 @@ bool TexturePainter::OnGameUpdate(float fElapsedTime) {
     currentCanvas->DrawCanvas();
 
     DrawHeadingInfo(1, 1);
-    DrawToolInfo(1, 8);
+    DrawToolInfo(1, 11);
     DrawButtons();
-    //currentCanvas->DrawBrush();
-
 
     return true;
 }
@@ -226,11 +249,8 @@ void TexturePainter::DrawHeadingInfo(int x, int y)
 
 void TexturePainter::DrawToolInfo(int x, int y)
 {
-    WriteStringToBuffer(x, y,     L"    Brush Size: " + std::to_wstring(currentCanvas->GetBrushSize()), FG_GREEN);
-    WriteStringToBuffer(x, y + 1, L" Current Brush: " + std::to_wstring(currentCanvas->GetBrushTypeInt()), FG_GREEN);
-    WriteStringToBuffer(x, y + 2, L"Current Colour: ");
-    DrawPoint(x + 16, y + 2, currentCanvas->GetBrushColour(), PIXEL_SOLID);
-
+    WriteStringToBuffer(x + 4, y, L"Brush");
+    DrawBlock(x + 4, y + 2, currentCanvas->GetBrushSize(), currentCanvas->GetBrushColour() | BG_MAGENTA, PIXEL_THREEQUARTERS);
 }
 
 void TexturePainter::DrawButtons()
@@ -246,18 +266,28 @@ bool TexturePainter::HandleKeyPress()
     if ( keyArray[VK_LBUTTON].bPressed)
     {
         if (currentCanvas->IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y))
-            currentCanvas->ApplyBrush(mouseCoords.X, mouseCoords.Y);
+            currentCanvas->ApplyBrushTool(mouseCoords.X, mouseCoords.Y);
 
         // check if over any of the buttons when clicked
         colourButtonsContainer->HandleMouseClick(mouseCoords.X, mouseCoords.Y);
         brushButtonsContainer->HandleMouseClick(mouseCoords.X, mouseCoords.Y);
+    }
 
-
+    if (keyArray[VK_LBUTTON].bHeld)
+    {
+        if (currentCanvas->IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y))
+        {
+            currentCanvas->ApplyBrushPaint(mouseCoords.X, mouseCoords.Y);
+        }
     }
 
     if (keyArray[VK_RBUTTON].bHeld)
     {
-        currentCanvas->ApplyBrush(mouseCoords.X, mouseCoords.Y, true);
+        if (currentCanvas->IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y))
+        {
+            currentCanvas->SetBrushToDelete();
+            currentCanvas->ApplyBrushPaint(mouseCoords.X, mouseCoords.Y);
+        }
     }
 
     if (keyArray[VK_OEM_PLUS].bPressed)

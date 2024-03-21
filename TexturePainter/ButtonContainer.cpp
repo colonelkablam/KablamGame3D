@@ -23,21 +23,31 @@ bool ButtonContainer::AddButton(int width, int height, short colour, std::functi
         drawingClass.AddToLog(L"Too many buttons added to ButtonContainer.");
         return false;
     }
-    else
-    {
-        // Calculate the column and row position for this button based on its ID
-        int columnPosition = buttonId % columns;
-        int rowPosition = buttonId / columns;  // Integer division will naturally floor the result
 
-        // Calculate the actual x and y positions based on the column and row positions
-        int x = xPos + (columnPosition * (width + spacing));
-        int y = yPos + (rowPosition * (height + spacing));
+    // Calculate the column and row position for this button based on its ID
+    int columnPosition = buttonId % columns;
+    int rowPosition = buttonId / columns;
 
-        Button* newButton = new Button(x, y, width, height, colour, onClickFunction);
-        buttons.push_back(newButton);
-
-        return true;
+    // Initialize yPosForRow if it's the first button in the row or doesn't exist
+    if (yPosForRow.size() <= rowPosition) {
+        yPosForRow.push_back((rowPosition == 0) ? yPos : yPosForRow[rowPosition - 1] + maxHeightInRow[rowPosition - 1] + spacing);
+        maxHeightInRow.push_back(0);
     }
+
+    // Calculate the actual x and y positions based on the column and row positions
+    int x = xPos + (columnPosition * (width + spacing));
+    int y = yPosForRow[rowPosition];
+
+    // Update the maximum height in the current row if this button is taller
+    if (height > maxHeightInRow[rowPosition]) {
+        maxHeightInRow[rowPosition] = height;
+    }
+
+    // Create and add the new button
+    Button* newButton = new Button(x, y, width, height, colour, onClickFunction);
+    buttons.push_back(newButton);
+
+    return true;
 }
 
 // button made with a texture

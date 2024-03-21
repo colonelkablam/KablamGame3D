@@ -40,6 +40,15 @@ private:
     ButtonContainer* colourButtonsContainer;
     ButtonContainer* brushButtonsContainer;
 
+    // containers for icons
+    Texture* deleteToolIcon;
+    Texture* blockToolIcon;
+    Texture* increaseToolIcon;
+    Texture* decreaseToolIcon;
+    Texture* rectToolIcon;
+    Texture* rectFillToolIcon;
+    Texture* lineToolIcon;
+
 public:
     // constructor
     TexturePainter(std::wstring title = L"New Unnamed Project");

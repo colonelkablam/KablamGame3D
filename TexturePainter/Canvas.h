@@ -26,7 +26,6 @@ private:
     bool initialClick;
     COORD initialClickCoords;
     CHAR_INFO currentPixel;
-    CHAR_INFO drawPixel;
     CHAR_INFO deletePixel;
 
     std::wstring fileName;
@@ -66,8 +65,6 @@ public:
 
     int GetBrushSize();
 
-    int GetBrushTypeInt();
-
     BrushType GetBrushType();
 
     void SetBrushType(BrushType brushType);
@@ -75,6 +72,8 @@ public:
     short GetBrushColour();
 
     void SetBrushColour(short colour);
+
+    void SetBrushColourAndGlyph(short colour, short glyph);
 
     const Texture* GetTexture();
 
@@ -86,9 +85,15 @@ public:
 
     COORD ConvertTextureCoordsToScreenCoords(int x, int y);
    
-    void ApplyBrushStroke(const Texture* brushStroke);
+    void MergeBrushStroke(const Texture* brushStroke);
+    
+    // apply painting block - able to hold down mouse button
+    void ApplyBrushPaint(int x, int y);
 
-    void ApplyBrush(int x, int y, bool erase = false);
+    // apply a tool requiring initial click and them secondary click
+    void ApplyBrushTool(int x, int y);
+
+    void SetBrushToDelete();
 
     void ChangeBrushType(BrushType newBrush);
     
@@ -104,15 +109,7 @@ public:
 
     void DrawCanvas();
 
-    void DisplayBrush();
-
-    void DisplayRectangleOnCanvas(int x0, int y0, int x1, int y1, short colour, bool filled = false, short glyph = PIXEL_SOLID, int lineWidth = 1);
-
-    void DisplayLineOnCanvas(int x0, int y0, int x1, int y1, short colour, short glyph = PIXEL_SOLID, int lineWidth = 1);
-
-    void DisplayBlockOnCanvas(int x, int y, int size, short colour, short glyph);
-
-    void DisplayPixelOnCanvas(int x, int y, short colour, short glyph);
+    void CreateBrushStroke();
 
     void IncreaseZoomLevel();
 };
