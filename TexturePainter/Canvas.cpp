@@ -11,7 +11,7 @@
 
 
 Canvas::Canvas(TexturePainter& drawer, Texture* tex, std::wstring fn, std::wstring fp, int x, int y)
-    : drawingClass{ drawer }, texture{ tex }, fileName{ fn }, filePath{ fp }, xPos{ x }, yPos{ y },
+    : drawingClass{ drawer }, texture{ tex }, currentBrushStroke{ nullptr }, fileName { fn }, filePath{ fp }, xPos{ x }, yPos{ y },
     initialClick{ false }, initialClickCoords{ 0, 0 }
 {
     currentBrushType = STARTING_BRUSH;
@@ -21,6 +21,10 @@ Canvas::Canvas(TexturePainter& drawer, Texture* tex, std::wstring fn, std::wstri
     currentPixel = { STARTING_GLYPH, STARTING_COLOUR };
     drawPixel = { STARTING_GLYPH, STARTING_COLOUR };
     deletePixel = { L' ', 0 };
+
+    //create first brush stroke
+    currentBrushStroke = new Texture{ texture->GetWidth(), texture->GetHeight() };
+
 }
 
 Canvas::~Canvas()
@@ -151,9 +155,18 @@ COORD Canvas::ConvertTextureCoordsToScreenCoords(int x, int y)
     return screenCoords;
 }
 
+void Canvas::ApplyBrushStroke(const Texture* brushStroke)
+{
+    texture->MergeOther(brushStroke);
+    currentBrushStroke->Clear();
+}
+
+
 void Canvas::ApplyBrush(int x, int y, bool erase)
 { 
     COORD coords = ConvertScreenCoordsToTextureCoords(x, y);
+    COORD mouseCoords = drawingClass.GetMousePosition();
+
 
     if (erase)
         currentPixel = deletePixel;
@@ -163,19 +176,20 @@ void Canvas::ApplyBrush(int x, int y, bool erase)
     switch (currentBrushType) {
     case BrushType::BRUSH_BLOCK:
         PaintBlock(coords.X, coords.Y, brushSize); // Draws a filled block
+        ApplyBrushStroke(currentBrushStroke);
         break;
     case BrushType::BRUSH_RECT:
         // store the initial click position
-        if (!initialClick) {
+        if (initialClick == false) {
             initialClickCoords.X = coords.X;
             initialClickCoords.Y = coords.Y;
             initialClick = true; // Reset after the initial click is recorded
         }
         else {
-            PaintRectangleCoords(initialClickCoords.X, initialClickCoords.Y, coords.X, coords.Y, false, brushSize);
             initialClick = false; // Reset after the initial click is recorded
             initialClickCoords.X = coords.X;
             initialClickCoords.Y = coords.Y;
+            ApplyBrushStroke(currentBrushStroke);
         }
         break;
     case BrushType::BRUSH_RECT_FILLED:
@@ -222,7 +236,7 @@ void Canvas::ChangeBrushSize(int sizeChange)
 
 void Canvas::PaintPoint(int x, int y)
 {
-    texture->SetPixel(x, y, currentPixel);
+    currentBrushStroke->SetPixel(x, y, currentPixel);
 }
 
 // Bresenham's line algorithm
@@ -308,29 +322,45 @@ void Canvas::DrawCanvas()
     // add texture to screen buffer
     drawingClass.DrawTextureToScreen(texture, xPos, yPos, zoomLevel, true);
     // draw current brush (block, line, or square being drawn)
+
+    // if brushStroke object exists, draw it to screen
+    if (currentBrushStroke != nullptr)
+        drawingClass.DrawPartialTextureToScreen(currentBrushStroke, xPos, yPos, zoomLevel);
+
     DisplayBrush();
 }
 
 void Canvas::DisplayBrush()
 {
     // get appropriate coords for drawing to screen - will dynamically calc these
-    COORD mouseTexPosition = ConvertScreenCoordsToTextureCoords(drawingClass.GetMousePosition().X, drawingClass.GetMousePosition().Y);
-    COORD mouseCoords = ConvertTextureCoordsToScreenCoords(mouseTexPosition.X, mouseTexPosition.Y);
+    COORD mouseCoords = ConvertScreenCoordsToTextureCoords(drawingClass.GetMousePosition().X, drawingClass.GetMousePosition().Y);
+   // COORD mouseCoords = ConvertTextureCoordsToScreenCoords(mouseTexPosition.X, mouseTexPosition.Y);
+
+    //COORD mouseCoords = { drawingClass.GetMousePosition().X - xPos, drawingClass.GetMousePosition().Y - yPos };
+
 
     COORD ScreenInitClickCoords = ConvertTextureCoordsToScreenCoords(initialClickCoords.X, initialClickCoords.Y);
+
+    if (currentBrushStroke != nullptr)
+        currentBrushStroke->Clear();
 
     // draw appropriate brush
     switch (currentBrushType) {
     case BrushType::BRUSH_BLOCK:
-        DisplayBlockOnCanvas(mouseCoords.X, mouseCoords.Y, brushSize, drawPixel.Attributes, PIXEL_THREEQUARTERS);
+        //DisplayBlockOnCanvas(mouseCoords.X, mouseCoords.Y, brushSize, drawPixel.Attributes, PIXEL_THREEQUARTERS);
         break;
     case BrushType::BRUSH_RECT:
         if (initialClick)
         {
-            DisplayRectangleOnCanvas(ScreenInitClickCoords.X, ScreenInitClickCoords.Y, drawingClass.GetMousePosition().X, drawingClass.GetMousePosition().Y, drawPixel.Attributes, false, PIXEL_THREEQUARTERS, brushSize);
-            DisplayPixelOnCanvas(ScreenInitClickCoords.X, ScreenInitClickCoords.Y, TexturePainter::HIGHLIGHT_COLOUR, PIXEL_THREEQUARTERS);
+            PaintRectangleCoords(initialClickCoords.X, initialClickCoords.Y, mouseCoords.X, mouseCoords.Y, false, brushSize);
         }
-        DisplayPixelOnCanvas(mouseCoords.X, mouseCoords.Y, TexturePainter::HIGHLIGHT_COLOUR, PIXEL_THREEQUARTERS);
+
+        //if (initialClick)
+        //{
+        //    DisplayRectangleOnCanvas(ScreenInitClickCoords.X, ScreenInitClickCoords.Y, drawingClass.GetMousePosition().X, drawingClass.GetMousePosition().Y, drawPixel.Attributes, false, PIXEL_THREEQUARTERS, brushSize);
+        //    DisplayPixelOnCanvas(ScreenInitClickCoords.X, ScreenInitClickCoords.Y, TexturePainter::HIGHLIGHT_COLOUR, PIXEL_THREEQUARTERS);
+        //}
+        //DisplayPixelOnCanvas(mouseCoords.X, mouseCoords.Y, TexturePainter::HIGHLIGHT_COLOUR, PIXEL_THREEQUARTERS);
         break;
     case BrushType::BRUSH_RECT_FILLED:
         if (initialClick)

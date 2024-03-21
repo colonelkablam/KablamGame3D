@@ -35,6 +35,7 @@ private:
     int yPos;
     int zoomLevel;
     Texture* texture;
+    Texture* currentBrushStroke;
 
     TexturePainter& drawingClass;
 
@@ -84,6 +85,8 @@ public:
     COORD ConvertScreenCoordsToTextureCoords(int x, int y);
 
     COORD ConvertTextureCoordsToScreenCoords(int x, int y);
+   
+    void ApplyBrushStroke(const Texture* brushStroke);
 
     void ApplyBrush(int x, int y, bool erase = false);
 

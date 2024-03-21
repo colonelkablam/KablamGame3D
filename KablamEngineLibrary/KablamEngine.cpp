@@ -527,6 +527,28 @@ int KablamEngine::DrawTextureToScreen(const Texture* texture, int xScreen, int y
     return 0; 
 }
 
+// this is for drawing texture directly to screen pixels
+int KablamEngine::DrawPartialTextureToScreen(const Texture* texture, int xScreen, int yScreen, float scale)
+{
+    for (int x{ 0 }; x < texture->GetWidth() * scale; x++)
+    {
+        for (int y = 0; y < texture->GetHeight() * scale; y++)
+        {
+            // Find the corresponding texture coordinates
+            int texX = static_cast<int>(x / scale);
+            int texY = static_cast<int>(y / scale);
+
+            short glyph{ texture->GetGlyph(texX, texY) };
+            short colour{ texture->GetColour(texX, texY) };
+
+            // for displaying 'empty' pixels
+            if (glyph != L' ')
+                DrawPoint(xScreen + x, yScreen + y, colour, glyph);
+        }
+    }
+    return 0;
+}
+
 // goes through screen[] and applies linear glyph shading
 void KablamEngine::ApplyBilinearFilterScreen()
 {

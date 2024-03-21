@@ -165,6 +165,8 @@ public:
     void DrawRectangleEdgeLength(int x, int y, int width, int height, short colour = FG_WHITE, bool filled = false, short glyph = PIXEL_SOLID, int lineWidth = 1);
     void DrawCircle(int x, int y, int radius, short colour = FG_WHITE, short glyph = PIXEL_SOLID, bool filled = false);
     int DrawTextureToScreen(const Texture* texture, int x, int y, float scale, bool showEmptyPix = false);
+    int DrawPartialTextureToScreen(const Texture* texture, int xScreen, int yScreen, float scale);
+
 
 protected:
     void ApplyBilinearFilterScreen();

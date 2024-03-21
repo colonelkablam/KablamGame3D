@@ -103,7 +103,7 @@ public:
 
 	// member methods
 private:
-	bool Initialise(int w, int h, bool illuminated = false, short backgroundColour = BG_BLACK);
+	bool Initialise(int w, int h, bool illuminated = false, short forgroundColour = FG_BLACK);
 	
 	void GenerateMipmaps();
 
@@ -152,6 +152,11 @@ public:
 	int GetWidth() const;
 
 	int GetHeight() const;
+
+	void MergeOther(const Texture* other);
+
+	void Clear(short colour = 0, short glyph = L' ');
+
 };
 
 
