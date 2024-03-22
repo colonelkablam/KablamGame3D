@@ -10,9 +10,9 @@
 #include "Canvas.h"
 
 
-Canvas::Canvas(TexturePainter& drawer, Texture* tex, std::wstring fn, std::wstring fp, int x, int y)
-    : drawingClass{ drawer }, texture{ tex }, currentBrushStroke{ nullptr }, fileName { fn }, filePath{ fp }, xPos{ x }, yPos{ y },
-    initialClick{ false }, initialClickCoords{ 0, 0 }
+Canvas::Canvas(TexturePainter& drawer, Texture* tex, std::wstring fn, std::wstring fp, short x, short y)
+    : drawingClass{ drawer }, texture{ tex }, currentBrushStroke{ nullptr }, fileName { fn }, filePath{ fp }, topLeft{ x, y }, 
+        bottomRight{ 0, 0 }, initialClick{false}, initialClickCoords{0, 0}, canvasViewOffset{0,0}
 {
     currentBrushType = STARTING_BRUSH;
     brushSize = START_BRUSH_SIZE;
@@ -24,6 +24,8 @@ Canvas::Canvas(TexturePainter& drawer, Texture* tex, std::wstring fn, std::wstri
     //create first brush stroke
     currentBrushStroke = new Texture{ texture->GetWidth(), texture->GetHeight() };
 
+    bottomRight = { static_cast<short>(x + TexturePainter::CANVAS_DISPLAY_WIDTH), static_cast<short>(y + TexturePainter::CANVAS_DISPLAY_HEIGHT) };
+
 }
 
 Canvas::~Canvas()
@@ -31,7 +33,6 @@ Canvas::~Canvas()
     delete texture;
     delete currentBrushStroke;
 }
-
 
 bool Canvas::SaveTexture(const std::wstring& filePath)
 {
@@ -68,6 +69,7 @@ int Canvas::GetZoomLevel()
 {
     return zoomLevel;
 }
+
 int Canvas::GetTextureWidth()
 {
     return texture->GetWidth();
@@ -121,14 +123,38 @@ const Texture* Canvas::GetTexture()
 
 COORD Canvas::GetPositionCoords()
 {
-    COORD coords{ (short)xPos, (short)yPos };
-    return coords;
+    return topLeft;
+}
+
+int Canvas::ChangeCanvasOffset(COORD change)
+{
+    // Update the canvasOffset with the change
+    canvasViewOffset.X += change.X;
+    canvasViewOffset.Y += change.Y;
+
+    int canvasWidth = texture->GetWidth();
+    int canvasHeight = texture->GetHeight();
+
+    // Clamp canvasOffset.X to be within 0 and canvasWidth
+    if (canvasViewOffset.X < 0)
+        canvasViewOffset.X = 0;
+    else if (canvasViewOffset.X > canvasWidth  - 1)
+        canvasViewOffset.X = canvasWidth - 1;
+
+    // Clamp canvasOffset.Y to be within 0 and canvasHeight
+    if (canvasViewOffset.Y < 0)
+        canvasViewOffset.Y = 0;
+    else if (canvasViewOffset.Y > canvasHeight - 1)
+        canvasViewOffset.Y = canvasHeight - 1;
+
+    // Return 0 for success  - might add feedback if hitting edge
+    return 0;
 }
 
 bool Canvas::IsMouseWithinCanvas(int x, int y)
 {
     // Check if the mouse coordinates are within the zoom-adjusted canvas boundaries
-    if (x >= xPos && x < xPos + texture->GetWidth() * zoomLevel && y >= yPos && y < yPos + texture->GetHeight() * zoomLevel)
+    if (x >= topLeft.X && x < bottomRight.X * zoomLevel && y >= topLeft.Y && y < bottomRight.Y * zoomLevel)
         return true;
     else
         return false;
@@ -136,7 +162,7 @@ bool Canvas::IsMouseWithinCanvas(int x, int y)
 
 COORD Canvas::ConvertScreenCoordsToTextureCoords(int x, int y)
 {
-    COORD coords{ (x - xPos) / zoomLevel , (y - yPos) / zoomLevel };
+    COORD coords{ (x - topLeft.X) / zoomLevel + canvasViewOffset.X, (y - topLeft.Y) / zoomLevel + canvasViewOffset.Y };
     return coords;
 }
 
@@ -146,8 +172,8 @@ COORD Canvas::ConvertTextureCoordsToScreenCoords(int x, int y)
 
     // reverse transformation used in ConvertMouseCoordsToTextureCoords
     // Consider the canvas position (xPos, yPos) and the zoom level
-    screenCoords.X = xPos + (x * zoomLevel);
-    screenCoords.Y = yPos + (y * zoomLevel);
+    screenCoords.X = topLeft.X + (x * zoomLevel);
+    screenCoords.Y = topLeft.Y + (y * zoomLevel);
 
     return screenCoords;
 }
@@ -201,7 +227,6 @@ void Canvas::ChangeBrushSize(int sizeChange)
     int newSize = (brushSize - 1 + sizeChange + 5) % 5 + 1;
     brushSize = newSize;
 }
-
 
 void Canvas::PaintPoint(int x, int y)
 {
@@ -273,8 +298,8 @@ void Canvas::PaintRectangleCoords(int x0, int y0, int x1, int y1, bool filled, i
 
 void Canvas::DrawCanvas()
 {
-    drawingClass.WriteStringToBuffer(xPos - 1, yPos - 3, L"ZOOM: " + std::to_wstring(zoomLevel) + L'. ');
-    drawingClass.WriteStringToBuffer(xPos + 8, yPos - 3, L"X: -   Y: -");
+    drawingClass.WriteStringToBuffer(topLeft.X - 1, topLeft.Y - 3, L"ZOOM: " + std::to_wstring(zoomLevel) + L'. ');
+    drawingClass.WriteStringToBuffer(topLeft.X + 8, topLeft.Y - 3, L"X: -   Y: -");
 
     COORD mouseCoords = drawingClass.GetMousePosition();
 
@@ -282,22 +307,33 @@ void Canvas::DrawCanvas()
     if (IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y))
     {
         COORD textureCoords = ConvertScreenCoordsToTextureCoords(mouseCoords.X, mouseCoords.Y);
-        drawingClass.WriteStringToBuffer(xPos + 11, yPos - 3, std::to_wstring(textureCoords.X + 1));
-        drawingClass.WriteStringToBuffer(xPos + 18, yPos - 3, std::to_wstring(textureCoords.Y + 1));
+        drawingClass.WriteStringToBuffer(topLeft.X + 11, topLeft.Y - 3, std::to_wstring(textureCoords.X + 1));
+        drawingClass.WriteStringToBuffer(topLeft.X + 18, topLeft.Y - 3, std::to_wstring(textureCoords.Y + 1));
     }
 
-    drawingClass.DrawRectangleEdgeLength(xPos - 1, yPos - 1, (texture->GetWidth() * zoomLevel) + 2, (texture->GetHeight() * zoomLevel) + 2, FG_RED);
+    drawingClass.WriteStringToBuffer(topLeft.X + 11, topLeft.Y - 4, std::to_wstring(canvasViewOffset.X) + L' ' + std::to_wstring(canvasViewOffset.Y));
 
     // add texture to screen buffer
-    drawingClass.DrawTextureToScreen(texture, xPos, yPos, zoomLevel, true);
-    // draw current brush (block, line, or square being drawn)
+    drawingClass.DrawSectionOfTextureToScreen(texture, topLeft.X, topLeft.Y, 
+                                                canvasViewOffset.X, 
+                                                canvasViewOffset.Y, 
+                                                TexturePainter::CANVAS_DISPLAY_WIDTH/zoomLevel + canvasViewOffset.X - 1, 
+                                                TexturePainter::CANVAS_DISPLAY_HEIGHT/zoomLevel + canvasViewOffset.Y - 1,
+                                                zoomLevel);
 
     // if brushStroke object exists, draw it to screen
     if (currentBrushStroke != nullptr)
-        drawingClass.DrawPartialTextureToScreen(currentBrushStroke, xPos, yPos, zoomLevel);
+        drawingClass.DrawPartialTextureToScreen(currentBrushStroke, 
+                                                topLeft.X - canvasViewOffset.X * zoomLevel, 
+                                                topLeft.Y - canvasViewOffset.Y * zoomLevel,
+                                                zoomLevel);
 
     // this is the current brush stroke texture that will be laid ontop of base
     CreateBrushStroke();
+
+    // draw border around maximum display panel
+    drawingClass.DrawRectangleEdgeLength(topLeft.X - 2, topLeft.Y - 2, TexturePainter::CANVAS_DISPLAY_WIDTH + 4, TexturePainter::CANVAS_DISPLAY_HEIGHT + 4, FG_RED, false, PIXEL_HALF);
+
 }
 
 void Canvas::CreateBrushStroke()

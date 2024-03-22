@@ -333,5 +333,30 @@ bool TexturePainter::HandleKeyPress()
         currentCanvas->LoadTexture(currentCanvas->GetFilePath());
     }
 
+    // arrow keys to scroll canvas view
+    if (keyArray[VK_RIGHT].bHeld)
+    {
+        currentCanvas->ChangeCanvasOffset({1, 0});
+        Sleep(20);
+    }
+    if (keyArray[VK_LEFT].bHeld)
+    {
+        currentCanvas->ChangeCanvasOffset({ -1, 0 });
+        Sleep(20);
+
+    }
+    if (keyArray[VK_UP].bHeld)
+    {
+        currentCanvas->ChangeCanvasOffset({ 0, -1 });
+        Sleep(20);
+
+    }
+    if (keyArray[VK_DOWN].bHeld)
+    {
+        currentCanvas->ChangeCanvasOffset({ 0, 1 });
+        Sleep(20);
+
+    }
+
     return true;
 }

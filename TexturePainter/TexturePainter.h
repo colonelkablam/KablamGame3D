@@ -11,6 +11,8 @@ class TexturePainter : public KablamEngine
 
 public:
     static const short HIGHLIGHT_COLOUR = FG_RED;
+    static const int CANVAS_DISPLAY_WIDTH = 128;
+    static const int CANVAS_DISPLAY_HEIGHT = 64;
 private:
     static const int MIN_TEXTURE_SIZE = 4;
     static const int MAX_TEXTURE_SIZE = 64;

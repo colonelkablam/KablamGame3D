@@ -30,9 +30,14 @@ private:
 
     std::wstring fileName;
     std::wstring filePath;
-    int xPos;
-    int yPos;
+
+    // position in screen window
+    COORD topLeft;
+    COORD bottomRight;
+
+    // canvas view
     int zoomLevel;
+    COORD canvasViewOffset;
     Texture* texture;
     Texture* currentBrushStroke;
 
@@ -41,7 +46,7 @@ private:
 public:
 
 // constructors.destructors etc
-    Canvas(TexturePainter& drawer, Texture* texture, std::wstring fileName, std::wstring filePath, int xPos, int yPos);
+    Canvas(TexturePainter& drawer, Texture* texture, std::wstring fileName, std::wstring filePath, short xPos, short yPos);
 
     ~Canvas();
 
@@ -65,8 +70,6 @@ public:
 
     int GetBrushSize();
 
-    BrushType GetBrushType();
-
     void SetBrushType(BrushType brushType);
 
     short GetBrushColour();
@@ -78,6 +81,8 @@ public:
     const Texture* GetTexture();
 
     COORD GetPositionCoords();
+
+    int ChangeCanvasOffset(COORD change);
 
     bool IsMouseWithinCanvas(int x, int y);
 

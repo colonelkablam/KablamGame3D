@@ -527,7 +527,7 @@ int KablamEngine::DrawTextureToScreen(const Texture* texture, int xScreen, int y
     return 0; 
 }
 
-// this is for drawing texture directly to screen pixels
+// this is for drawing texture directly to screen pixels - any L' ' glyphs will be ignored (can see background)
 int KablamEngine::DrawPartialTextureToScreen(const Texture* texture, int xScreen, int yScreen, float scale)
 {
     for (int x{ 0 }; x < texture->GetWidth() * scale; x++)
@@ -544,6 +544,34 @@ int KablamEngine::DrawPartialTextureToScreen(const Texture* texture, int xScreen
             // for displaying 'empty' pixels
             if (glyph != L' ')
                 DrawPoint(xScreen + x, yScreen + y, colour, glyph);
+        }
+    }
+    return 0;
+}
+
+// drawing a rectangular section defined by x0 y0 and x1  y1 to screen - xScreen, yScreen will be top left
+int KablamEngine::DrawSectionOfTextureToScreen(const Texture* texture, int xScreen, int yScreen, int x0, int y0, int x1, int y1, float scale)
+{
+    // Clamp the rectangle coordinates to ensure they are within the texture's dimensions
+    x0 = std::max(x0, 0);
+    y0 = std::max(y0, 0);
+    x1 = std::min(x1, texture->GetWidth() - 1);
+    y1 = std::min(y1, texture->GetHeight() - 1);
+
+    for (int x = x0; x <= x1; x++)
+    {
+        for (int y = y0; y <= y1; y++)
+        {
+            // Find the corresponding texture coordinates
+            int texX = x; // No need to adjust by scale since we're looping over actual texture coordinates
+            int texY = y;
+
+            short glyph{ texture->GetGlyph(texX, texY) };
+            short colour{ texture->GetColour(texX, texY) };
+
+            // For displaying 'empty' pixels, skip drawing if the glyph is a space
+            if (glyph != L' ')
+                DrawBlock(xScreen + static_cast<int>((x - x0) * scale), yScreen + static_cast<int>((y - y0) * scale), scale, colour, glyph);
         }
     }
     return 0;

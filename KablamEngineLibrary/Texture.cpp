@@ -241,7 +241,6 @@ short Texture::SampleColour(float x, float y) const
 	return m_colourArray[index];
 }
 
-
 short Texture::SampleGlyph(float x, float y) const
 {
 	// Ensure x and y are within the expected range [0.0, 1.0]
