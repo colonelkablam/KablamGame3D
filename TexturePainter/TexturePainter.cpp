@@ -60,7 +60,7 @@ bool TexturePainter::OnGameCreate()
         colourButtonsContainer->AddButton(5, 5, colour | FG_INTENSITY, [this, colour]() { currentCanvas->SetBrushColour(colour | FG_INTENSITY); });
     }
     deleteToolIcon = new Texture(L"./ToolIcons/delete_tool_icon.txr");
-    colourButtonsContainer->AddButton(11,3, 1, [this]() { currentCanvas->SetBrushToDelete(); });
+    colourButtonsContainer->AddButton(deleteToolIcon, [this]() { currentCanvas->SetBrushToDelete(); });
 
 
 

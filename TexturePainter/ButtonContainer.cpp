@@ -3,7 +3,7 @@
 
 ButtonContainer::ButtonContainer(TexturePainter& drawer, int x, int y, int col, int row, short colour, int space)
     : drawingClass{ drawer }, xPos{ x }, yPos{ y }, lastClicked{ 0 }, columns{ col }, rows{ row },
-        background{ colour }, spacing{ space } {}
+    background{ colour }, spacing{ space }, nextXPos { 0 }, nextYPos{ 0 }, tallestInRow{ 0 } {}
 
 ButtonContainer::~ButtonContainer()
 {
@@ -23,36 +23,45 @@ bool ButtonContainer::AddButton(int width, int height, short colour, std::functi
         drawingClass.AddToLog(L"Too many buttons added to ButtonContainer.");
         return false;
     }
+    else
+    {
+        // Calculate the column and row position for this button based on its ID
+        int columnPosition = buttonId % columns;
+        int rowPosition = buttonId / columns;  // Integer division will naturally floor the result
 
-    // Calculate the column and row position for this button based on its ID
-    int columnPosition = buttonId % columns;
-    int rowPosition = buttonId / columns;
+        // if 1st button
+        if (columnPosition == 0 && rowPosition == 0)
+        {
+            nextXPos = xPos + spacing;
+            nextYPos = yPos + spacing;
+            tallestInRow = height;
+        }
+        // if starting new row
+        else if (columnPosition == 0) 
+        {
+            nextXPos = xPos + spacing;
+            nextYPos += tallestInRow + spacing;
+            tallestInRow = height; // first height the tallest
+        }
+        // keep track of tallest button in row
+        else 
+            if (height > tallestInRow)
+                tallestInRow = height;
 
-    // Initialize yPosForRow if it's the first button in the row or doesn't exist
-    if (yPosForRow.size() <= rowPosition) {
-        yPosForRow.push_back((rowPosition == 0) ? yPos : yPosForRow[rowPosition - 1] + maxHeightInRow[rowPosition - 1] + spacing);
-        maxHeightInRow.push_back(0);
+        // add button
+        Button* newButton = new Button(nextXPos, nextYPos, width, height, colour, onClickFunction);
+        buttons.push_back(newButton);
+
+        nextXPos += width + spacing; // Prepare nextXPos for the next button in the same row
+
+        return true;
     }
-
-    // Calculate the actual x and y positions based on the column and row positions
-    int x = xPos + (columnPosition * (width + spacing));
-    int y = yPosForRow[rowPosition];
-
-    // Update the maximum height in the current row if this button is taller
-    if (height > maxHeightInRow[rowPosition]) {
-        maxHeightInRow[rowPosition] = height;
-    }
-
-    // Create and add the new button
-    Button* newButton = new Button(x, y, width, height, colour, onClickFunction);
-    buttons.push_back(newButton);
-
-    return true;
 }
 
 // button made with a texture
 bool ButtonContainer::AddButton(Texture* iconTexture, std::function<void()> onClickFunction)
 {
+
     int buttonId = buttons.size();
     if (buttonId >= rows * columns)
     {
@@ -61,16 +70,37 @@ bool ButtonContainer::AddButton(Texture* iconTexture, std::function<void()> onCl
     }
     else
     {
+
+        int height{ iconTexture->GetHeight() };
+        int width{ iconTexture->GetWidth() };
         // Calculate the column and row position for this button based on its ID
         int columnPosition = buttonId % columns;
         int rowPosition = buttonId / columns;  // Integer division will naturally floor the result
 
-        // Calculate the actual x and y positions based on the column and row positions
-        int x = xPos + (columnPosition * (iconTexture->GetWidth() + spacing));
-        int y = yPos + (rowPosition * (iconTexture->GetHeight() + spacing));
+        // if 1st button
+        if (columnPosition == 0 && rowPosition == 0)
+        {
+            nextXPos = xPos + spacing;
+            nextYPos = yPos + spacing;
+            tallestInRow = height;
+        }
+        // if starting new row
+        else if (columnPosition == 0)
+        {
+            nextXPos = xPos + spacing;
+            nextYPos += tallestInRow + spacing;
+            tallestInRow = height; // first height the tallest
+        }
+        // keep track of tallest button in row
+        else
+            if (height > tallestInRow)
+                tallestInRow = height;
 
-        Button* newButton = new Button(x, y, iconTexture, onClickFunction);
+        // add button
+        Button* newButton = new Button(nextXPos, nextYPos, iconTexture, onClickFunction);
         buttons.push_back(newButton);
+
+        nextXPos += width + spacing; // Prepare nextXPos for the next button in the same row
 
         return true;
     }
@@ -94,17 +124,16 @@ void ButtonContainer::HandleMouseClick(int mouseX, int mouseY)
 
 void ButtonContainer::DrawButtons()
 {
-    int count{ 0 };
     for (const Button* button : buttons)
     {
         if (button->texture == nullptr)
             drawingClass.DrawRectangleEdgeLength(button->xPos, button->yPos, button->width, button->height, button->colour, true, PIXEL_SOLID);
         else
-            drawingClass.DrawTextureToScreen(button->texture, button->xPos, button->yPos, 1);
+            drawingClass.DrawTextureToScreen(button->texture, button->xPos, button->yPos, 1, true);
 
-        if (count == lastClicked)
-            drawingClass.DrawRectangleEdgeLength(button->xPos - 1, button->yPos - 1, button->width + 2, button->height + 2, TexturePainter::HIGHLIGHT_COLOUR, false, PIXEL_QUARTER);
-        
-        count++;
+        drawingClass.DrawRectangleEdgeLength(button->xPos - 1, button->yPos - 1, button->width + 2, button->height + 2, background, false, PIXEL_HALF);
     }
+    // highlight last clicked
+    drawingClass.DrawRectangleEdgeLength(buttons.at(lastClicked)->xPos - 1, buttons.at(lastClicked)->yPos - 1, buttons.at(lastClicked)->width + 2, buttons.at(lastClicked)->height + 2, TexturePainter::HIGHLIGHT_COLOUR, false, PIXEL_QUARTER);
+
 }

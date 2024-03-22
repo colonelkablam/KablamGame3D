@@ -15,10 +15,15 @@ private:
     int xPos;
     int yPos;
     int lastClicked;
+    short background;
+
+    // handling button placements
+    int nextXPos;
+    int nextYPos;
+    int tallestInRow;
     int columns;
     int rows;
     int spacing;
-    short background;
 
     struct Button
     {

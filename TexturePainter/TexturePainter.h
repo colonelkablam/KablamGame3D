@@ -17,15 +17,15 @@ private:
 
     const std::wstring SAVE_FOLDER = L"Textures\\"; // relative path to subDir
     const std::wstring TEXTURE_EXTENSION = L".txr";
-    const int CANVAS_XPOS = 16;
+    const int CANVAS_XPOS = 17;
     const int CANVAS_YPOS = 23;
 
-    const int COLOUR_BUTTON_XPOS = 2;
+    const int COLOUR_BUTTON_XPOS = 1;
     const int COLOUR_BUTTON_YPOS = 22;
     const int COLOUR_BUTTON_SIZE = 5;
 
-    const int BRUSH_BUTTON_XPOS = 15;
-    const int BRUSH_BUTTON_YPOS = 13;
+    const int BRUSH_BUTTON_XPOS = 16;
+    const int BRUSH_BUTTON_YPOS = 12;
     const int BRUSH_BUTTON_SIZE = 5;
 
 
