@@ -8,11 +8,8 @@
 #include "TexturePainter.h"
 // need to #include Texture.h in Canvas.h before here
 
-//#include "BrushStrokeCommand.h"
-
 #include "Canvas.h"
-
-
+#include "BrushStrokeCommand.h"
 
 Canvas::Canvas(TexturePainter& drawer, Texture* tex, std::wstring fn, std::wstring fp, short x, short y)
     : drawingClass{ drawer }, backgroundTexture{ tex }, currentBrushStrokeTexture{ nullptr }, fileName{ fn }, filePath{ fp }, topLeft{ x, y },
@@ -194,7 +191,7 @@ void Canvas::ApplyBrushPaint(int x, int y)
     switch (currentBrushType) {
     case BrushType::BRUSH_BLOCK:
         BrushStrokeCommand* newStroke = new BrushStrokeCommand(*this, new BrushStroke(0, 0, currentBrushStrokeTexture));
-        //brushMangager.performAction(newStroke);
+        brushMangager.performAction(newStroke);
         //currentBrushStrokeTexture->Clear();
         break;
     }

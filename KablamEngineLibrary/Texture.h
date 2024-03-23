@@ -99,9 +99,6 @@ public:
 	// from saved file
 	Texture(std::wstring sFilePath = L".\\Textures\\Untitled.txr");
 
-	// copy TBC
-	Texture(Texture& source);
-
 	// destructor
 	~Texture();
 

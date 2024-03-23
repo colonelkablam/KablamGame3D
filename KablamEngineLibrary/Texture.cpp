@@ -2,11 +2,11 @@
 #include "pch.h"
 #include "Texture.h"
 
-
 // undefine the macros from windows.h
 #undef max
 #undef min
 
+// constructors - three args
 Texture::Texture(int w, int h, int illum)
 	: m_colourArray{ nullptr }, m_glyphArray{ nullptr }, topMipmap{ nullptr }
 {
@@ -16,6 +16,7 @@ Texture::Texture(int w, int h, int illum)
 	GenerateMipmaps();
 }
 
+// constructors - filename
 Texture::Texture(std::wstring filePath)
 	: m_colourArray{ nullptr }, m_glyphArray{ nullptr }, topMipmap{ nullptr }
 {
@@ -29,7 +30,8 @@ Texture::Texture(std::wstring filePath)
 }
 
 // Copy constructor
-Texture::Texture(const Texture& other) : m_width(other.m_width), m_height(other.m_height), m_illumination(other.m_illumination) {
+Texture::Texture(const Texture& other) 
+	: m_width(other.m_width), m_height(other.m_height), m_illumination(other.m_illumination) {
 	m_colourArray = new short[m_width * m_height];
 	std::copy(other.m_colourArray, other.m_colourArray + m_width * m_height, m_colourArray);
 

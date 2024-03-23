@@ -1,5 +1,8 @@
 //#include "BrushStroke.h"
 //
+//#include "Texture.h"
+//
+//
 //BrushStroke::BrushStroke(int xPos, int yPos, Texture* texture)
 //    : x{ xPos }, y{ yPos }, strokeTexture{ texture }, undoTexture{ nullptr }
 //{
