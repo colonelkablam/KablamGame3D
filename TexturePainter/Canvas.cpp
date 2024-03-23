@@ -178,10 +178,12 @@ COORD Canvas::ConvertTextureCoordsToScreenCoords(int x, int y)
     return screenCoords;
 }
 
-void Canvas::MergeBrushStroke(const Texture* brushStroke)
+Texture* Canvas::MergeBrushStroke(const Texture* brushStroke)
 {
-    texture->MergeOther(brushStroke);
+    Texture* undoTexture{ nullptr };
+    undoTexture = texture->MergeOther(brushStroke);
     currentBrushStroke->Clear();
+    return undoTexture;
 }
 
 void Canvas::ApplyBrushPaint(int x, int y)

@@ -528,20 +528,30 @@ int Texture::GetHeight() const
 }
 
 // merge another texture over (ignoring 'empty' glyphs)
-void Texture::MergeOther(const Texture* other)
+Texture* Texture::MergeOther(const Texture* other)
 {
+	// create an 'undo' texture
+	Texture* undoTexture = new Texture(m_width, m_height);
+
 	for (size_t i{ 0 }; i < m_width * m_height; i++) {
+		// 'X' erases the underlying glyph, setting it to a space ' '
 		if (other->m_glyphArray[i] == L'X') {
-			// 'X' erases the underlying glyph, setting it to a space ' '
 			m_glyphArray[i] = L' ';
 		}
+		// If overlying texture glyph is not a space, copy both glyph and color
 		else if (other->m_glyphArray[i] != L' ') {
-			// If overlying texture glyph is not a space, copy both glyph and color
+
+			// grab underlying texture
+			undoTexture->m_glyphArray[i] = m_glyphArray[i];
+			undoTexture->m_colourArray[i] = m_glyphArray[i];
+
 			m_glyphArray[i] = other->m_glyphArray[i];
 			m_colourArray[i] = other->m_colourArray[i];
 		}
 		// If overlying texture glyph is a space, do nothing
 	}
+
+	return undoTexture;
 }
 
 void Texture::Clear(short colour, short glyph)

@@ -153,7 +153,7 @@ public:
 
 	int GetHeight() const;
 
-	void MergeOther(const Texture* other);
+	Texture* MergeOther(const Texture* other);
 
 	void Clear(short colour = 0, short glyph = L' ');
 

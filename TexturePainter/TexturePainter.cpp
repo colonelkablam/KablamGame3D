@@ -48,7 +48,7 @@ bool TexturePainter::OnGameCreate()
 
     SetResizeWindowLock(true);
     SetConsoleFocusPause(true);
-    SetWindowPosition(50, 50);
+    SetWindowPosition(0, 0);
 
     // container for colour buttons
     colourButtonsContainer = new ButtonContainer(*this, COLOUR_BUTTON_XPOS, COLOUR_BUTTON_YPOS, 2, 9); 

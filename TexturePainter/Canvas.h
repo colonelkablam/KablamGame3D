@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stack>
+
 #include "Texture.h"
 
 class TexturePainter; // forwawrd decleration for DI
@@ -39,6 +41,38 @@ private:
     int zoomLevel;
     COORD canvasViewOffset;
     Texture* texture;
+
+    struct BrushStroke
+    {
+        int x{ 0 };
+        int y{ 0 };
+        Texture* strokeTexture;
+        Texture* undoTexture;
+
+        BrushStroke(int xPos, int yPos, Texture* texture)
+            : x{ x }, y{ y }, strokeTexture{texture}, undoTexture{nullptr} { }
+
+        ~BrushStroke()
+        {
+            delete strokeTexture;
+            delete undoTexture;
+        }
+
+        void Apply(Canvas& canvas)
+        {
+            if (undoTexture != nullptr)
+                undoTexture = canvas.MergeBrushStroke(strokeTexture);
+        }
+
+        void Undo(Canvas &canvas)
+        {
+            canvas.MergeBrushStroke(undoTexture);
+        }
+
+    };
+
+    std::stack<Texture*> brushStrokes;
+
     Texture* currentBrushStroke;
 
     TexturePainter& drawingClass;
@@ -90,7 +124,7 @@ public:
 
     COORD ConvertTextureCoordsToScreenCoords(int x, int y);
    
-    void MergeBrushStroke(const Texture* brushStroke);
+    Texture* MergeBrushStroke(const Texture* brushStroke);
     
     // apply painting block - able to hold down mouse button
     void ApplyBrushPaint(int x, int y);
