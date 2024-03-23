@@ -141,6 +141,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BrushStroke.cpp" />
     <ClCompile Include="ButtonContainer.cpp" />
     <ClCompile Include="Canvas.cpp" />
     <ClCompile Include="Main.cpp" />
@@ -148,8 +149,12 @@
     <ClCompile Include="Utility.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BrushStroke.h" />
+    <ClInclude Include="BrushStrokeCommand.h" />
     <ClInclude Include="ButtonContainer.h" />
     <ClInclude Include="Canvas.h" />
+    <ClInclude Include="Command.h" />
+    <ClInclude Include="UndoRedoManager.h" />
     <ClInclude Include="TexturePainter.h" />
     <ClInclude Include="Utility.h" />
   </ItemGroup>

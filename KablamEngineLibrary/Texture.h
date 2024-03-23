@@ -71,6 +71,7 @@ private:
 		short* glyphArray;
 		MipmapLevel* next;  // Pointer to the next mipmap level (lower resolution)
 
+		// constructor
 		MipmapLevel(int w, int h, int illum) : width(w), height(h), illuminated(illum), next(nullptr) {
 			// Initialize arrays, e.g., with default color and glyph
 			colourArray = new short[w * h] {FG_DARK_MAGENTA};
@@ -92,6 +93,9 @@ public:
 	// constructors
 	Texture(int w = 32, int h = 32, int illumination = 0);
 
+	// copy constructor
+	Texture(const Texture& other);
+
 	// from saved file
 	Texture(std::wstring sFilePath = L".\\Textures\\Untitled.txr");
 
@@ -106,6 +110,8 @@ private:
 	bool Initialise(int w, int h, bool illuminated = false, short forgroundColour = FG_BLACK);
 	
 	void GenerateMipmaps();
+
+	MipmapLevel* copyMipmapLevels(const MipmapLevel* source);
 
 	void Downsample(MipmapLevel* currentLevel, MipmapLevel* nextLevel);
 	

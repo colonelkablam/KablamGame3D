@@ -7,11 +7,15 @@
 // need to include full header here to use class methods from DI
 #include "TexturePainter.h"
 // need to #include Texture.h in Canvas.h before here
+
+//#include "BrushStrokeCommand.h"
+
 #include "Canvas.h"
 
 
+
 Canvas::Canvas(TexturePainter& drawer, Texture* tex, std::wstring fn, std::wstring fp, short x, short y)
-    : drawingClass{ drawer }, texture{ tex }, currentBrushStroke{ nullptr }, fileName { fn }, filePath{ fp }, topLeft{ x, y }, 
+    : drawingClass{ drawer }, backgroundTexture{ tex }, currentBrushStrokeTexture{ nullptr }, fileName{ fn }, filePath{ fp }, topLeft{ x, y },
         bottomRight{ 0, 0 }, initialClick{false}, initialClickCoords{0, 0}, canvasViewOffset{0,0}
 {
     currentBrushType = STARTING_BRUSH;
@@ -22,7 +26,8 @@ Canvas::Canvas(TexturePainter& drawer, Texture* tex, std::wstring fn, std::wstri
     deletePixel = { L'X', 0 };
 
     //create first brush stroke
-    currentBrushStroke = new Texture{ texture->GetWidth(), texture->GetHeight() };
+    currentBrushStrokeTexture = new Texture{ backgroundTexture->GetWidth(), backgroundTexture->GetHeight() };
+
 
     bottomRight = { static_cast<short>(x + TexturePainter::CANVAS_DISPLAY_WIDTH), static_cast<short>(y + TexturePainter::CANVAS_DISPLAY_HEIGHT) };
 
@@ -30,13 +35,12 @@ Canvas::Canvas(TexturePainter& drawer, Texture* tex, std::wstring fn, std::wstri
 
 Canvas::~Canvas()
 {
-    delete texture;
-    delete currentBrushStroke;
+    delete backgroundTexture;
 }
 
 bool Canvas::SaveTexture(const std::wstring& filePath)
 {
-    if (texture->SaveAs(filePath))
+    if (backgroundTexture->SaveAs(filePath))
         return true;
     else
         return false;
@@ -44,7 +48,7 @@ bool Canvas::SaveTexture(const std::wstring& filePath)
 
 bool Canvas::LoadTexture(const std::wstring& filePath)
 {
-    if (texture->LoadFrom(filePath))
+    if (backgroundTexture->LoadFrom(filePath))
         return true;
     else
         return false;
@@ -62,7 +66,7 @@ const std::wstring& Canvas::GetFilePath()
 
 int Canvas::GetIllumination()
 {
-    return texture->GetIllumination();
+    return backgroundTexture->GetIllumination();
 }
 
 int Canvas::GetZoomLevel()
@@ -72,12 +76,12 @@ int Canvas::GetZoomLevel()
 
 int Canvas::GetTextureWidth()
 {
-    return texture->GetWidth();
+    return backgroundTexture->GetWidth();
 }
 
 int Canvas::GetTextureHeight()
 {
-    return texture->GetHeight();
+    return backgroundTexture->GetHeight();
 }
 
 int Canvas::GetBrushSize()
@@ -118,7 +122,7 @@ void Canvas::SetBrushToDelete()
 // constant texture pointer for texture painer to draw to screen
 const Texture* Canvas::GetTexture()
 {
-    return texture;
+    return backgroundTexture;
 }
 
 COORD Canvas::GetPositionCoords()
@@ -132,8 +136,8 @@ int Canvas::ChangeCanvasOffset(COORD change)
     canvasViewOffset.X += change.X;
     canvasViewOffset.Y += change.Y;
 
-    int canvasWidth = texture->GetWidth();
-    int canvasHeight = texture->GetHeight();
+    int canvasWidth = backgroundTexture->GetWidth();
+    int canvasHeight = backgroundTexture->GetHeight();
 
     // Clamp canvasOffset.X to be within 0 and canvasWidth
     if (canvasViewOffset.X < 0)
@@ -181,8 +185,7 @@ COORD Canvas::ConvertTextureCoordsToScreenCoords(int x, int y)
 Texture* Canvas::MergeBrushStroke(const Texture* brushStroke)
 {
     Texture* undoTexture{ nullptr };
-    undoTexture = texture->MergeOther(brushStroke);
-    currentBrushStroke->Clear();
+    undoTexture = backgroundTexture->MergeOther(brushStroke);
     return undoTexture;
 }
 
@@ -190,7 +193,9 @@ void Canvas::ApplyBrushPaint(int x, int y)
 {
     switch (currentBrushType) {
     case BrushType::BRUSH_BLOCK:
-        MergeBrushStroke(currentBrushStroke);
+        BrushStrokeCommand* newStroke = new BrushStrokeCommand(*this, new BrushStroke(0, 0, currentBrushStrokeTexture));
+        //brushMangager.performAction(newStroke);
+        //currentBrushStrokeTexture->Clear();
         break;
     }
 }
@@ -213,7 +218,7 @@ void Canvas::ApplyBrushTool(int x, int y)
             initialClick = false;
             // Apply the brush stroke from the initial click position to the current position
             // brushStroke being prepared in CreateBrushStroke()
-            MergeBrushStroke(currentBrushStroke);
+            MergeBrushStroke(currentBrushStrokeTexture);
         }
         break;
     }
@@ -232,7 +237,7 @@ void Canvas::ChangeBrushSize(int sizeChange)
 
 void Canvas::PaintPoint(int x, int y)
 {
-    currentBrushStroke->SetPixel(x, y, currentPixel);
+    currentBrushStrokeTexture->SetPixel(x, y, currentPixel);
 }
 
 // Bresenham's line algorithm
@@ -316,7 +321,7 @@ void Canvas::DrawCanvas()
     drawingClass.WriteStringToBuffer(topLeft.X + 11, topLeft.Y - 4, std::to_wstring(canvasViewOffset.X) + L' ' + std::to_wstring(canvasViewOffset.Y));
 
     // add texture to screen buffer
-    drawingClass.DrawSectionOfTextureToScreen(texture, topLeft.X, topLeft.Y, 
+    drawingClass.DrawSectionOfTextureToScreen(backgroundTexture, topLeft.X, topLeft.Y, 
                                                 canvasViewOffset.X, 
                                                 canvasViewOffset.Y, 
                                                 TexturePainter::CANVAS_DISPLAY_WIDTH/zoomLevel + canvasViewOffset.X - 1, 
@@ -324,8 +329,8 @@ void Canvas::DrawCanvas()
                                                 zoomLevel);
 
     // if brushStroke object exists, draw it to screen
-    if (currentBrushStroke != nullptr)
-        drawingClass.DrawPartialTextureToScreen(currentBrushStroke, 
+    if (currentBrushStrokeTexture != nullptr)
+        drawingClass.DrawPartialTextureToScreen(currentBrushStrokeTexture, 
                                                 topLeft.X - canvasViewOffset.X * zoomLevel, 
                                                 topLeft.Y - canvasViewOffset.Y * zoomLevel,
                                                 zoomLevel);
@@ -343,8 +348,8 @@ void Canvas::CreateBrushStroke()
     // get appropriate coords for drawing to screen - will dynamically calc these
     COORD mouseCoords = ConvertScreenCoordsToTextureCoords(drawingClass.GetMousePosition().X, drawingClass.GetMousePosition().Y);
 
-    if (currentBrushStroke != nullptr)
-        currentBrushStroke->Clear();
+    if (currentBrushStrokeTexture != nullptr)
+        currentBrushStrokeTexture->Clear();
 
     // draw appropriate brush
     switch (currentBrushType) {
