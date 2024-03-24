@@ -93,11 +93,11 @@ public:
 	// constructors
 	Texture(int w = 32, int h = 32, int illumination = 0);
 
-	// copy constructor
-	Texture(const Texture& other);
-
 	// from saved file
 	Texture(std::wstring sFilePath = L".\\Textures\\Untitled.txr");
+
+	// DELETE Copy constructor
+	Texture(const Texture& other) = delete;
 
 	// destructor
 	~Texture();

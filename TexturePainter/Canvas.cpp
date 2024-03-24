@@ -188,11 +188,27 @@ Texture* Canvas::MergeBrushStroke(const Texture* brushStroke)
 
 void Canvas::ApplyBrushPaint(int x, int y)
 {
+    COORD coords = ConvertScreenCoordsToTextureCoords(x, y);
+
+
     switch (currentBrushType) {
     case BrushType::BRUSH_BLOCK:
-        BrushStrokeCommand* newStroke = new BrushStrokeCommand(*this, new BrushStroke(0, 0, currentBrushStrokeTexture));
+        /*BrushStrokeCommand* newStroke = new BrushStrokeCommand(*this, new BrushStroke(0, 0, currentBrushStrokeTexture));
         brushMangager.performAction(newStroke);
-        //currentBrushStrokeTexture->Clear();
+        currentBrushStrokeTexture = new Texture(backgroundTexture->GetWidth(), backgroundTexture->GetHeight());
+        break;*/
+
+        if (!initialClick) {
+            // Store the initial click position
+            initialClickCoords = coords;
+            initialClick = true;
+        }
+        else {
+            initialClick = false;
+            // Apply the brush stroke from the initial click position to the current position
+            // brushStroke being prepared in CreateBrushStroke()
+            MergeBrushStroke(currentBrushStrokeTexture);
+        }
         break;
     }
 }

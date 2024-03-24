@@ -6,7 +6,7 @@
 #undef max
 #undef min
 
-// constructors - three args
+// constructor - three args
 Texture::Texture(int w, int h, int illum)
 	: m_colourArray{ nullptr }, m_glyphArray{ nullptr }, topMipmap{ nullptr }
 {
@@ -16,7 +16,7 @@ Texture::Texture(int w, int h, int illum)
 	GenerateMipmaps();
 }
 
-// constructors - filename
+// constructor - filename
 Texture::Texture(std::wstring filePath)
 	: m_colourArray{ nullptr }, m_glyphArray{ nullptr }, topMipmap{ nullptr }
 {
@@ -29,17 +29,7 @@ Texture::Texture(std::wstring filePath)
 	GenerateMipmaps();
 }
 
-// Copy constructor
-Texture::Texture(const Texture& other) 
-	: m_width(other.m_width), m_height(other.m_height), m_illumination(other.m_illumination) {
-	m_colourArray = new short[m_width * m_height];
-	std::copy(other.m_colourArray, other.m_colourArray + m_width * m_height, m_colourArray);
-
-	m_glyphArray = new short[m_width * m_height];
-	std::copy(other.m_glyphArray, other.m_glyphArray + m_width * m_height, m_glyphArray);
-
-	topMipmap = copyMipmapLevels(other.topMipmap);
-}
+// Copy constructor deleted
 
 // Helper function to copy the linked list of MipmapLevels
 Texture::MipmapLevel* Texture::copyMipmapLevels(const MipmapLevel* source) {

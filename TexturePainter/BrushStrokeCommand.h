@@ -1,8 +1,9 @@
 #pragma once
 
-#include "BrushStroke.h"
-#include "Command.h"
 #include "Canvas.h"
+#include "Command.h"
+#include "BrushStroke.h"
+
 
 class BrushStrokeCommand : public Command {
     Canvas& canvas;  // Reference to the canvas

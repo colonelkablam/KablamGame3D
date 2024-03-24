@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stack>
+
 #include "Command.h"
 
 class UndoRedoManager {

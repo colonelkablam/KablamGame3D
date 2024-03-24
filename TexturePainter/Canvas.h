@@ -3,7 +3,7 @@
 #include <stack>
 
 #include "Texture.h"
-//#include "BrushStrokeCommand.h"
+
 #include "UndoRedoManager.h"
 
 class TexturePainter; // forwawrd decleration for DI
@@ -29,6 +29,7 @@ private:
     int brushSize;
     bool initialClick;
     COORD initialClickCoords;
+
     CHAR_INFO currentPixel;
     CHAR_INFO deletePixel;
 

@@ -273,7 +273,18 @@ bool TexturePainter::HandleKeyPress()
         brushButtonsContainer->HandleMouseClick(mouseCoords.X, mouseCoords.Y);
     }
 
+    // when left mouse held
     if (keyArray[VK_LBUTTON].bHeld)
+    {
+        if (currentCanvas->IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y))
+        {
+            currentCanvas->ApplyBrushPaint(mouseCoords.X, mouseCoords.Y);
+        }
+    }
+
+
+    // when left mouse lifted
+    if (keyArray[VK_LBUTTON].bReleased)
     {
         if (currentCanvas->IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y))
         {
