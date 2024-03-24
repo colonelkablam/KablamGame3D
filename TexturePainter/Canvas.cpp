@@ -199,15 +199,11 @@ void Canvas::ApplyBrushPaint(int x, int y)
         break;*/
 
         if (!initialClick) {
-            // Store the initial click position
-            initialClickCoords = coords;
-            initialClick = true;
+            currentBrushStrokeTexture(currentBrushStrokeTexture);
         }
-        else {
-            initialClick = false;
-            // Apply the brush stroke from the initial click position to the current position
-            // brushStroke being prepared in CreateBrushStroke()
-            MergeBrushStroke(currentBrushStrokeTexture);
+        else
+        {
+
         }
         break;
     }
