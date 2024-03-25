@@ -29,6 +29,7 @@ private:
     int brushSize;
     bool initialClick;
     COORD initialClickCoords;
+    bool liftedClick;
 
     CHAR_INFO currentPixel;
     CHAR_INFO deletePixel;
@@ -44,12 +45,14 @@ private:
     int zoomLevel;
     COORD canvasViewOffset;
 
+    // main canvas texture
     Texture* backgroundTexture;
-
+    // texture of brushStroke
     Texture* currentBrushStrokeTexture;
-
+    // manage the application of brushStrokes
     UndoRedoManager brushMangager;
-
+    
+    // DI from parent
     TexturePainter& drawingClass;
 
 public:
@@ -95,17 +98,26 @@ public:
 
     bool IsMouseWithinCanvas(int x, int y);
 
+    void LeftButtonReleased();
+
     COORD ConvertScreenCoordsToTextureCoords(int x, int y);
 
     COORD ConvertTextureCoordsToScreenCoords(int x, int y);
    
-    Texture* MergeBrushStroke(const Texture* brushStroke);
-    
+    BrushStroke* CreateBrushStroke();
+
+    void ApplyBrushStroke(int insertionIndex, int size, CHAR_INFO* stroke);
+
     // apply painting block - able to hold down mouse button
-    void ApplyBrushPaint(int x, int y);
+    void ApplyPaint(int x, int y);
+
+    void SetPaint();
 
     // apply a tool requiring initial click and them secondary click
-    void ApplyBrushTool(int x, int y);
+    void ApplyTool(int x, int y);
+
+
+    Texture* MergeTexture(Texture* other, bool treatSpacesAsValid);
 
     void SetBrushToDelete();
 
@@ -123,8 +135,10 @@ public:
 
     void DrawCanvas();
 
-    void CreateBrushStroke();
+    void DisplayBrushStroke();
 
     void IncreaseZoomLevel();
+
+    void UndoLastCommand();
 };
 

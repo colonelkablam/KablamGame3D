@@ -1,24 +1,18 @@
 #include "BrushStroke.h"
 
 
-BrushStroke::BrushStroke(int xPos, int yPos, Texture* texture)
-    : x{ xPos }, y{ yPos }, strokeTexture{ texture }, undoTexture{ nullptr }
-{
-    // take ownership of texture pointer
-    delete strokeTexture;
-    delete undoTexture;
-    strokeTexture = texture;
-}
+BrushStroke::BrushStroke(Texture* texture)
+    : brushStrokeTexture { texture }, undoTexture {nullptr} { }
 
 BrushStroke::~BrushStroke()
 {
-    delete strokeTexture;
+    delete brushStrokeTexture;
     delete undoTexture;
 }
 
-Texture* BrushStroke::GetStrokeTexture()
+Texture* BrushStroke::GetBrushStrokeTexture()
 {
-    return strokeTexture;
+    return brushStrokeTexture;
 }
 
 Texture* BrushStroke::GetUndoTexture()
@@ -26,8 +20,15 @@ Texture* BrushStroke::GetUndoTexture()
     return undoTexture;
 }
 
-void BrushStroke::SetUndoTexture(Texture* undo)
+void BrushStroke::SetBrushStrokeTexture(Texture* texture)
+{
+    delete brushStrokeTexture;
+    brushStrokeTexture = texture;
+}
+
+
+void BrushStroke::SetUndoTexture(Texture* texture)
 {
     delete undoTexture;
-    undoTexture = undo;
+    undoTexture = texture;
 }

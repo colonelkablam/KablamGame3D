@@ -342,25 +342,6 @@ void KablamEngine::DrawBlock(int x, int y, int size, short colour, short glyph)
 
 }
 
-
-//// Bresenham's line algorithm
-//void KablamEngine::DrawLine(int x0, int y0, int x1, int y1, short colour, short glyph)
-//{
-//    int dx = std::abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
-//    int dy = -std::abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
-//    int err = dx + dy, e2; /* error value e_xy */
-//
-//    while (true) {
-//        if (x0 >= 0 && x0 < nScreenWidth && y0 >= 0 && y0 < nScreenWidth) {
-//            DrawPoint(x0, y0, colour, glyph); // Set the character at the current position
-//        }
-//        if (x0 == x1 && y0 == y1) break;
-//        e2 = 2 * err;
-//        if (e2 >= dy) { err += dy; x0 += sx; }
-//        if (e2 <= dx) { err += dx; y0 += sy; }
-//    }
-//}
-
 // Bresenham's line algorithm
 // ChatGPT used to add line thickness... draws a square along each point of the line
 void KablamEngine::DrawLine(int x0, int y0, int x1, int y1, short colour, short glyph, int lineThickness)
@@ -541,7 +522,7 @@ int KablamEngine::DrawPartialTextureToScreen(const Texture* texture, int xScreen
             short glyph{ texture->GetGlyph(texX, texY) };
             short colour{ texture->GetColour(texX, texY) };
 
-            // for displaying 'empty' pixels
+            // Only draw pixels, not 'empty' spaces
             if (glyph != L' ')
                 DrawPoint(xScreen + x, yScreen + y, colour, glyph);
         }
@@ -550,7 +531,7 @@ int KablamEngine::DrawPartialTextureToScreen(const Texture* texture, int xScreen
 }
 
 // drawing a rectangular section defined by x0 y0 and x1  y1 to screen - xScreen, yScreen will be top left
-int KablamEngine::DrawSectionOfTextureToScreen(const Texture* texture, int xScreen, int yScreen, int x0, int y0, int x1, int y1, float scale)
+int KablamEngine::DrawSectionOfTextureToScreen(const Texture* texture, int xScreen, int yScreen, int x0, int y0, int x1, int y1, float scale, bool showEmptyPix)
 {
     // Clamp the rectangle coordinates to ensure they are within the texture's dimensions
     x0 = std::max(x0, 0);
@@ -569,9 +550,13 @@ int KablamEngine::DrawSectionOfTextureToScreen(const Texture* texture, int xScre
             short glyph{ texture->GetGlyph(texX, texY) };
             short colour{ texture->GetColour(texX, texY) };
 
-            // For displaying 'empty' pixels, skip drawing if the glyph is a space
-            if (glyph != L' ')
-                DrawBlock(xScreen + static_cast<int>((x - x0) * scale), yScreen + static_cast<int>((y - y0) * scale), scale, colour, glyph);
+            // Modify behavior based on showEmptyPix flag
+            if (showEmptyPix && glyph == L' ') {
+                glyph = L'X';  // Change glyph to 'X'
+                colour = FG_DARK_GREY;
+            }
+            
+            DrawBlock(xScreen + static_cast<int>((x - x0) * scale), yScreen + static_cast<int>((y - y0) * scale), scale, colour, glyph);
         }
     }
     return 0;

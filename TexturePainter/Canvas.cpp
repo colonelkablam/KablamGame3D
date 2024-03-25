@@ -13,18 +13,19 @@
 
 Canvas::Canvas(TexturePainter& drawer, Texture* tex, std::wstring fn, std::wstring fp, short x, short y)
     : drawingClass{ drawer }, backgroundTexture{ tex }, currentBrushStrokeTexture{ nullptr }, fileName{ fn }, filePath{ fp }, topLeft{ x, y },
-        bottomRight{ 0, 0 }, initialClick{false}, initialClickCoords{0, 0}, canvasViewOffset{0,0}
+    bottomRight{ 0, 0 }, initialClick{ false }, liftedClick{ false }, initialClickCoords{ 0, 0 }, canvasViewOffset {
+    0, 0
+}
 {
     currentBrushType = STARTING_BRUSH;
     brushSize = START_BRUSH_SIZE;
     zoomLevel = START_ZOOM_LEVEL;
 
     currentPixel = { STARTING_GLYPH, STARTING_COLOUR };
-    deletePixel = { L'X', 0 };
+    deletePixel = { L'X', FG_WHITE };
 
-    //create first brush stroke
+    //create brush stroke texture
     currentBrushStrokeTexture = new Texture{ backgroundTexture->GetWidth(), backgroundTexture->GetHeight() };
-
 
     bottomRight = { static_cast<short>(x + TexturePainter::CANVAS_DISPLAY_WIDTH), static_cast<short>(y + TexturePainter::CANVAS_DISPLAY_HEIGHT) };
 
@@ -33,6 +34,7 @@ Canvas::Canvas(TexturePainter& drawer, Texture* tex, std::wstring fn, std::wstri
 Canvas::~Canvas()
 {
     delete backgroundTexture;
+    delete currentBrushStrokeTexture;
 }
 
 bool Canvas::SaveTexture(const std::wstring& filePath)
@@ -161,6 +163,11 @@ bool Canvas::IsMouseWithinCanvas(int x, int y)
         return false;
 }
 
+void Canvas::LeftButtonReleased()
+{
+    liftedClick = true;
+}
+
 COORD Canvas::ConvertScreenCoordsToTextureCoords(int x, int y)
 {
     COORD coords{ (x - topLeft.X) / zoomLevel + canvasViewOffset.X, (y - topLeft.Y) / zoomLevel + canvasViewOffset.Y };
@@ -179,37 +186,32 @@ COORD Canvas::ConvertTextureCoordsToScreenCoords(int x, int y)
     return screenCoords;
 }
 
-Texture* Canvas::MergeBrushStroke(const Texture* brushStroke)
-{
-    Texture* undoTexture{ nullptr };
-    undoTexture = backgroundTexture->MergeOther(brushStroke);
-    return undoTexture;
-}
 
-void Canvas::ApplyBrushPaint(int x, int y)
+void Canvas::ApplyPaint(int x, int y)
 {
     COORD coords = ConvertScreenCoordsToTextureCoords(x, y);
 
-
     switch (currentBrushType) {
     case BrushType::BRUSH_BLOCK:
-        /*BrushStrokeCommand* newStroke = new BrushStrokeCommand(*this, new BrushStroke(0, 0, currentBrushStrokeTexture));
-        brushMangager.performAction(newStroke);
-        currentBrushStrokeTexture = new Texture(backgroundTexture->GetWidth(), backgroundTexture->GetHeight());
-        break;*/
-
-        if (!initialClick) {
-            currentBrushStrokeTexture(currentBrushStrokeTexture);
-        }
-        else
-        {
-
-        }
+        // apply block to currentBrushStrokeTexture - will set to backgroundTexture when release button
+        PaintBlock(coords.X, coords.Y, brushSize);
         break;
     }
 }
 
-void Canvas::ApplyBrushTool(int x, int y)
+void Canvas::SetPaint()
+{
+    // create a new brush stroke with the current pointer to the current brush texture
+    BrushStrokeCommand* newStroke = new BrushStrokeCommand(*this, new BrushStroke(currentBrushStrokeTexture));
+
+    // reset - brushStrokeCommand obj takeas ownership of the brush pointer and new one is created
+    currentBrushStrokeTexture = new Texture(backgroundTexture->GetWidth(), backgroundTexture->GetHeight());
+
+    // apply texture to backgroundTexture
+    brushMangager.performAction(newStroke);
+}
+
+void Canvas::ApplyTool(int x, int y)
 {
     COORD coords = ConvertScreenCoordsToTextureCoords(x, y);
 
@@ -227,11 +229,17 @@ void Canvas::ApplyBrushTool(int x, int y)
             initialClick = false;
             // Apply the brush stroke from the initial click position to the current position
             // brushStroke being prepared in CreateBrushStroke()
-            MergeBrushStroke(currentBrushStrokeTexture);
+           //(currentBrushStrokeTexture);
         }
         break;
     }
 }
+
+Texture* Canvas::MergeTexture(Texture* other, bool treatSpacesAsValid)
+{
+    return backgroundTexture->MergeOther(other, treatSpacesAsValid);
+}
+
 
 void Canvas::ChangeBrushType(BrushType newBrush)
 {
@@ -335,7 +343,8 @@ void Canvas::DrawCanvas()
                                                 canvasViewOffset.Y, 
                                                 TexturePainter::CANVAS_DISPLAY_WIDTH/zoomLevel + canvasViewOffset.X - 1, 
                                                 TexturePainter::CANVAS_DISPLAY_HEIGHT/zoomLevel + canvasViewOffset.Y - 1,
-                                                zoomLevel);
+                                                zoomLevel,
+                                                true);
 
     // if brushStroke object exists, draw it to screen
     if (currentBrushStrokeTexture != nullptr)
@@ -344,45 +353,48 @@ void Canvas::DrawCanvas()
                                                 topLeft.Y - canvasViewOffset.Y * zoomLevel,
                                                 zoomLevel);
 
-    // this is the current brush stroke texture that will be laid ontop of base
-    CreateBrushStroke();
-
     // draw border around maximum display panel
     drawingClass.DrawRectangleEdgeLength(topLeft.X - 2, topLeft.Y - 2, TexturePainter::CANVAS_DISPLAY_WIDTH + 4, TexturePainter::CANVAS_DISPLAY_HEIGHT + 4, FG_RED, false, PIXEL_HALF);
 
 }
 
-void Canvas::CreateBrushStroke()
+void Canvas::DisplayBrushStroke()
 {
     // get appropriate coords for drawing to screen - will dynamically calc these
     COORD mouseCoords = ConvertScreenCoordsToTextureCoords(drawingClass.GetMousePosition().X, drawingClass.GetMousePosition().Y);
 
+    // only paint on currentBrushStrokeTexture if not a nullptr
     if (currentBrushStrokeTexture != nullptr)
-        currentBrushStrokeTexture->Clear();
+    {
+        // if mouse not initially pressed down keep texture clear
+        if (initialClick == false)
+            currentBrushStrokeTexture->Clear();
 
-    // draw appropriate brush
-    switch (currentBrushType) {
-    case BrushType::BRUSH_BLOCK:
-        PaintBlock(mouseCoords.X, mouseCoords.Y, brushSize);
-        break;
-    case BrushType::BRUSH_RECT:
-        if (initialClick)
-        {
-            PaintRectangleCoords(initialClickCoords.X, initialClickCoords.Y, mouseCoords.X, mouseCoords.Y, false, brushSize);
+
+        // draw appropriate brush
+        switch (currentBrushType) {
+        case BrushType::BRUSH_BLOCK:
+            PaintBlock(mouseCoords.X, mouseCoords.Y, brushSize);
+            break;
+        case BrushType::BRUSH_RECT:
+            if (initialClick)
+            {
+                PaintRectangleCoords(initialClickCoords.X, initialClickCoords.Y, mouseCoords.X, mouseCoords.Y, false, brushSize);
+            }
+            break;
+        case BrushType::BRUSH_RECT_FILLED:
+            if (initialClick)
+            {
+                PaintRectangleCoords(initialClickCoords.X, initialClickCoords.Y, mouseCoords.X, mouseCoords.Y, true);
+            }
+            break;
+        case BrushType::BRUSH_LINE:
+            if (initialClick)
+            {
+                PaintLine(initialClickCoords.X, initialClickCoords.Y, mouseCoords.X, mouseCoords.Y, brushSize);
+            }
+            break;
         }
-        break;
-    case BrushType::BRUSH_RECT_FILLED:
-        if (initialClick)
-        {
-            PaintRectangleCoords(initialClickCoords.X, initialClickCoords.Y, mouseCoords.X, mouseCoords.Y, true);
-        }
-        break;
-    case BrushType::BRUSH_LINE:
-        if (initialClick)
-        {
-            PaintLine(initialClickCoords.X, initialClickCoords.Y, mouseCoords.X, mouseCoords.Y, brushSize);
-        }
-        break;
     }
 
 }
@@ -391,6 +403,12 @@ void Canvas::IncreaseZoomLevel()
 {
     zoomLevel = (zoomLevel % 3) + 1;
 }
+
+void Canvas::UndoLastCommand()
+{
+    brushMangager.undo();
+}
+
 
 
 

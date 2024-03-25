@@ -54,8 +54,13 @@ enum PIXEL_TYPE
 	PIXEL_QUARTER = 0x2591,
 };
 
+class BrushStroke;
+
 class Texture
 {
+	friend class BrushStroke;
+	friend class Canvas;
+
 private:
 	int m_width;
 	int m_height;
@@ -137,6 +142,10 @@ private:
 	void SetColourAndDeltaFromSecondaryTexel(int ix, int iy, float dx, float dy, short primaryColour, short& secondaryColour, float& delta);
 	short GetGlyphFromDelta(float delta);
 
+	// for accessing internal arrays
+	short* GetColourArrayPtr() const;
+	short* GetGlyphArrayPtr() const;
+
 public:
 	int GetIllumination() const;
 
@@ -156,7 +165,7 @@ public:
 
 	int GetHeight() const;
 
-	Texture* MergeOther(const Texture* other);
+	Texture* MergeOther(const Texture* other, bool treatSpacesAsValid = false);
 
 	void Clear(short colour = 0, short glyph = L' ');
 

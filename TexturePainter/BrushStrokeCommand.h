@@ -19,14 +19,17 @@ public:
     }
 
     // Method to apply the stroke to the canvas
-    void execute() override {
-        Texture* undoTexture = canvas.MergeBrushStroke(brushStroke->GetStrokeTexture());
-        brushStroke->SetUndoTexture(undoTexture);
+    void execute() override
+    {
+        // applying the texture to the background canvas populates the undo texture
+        brushStroke->SetUndoTexture(canvas.MergeTexture(brushStroke->GetBrushStrokeTexture(), false));
     }
 
     // Method to remove the stroke from the canvas
-    void undo() override {
-        canvas.MergeBrushStroke(brushStroke->GetUndoTexture()); 
+    void undo() override
+    {
+        if (brushStroke->GetUndoTexture() != nullptr)
+            canvas.MergeTexture(brushStroke->GetUndoTexture(), true);
     }
 
 };

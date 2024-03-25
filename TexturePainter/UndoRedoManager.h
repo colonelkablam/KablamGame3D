@@ -26,7 +26,7 @@ public:
 
     void performAction(Command* command) {
         command->execute();
-        undoStack.push(std::move(command));
+        undoStack.push(command);
         while (!redoStack.empty()) redoStack.pop(); // Clear the redoStack
     }
 

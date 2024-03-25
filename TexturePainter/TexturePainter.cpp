@@ -263,43 +263,47 @@ void TexturePainter::DrawButtons()
 bool TexturePainter::HandleKeyPress()
 {
     //controls
+
+    // when left mouse button held
+    if (keyArray[VK_LBUTTON].bHeld)
+    {
+        if (currentCanvas->IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y))
+        {
+            currentCanvas->ApplyPaint(mouseCoords.X, mouseCoords.Y);
+        }
+    }
+
+    // when left mouse lifted
+    if (keyArray[VK_LBUTTON].bReleased)
+    {
+        currentCanvas->SetPaint();
+    }
+
+
     if ( keyArray[VK_LBUTTON].bPressed)
     {
         if (currentCanvas->IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y))
-            currentCanvas->ApplyBrushTool(mouseCoords.X, mouseCoords.Y);
+            currentCanvas->ApplyTool(mouseCoords.X, mouseCoords.Y);
 
         // check if over any of the buttons when clicked
         colourButtonsContainer->HandleMouseClick(mouseCoords.X, mouseCoords.Y);
         brushButtonsContainer->HandleMouseClick(mouseCoords.X, mouseCoords.Y);
     }
 
-    // when left mouse held
-    if (keyArray[VK_LBUTTON].bHeld)
-    {
-        if (currentCanvas->IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y))
-        {
-            currentCanvas->ApplyBrushPaint(mouseCoords.X, mouseCoords.Y);
-        }
-    }
 
 
-    // when left mouse lifted
-    if (keyArray[VK_LBUTTON].bReleased)
-    {
-        if (currentCanvas->IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y))
-        {
-            currentCanvas->ApplyBrushPaint(mouseCoords.X, mouseCoords.Y);
-        }
-    }
 
-    if (keyArray[VK_RBUTTON].bHeld)
-    {
-        if (currentCanvas->IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y))
-        {
-            currentCanvas->SetBrushToDelete();
-            currentCanvas->ApplyBrushPaint(mouseCoords.X, mouseCoords.Y);
-        }
-    }
+
+
+
+    //if (keyArray[VK_RBUTTON].bHeld)
+    //{
+    //    if (currentCanvas->IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y))
+    //    {
+    //        currentCanvas->SetBrushToDelete();
+    //        currentCanvas->ApplyPaint(mouseCoords.X, mouseCoords.Y);
+    //    }
+    //}
 
     if (keyArray[VK_OEM_PLUS].bPressed)
     {
@@ -367,6 +371,12 @@ bool TexturePainter::HandleKeyPress()
         currentCanvas->ChangeCanvasOffset({ 0, 1 });
         Sleep(20);
 
+    }
+
+    // UNDO functionality
+    if (keyArray[VK_CONTROL].bHeld && keyArray[L'Z'].bPressed)
+    {
+        currentCanvas->UndoLastCommand();
     }
 
     return true;

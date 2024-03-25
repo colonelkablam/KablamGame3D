@@ -456,6 +456,17 @@ short Texture::GetGlyphFromDelta(float delta) {
 		return PIXEL_HALF;
 }
 
+// for friend classes only for accessing internal arrays
+short* Texture::GetColourArrayPtr() const
+{
+	return m_colourArray;
+}
+
+short* Texture::GetGlyphArrayPtr() const
+{
+	return m_glyphArray;
+}
+
 int Texture::GetIllumination() const
 {
 	return m_illumination;
@@ -537,31 +548,32 @@ int Texture::GetHeight() const
 	return m_height;
 }
 
-// merge another texture over (ignoring 'empty' glyphs)
-Texture* Texture::MergeOther(const Texture* other)
-{
-	// create an 'undo' texture
+Texture* Texture::MergeOther(const Texture* other, bool treatSpacesAsValid) {
+	
+	// Create an 'undo' texture
 	Texture* undoTexture = new Texture(m_width, m_height);
 
-	for (size_t i{ 0 }; i < m_width * m_height; i++) {
-		// 'X' erases the underlying glyph, setting it to a space ' '
-		if (other->m_glyphArray[i] == L'X') {
-			m_glyphArray[i] = L' ';
-		}
-		// If overlying texture glyph is not a space, copy both glyph and color
-		else if (other->m_glyphArray[i] != L' ') {
+	for (size_t i = 0; i < m_width * m_height; i++) {
+		// Always save the current state for undo
+		undoTexture->m_glyphArray[i] = m_glyphArray[i];
+		undoTexture->m_colourArray[i] = m_colourArray[i];
 
-			// grab underlying texture
-			undoTexture->m_glyphArray[i] = m_glyphArray[i];
-			undoTexture->m_colourArray[i] = m_glyphArray[i];
-
-			m_glyphArray[i] = other->m_glyphArray[i];
-			m_colourArray[i] = other->m_colourArray[i];
+		// Check if we should treat spaces as valid glyphs for overwriting
+		if (treatSpacesAsValid || other->m_glyphArray[i] != L' ') {
+			// 'X' erases the underlying glyph and colour, setting it to a space ' ' and black
+			if (other->m_glyphArray[i] == L'X') {
+				m_glyphArray[i] = L' ';
+				m_colourArray[i] = FG_BLACK;
+			}
+			else {
+				// Overwrite with 'other' texture's glyph and color, including spaces if treatSpacesAsValid is true
+				m_glyphArray[i] = other->m_glyphArray[i];
+				m_colourArray[i] = other->m_colourArray[i];
+			}
 		}
-		// If overlying texture glyph is a space, do nothing
 	}
 
-	return undoTexture;
+	return undoTexture; // Return the undo texture for potential undo operations
 }
 
 void Texture::Clear(short colour, short glyph)
