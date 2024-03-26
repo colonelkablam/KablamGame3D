@@ -245,6 +245,9 @@ void TexturePainter::DrawHeadingInfo(int x, int y)
     WriteStringToBuffer(x + 60, y + 3, L"Untitled Canvas        0", FG_GREEN);
     WriteStringToBuffer(x + 60, y + 4, L"Change Zoom            +  ", FG_GREEN);
     WriteStringToBuffer(x + 60, y + 5, L"Exit                   ESC", FG_GREEN);
+
+    WriteStringToBuffer(x + 60, y + 7, L"Undo Stack: " + std::to_wstring(currentCanvas->GetSizeUndoStack()), FG_GREEN);
+    WriteStringToBuffer(x + 60, y + 8, L"Redo Satck: " + std::to_wstring(currentCanvas->GetSizeRedoStack()), FG_GREEN);
 }
 
 void TexturePainter::DrawToolInfo(int x, int y)
@@ -276,7 +279,10 @@ bool TexturePainter::HandleKeyPress()
     // when left mouse lifted
     if (keyArray[VK_LBUTTON].bReleased)
     {
-        currentCanvas->SetPaint();
+        if (currentCanvas->IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y))
+        {
+            currentCanvas->SetPaint();
+        }
     }
 
 

@@ -65,6 +65,8 @@ private:
 	int m_width;
 	int m_height;
 	int m_illumination;
+
+public:
 	short* m_colourArray;
 	short* m_glyphArray;
 
@@ -96,13 +98,13 @@ private:
 public:
 
 	// constructors
-	Texture(int w = 32, int h = 32, int illumination = 0);
+	Texture(int w = 32, int h = 32, int illumination = 0, bool mipmap = false);
 
 	// from saved file
-	Texture(std::wstring sFilePath = L".\\Textures\\Untitled.txr");
+	Texture(std::wstring sFilePath = L".\\Textures\\Untitled.txr", bool mipmap = false);
 
 	// DELETE Copy constructor
-	Texture(const Texture& other) = delete;
+	//Texture(const Texture& other) = delete;
 
 	// destructor
 	~Texture();

@@ -24,14 +24,19 @@ public:
         }
     }
 
-    void performAction(Command* command) {
+    void PerformAction(Command* command) {
         command->execute();
         undoStack.push(command);
-        while (!redoStack.empty()) redoStack.pop(); // Clear the redoStack
+        // Clear the redoStack
+        while (!redoStack.empty()) {
+            Command* commandToBeDeleted = redoStack.top(); // Get the top command from redoStack
+            redoStack.pop();                               // Remove the top element from redoStack
+            delete commandToBeDeleted;                     // Delete the command object
+        }
     }
 
-    void undo() {
-        if (!undoStack.empty()) {
+    void Undo() {
+        if (undoStack.empty() == false) {
             Command* command = undoStack.top();
             undoStack.pop();
             command->undo();
@@ -39,12 +44,22 @@ public:
         }
     }
 
-    void redo() {
+    void Redo() {
         if (!redoStack.empty()) {
             Command* command = redoStack.top();
             redoStack.pop();
             command->execute();
             undoStack.push(command);
         }
+    }
+
+    int GetUndoStackSize()
+    {
+        return undoStack.size();
+    }
+
+    int GetRedoStackSize()
+    {
+        return redoStack.size();
     }
 };

@@ -1,13 +1,18 @@
 #include "BrushStroke.h"
 
-
 BrushStroke::BrushStroke(Texture* texture)
     : brushStrokeTexture { texture }, undoTexture {nullptr} { }
 
 BrushStroke::~BrushStroke()
 {
     delete brushStrokeTexture;
-    delete undoTexture;
+    brushStrokeTexture = nullptr;
+
+    if (undoTexture != nullptr)
+    {
+        delete undoTexture;
+        undoTexture = nullptr;
+    }
 }
 
 Texture* BrushStroke::GetBrushStrokeTexture()

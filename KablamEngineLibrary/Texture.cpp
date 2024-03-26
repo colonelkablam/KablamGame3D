@@ -7,17 +7,18 @@
 #undef min
 
 // constructor - three args
-Texture::Texture(int w, int h, int illum)
+Texture::Texture(int w, int h, int illum, bool mipmap)
 	: m_colourArray{ nullptr }, m_glyphArray{ nullptr }, topMipmap{ nullptr }
 {
 	Initialise(w, h, illum);
 
-	// populate linked list of mipmaps
-	GenerateMipmaps();
+	// populate linked list of mipmaps if flagged
+	if (mipmap)
+		GenerateMipmaps();
 }
 
 // constructor - filename
-Texture::Texture(std::wstring filePath)
+Texture::Texture(std::wstring filePath, bool mipmap)
 	: m_colourArray{ nullptr }, m_glyphArray{ nullptr }, topMipmap{ nullptr }
 {
 	if (!LoadFrom(filePath))
@@ -25,8 +26,9 @@ Texture::Texture(std::wstring filePath)
 		// if failed to load make a 32*32 dark red canvas
 		Initialise(32, 32, 0, FG_DARK_MAGENTA);
 	}
-	// populate linked list of mipmaps
-	GenerateMipmaps();
+	// populate linked list of mipmaps if flagged
+	if (mipmap)
+		GenerateMipmaps();
 }
 
 // Copy constructor deleted
@@ -55,6 +57,9 @@ Texture::~Texture()
 		MipmapLevel* next = current->next;
 		delete[] current->colourArray;
 		delete[] current->glyphArray;
+		// Delete the MipmapLevel itself
+		delete current;
+		// Move on to the next MipmapLevel
 		current = next;
 	}
 }
@@ -290,26 +295,30 @@ CHAR_INFO Texture::SamplePixel(float x, float y) const
 
 // MIPMAPPING
 CHAR_INFO Texture::SamplePixelWithMipmap(float x, float y, float detail) const {
+	// check if mipmaps generated
+	if (topMipmap != nullptr)
+	{
+		// Determine appropriate mipmap level based on detail 
+		// (0 is the OG texture, 1 is halved res, 2 is halved again and so on...)
+		MipmapLevel* level = GetMipmapLevel(detail);
 
-	// Determine appropriate mipmap level based on detail 
-	// (0 is the OG texture, 1 is halved res, 2 is halved again and so on...)
-	MipmapLevel* level = GetMipmapLevel(detail);
+		// Scale x, y to level dimensions and clamp
+		x = std::max(0.0f, std::min(x, 1.0f)) * level->width;
+		y = std::max(0.0f, std::min(y, 1.0f)) * level->height;
 
-	// Scale x, y to level dimensions and clamp
-	x = std::max(0.0f, std::min(x, 1.0f)) * level->width;
-	y = std::max(0.0f, std::min(y, 1.0f)) * level->height;
+		int ix = std::min(static_cast<int>(x), level->width - 1);
+		int iy = std::min(static_cast<int>(y), level->height - 1);
 
-	int ix = std::min(static_cast<int>(x), level->width - 1);
-	int iy = std::min(static_cast<int>(y), level->height - 1);
-
-	// Return colour from the selected mipmap level
-	size_t index = iy * level->width + ix;
-
-	CHAR_INFO pixel{ 0 };
-	pixel.Attributes = level->colourArray[index];
-	pixel.Char.UnicodeChar = level->glyphArray[index];
-
-	return pixel;
+		// Return colour from the selected mipmap level
+		size_t index = iy * level->width + ix;
+		
+		CHAR_INFO pixel{ 0 };
+		pixel.Attributes = level->colourArray[index];
+		pixel.Char.UnicodeChar = level->glyphArray[index];
+		return pixel;
+	}
+	else
+		return SamplePixel(x, y);
 }
 
 // looks at 4 closest texels and picks dominant (c00) and secondary (c01) colour

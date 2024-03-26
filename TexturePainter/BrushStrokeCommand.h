@@ -16,6 +16,7 @@ public:
     ~BrushStrokeCommand()
     {
         delete brushStroke;
+        brushStroke = nullptr;
     }
 
     // Method to apply the stroke to the canvas

@@ -34,7 +34,9 @@ Canvas::Canvas(TexturePainter& drawer, Texture* tex, std::wstring fn, std::wstri
 Canvas::~Canvas()
 {
     delete backgroundTexture;
+    backgroundTexture = nullptr;
     delete currentBrushStrokeTexture;
+    currentBrushStrokeTexture = nullptr;
 }
 
 bool Canvas::SaveTexture(const std::wstring& filePath)
@@ -202,13 +204,14 @@ void Canvas::ApplyPaint(int x, int y)
 void Canvas::SetPaint()
 {
     // create a new brush stroke with the current pointer to the current brush texture
-    BrushStrokeCommand* newStroke = new BrushStrokeCommand(*this, new BrushStroke(currentBrushStrokeTexture));
+    //BrushStrokeCommand* newStroke = new BrushStrokeCommand(*this, new BrushStroke(currentBrushStrokeTexture));
 
     // reset - brushStrokeCommand obj takeas ownership of the brush pointer and new one is created
+    delete currentBrushStrokeTexture;
     currentBrushStrokeTexture = new Texture(backgroundTexture->GetWidth(), backgroundTexture->GetHeight());
 
     // apply texture to backgroundTexture
-    brushMangager.performAction(newStroke);
+    //brushMangager.PerformAction(newStroke);
 }
 
 void Canvas::ApplyTool(int x, int y)
@@ -322,7 +325,7 @@ void Canvas::PaintRectangleCoords(int x0, int y0, int x1, int y1, bool filled, i
 
 void Canvas::DrawCanvas()
 {
-    drawingClass.WriteStringToBuffer(topLeft.X - 1, topLeft.Y - 3, L"ZOOM: " + std::to_wstring(zoomLevel) + L'. ');
+    drawingClass.WriteStringToBuffer(topLeft.X, topLeft.Y - 3, L"ZOOM: " + std::to_wstring(zoomLevel) + L'. ');
     drawingClass.WriteStringToBuffer(topLeft.X + 8, topLeft.Y - 3, L"X: -   Y: -");
 
     COORD mouseCoords = drawingClass.GetMousePosition();
@@ -335,7 +338,11 @@ void Canvas::DrawCanvas()
         drawingClass.WriteStringToBuffer(topLeft.X + 18, topLeft.Y - 3, std::to_wstring(textureCoords.Y + 1));
     }
 
-    drawingClass.WriteStringToBuffer(topLeft.X + 11, topLeft.Y - 4, std::to_wstring(canvasViewOffset.X) + L' ' + std::to_wstring(canvasViewOffset.Y));
+    // currently drawing offset for debugging
+    drawingClass.WriteStringToBuffer(topLeft.X, topLeft.Y - 2, std::to_wstring(canvasViewOffset.X) + L' ' + std::to_wstring(canvasViewOffset.Y));
+
+    // draw non texture background
+    drawingClass.DrawRectangleEdgeLength(topLeft.X, topLeft.Y, TexturePainter::CANVAS_DISPLAY_WIDTH, TexturePainter::CANVAS_DISPLAY_HEIGHT, FG_BLUE, true, L'.');
 
     // add texture to screen buffer
     drawingClass.DrawSectionOfTextureToScreen(backgroundTexture, topLeft.X, topLeft.Y, 
@@ -354,8 +361,7 @@ void Canvas::DrawCanvas()
                                                 zoomLevel);
 
     // draw border around maximum display panel
-    drawingClass.DrawRectangleEdgeLength(topLeft.X - 2, topLeft.Y - 2, TexturePainter::CANVAS_DISPLAY_WIDTH + 4, TexturePainter::CANVAS_DISPLAY_HEIGHT + 4, FG_RED, false, PIXEL_HALF);
-
+    drawingClass.DrawRectangleEdgeLength(topLeft.X - 1, topLeft.Y - 1, TexturePainter::CANVAS_DISPLAY_WIDTH + 2, TexturePainter::CANVAS_DISPLAY_HEIGHT + 2, FG_RED, false, PIXEL_HALF);
 }
 
 void Canvas::DisplayBrushStroke()
@@ -406,9 +412,19 @@ void Canvas::IncreaseZoomLevel()
 
 void Canvas::UndoLastCommand()
 {
-    brushMangager.undo();
+    brushMangager.Undo();
 }
 
+int Canvas::GetSizeUndoStack()
+{
+    return brushMangager.GetUndoStackSize();
+}
+
+int Canvas::GetSizeRedoStack()
+{
+    return brushMangager.GetRedoStackSize();
+
+}
 
 
 

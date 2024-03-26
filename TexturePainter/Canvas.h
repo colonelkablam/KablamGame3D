@@ -46,9 +46,10 @@ private:
     COORD canvasViewOffset;
 
     // main canvas texture
-    Texture* backgroundTexture;
+    Texture backgroundTexture;
     // texture of brushStroke
-    Texture* currentBrushStrokeTexture;
+    Texture currentBrushStrokeTexture;
+
     // manage the application of brushStrokes
     UndoRedoManager brushMangager;
     
@@ -58,7 +59,7 @@ private:
 public:
 
 // constructors.destructors etc
-    Canvas(TexturePainter& drawer, Texture* texture, std::wstring fileName, std::wstring filePath, short xPos, short yPos);
+    Canvas(TexturePainter& drawer, Texture& texture, std::wstring fileName, std::wstring filePath, short xPos, short yPos);
 
     ~Canvas();
 
@@ -104,10 +105,6 @@ public:
 
     COORD ConvertTextureCoordsToScreenCoords(int x, int y);
    
-    BrushStroke* CreateBrushStroke();
-
-    void ApplyBrushStroke(int insertionIndex, int size, CHAR_INFO* stroke);
-
     // apply painting block - able to hold down mouse button
     void ApplyPaint(int x, int y);
 
@@ -115,7 +112,6 @@ public:
 
     // apply a tool requiring initial click and them secondary click
     void ApplyTool(int x, int y);
-
 
     Texture* MergeTexture(Texture* other, bool treatSpacesAsValid);
 
@@ -140,5 +136,9 @@ public:
     void IncreaseZoomLevel();
 
     void UndoLastCommand();
+
+    int GetSizeUndoStack();
+
+    int GetSizeRedoStack();
 };
 
