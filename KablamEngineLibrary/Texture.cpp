@@ -6,11 +6,12 @@
 #undef max
 #undef min
 
-// constructor - three args
+
+// constructor - three args (also default construtor)
 Texture::Texture(int w, int h, int illum, bool mipmap)
 	: m_colourArray{ nullptr }, m_glyphArray{ nullptr }, topMipmap{ nullptr }
 {
-	Initialise(w, h, illum);
+	Initialise(w, h, illum, FG_BLACK);
 
 	// populate linked list of mipmaps if flagged
 	if (mipmap)
@@ -24,27 +25,53 @@ Texture::Texture(std::wstring filePath, bool mipmap)
 	if (!LoadFrom(filePath))
 	{
 		// if failed to load make a 32*32 dark red canvas
-		Initialise(32, 32, 0, FG_DARK_MAGENTA);
+		Initialise(32, 32, 0, BG_DARK_MAGENTA);
 	}
 	// populate linked list of mipmaps if flagged
 	if (mipmap)
 		GenerateMipmaps();
 }
 
-// Copy constructor deleted
+// Copy constructor 
+Texture::Texture(const Texture& other)
+	: m_width(other.m_width), m_height(other.m_height), m_illumination(other.m_illumination),
+	m_colourArray(new short[other.m_width * other.m_height]), m_glyphArray(new short[other.m_width * other.m_height]),
+	topMipmap(copyMipmapLevels(other.topMipmap)) {
 
-// Helper function to copy the linked list of MipmapLevels
-Texture::MipmapLevel* Texture::copyMipmapLevels(const MipmapLevel* source) {
-	if (!source) return nullptr;
-
-	MipmapLevel* copy = new MipmapLevel(source->width, source->height, source->illuminated);
-	std::copy(source->colourArray, source->colourArray + source->width * source->height, copy->colourArray);
-	std::copy(source->glyphArray, source->glyphArray + source->width * source->height, copy->glyphArray);
-
-	copy->next = copyMipmapLevels(source->next); // Recursive call to copy the rest of the list
-	return copy;
+	std::copy(other.m_colourArray, other.m_colourArray + m_width * m_height, m_colourArray);
+	std::copy(other.m_glyphArray, other.m_glyphArray + m_width * m_height, m_glyphArray);
 }
 
+// copy assignment operator
+Texture& Texture::operator=(const Texture& other) {
+	if (this != &other) {  // Protect against self-assignment
+		// Release existing resources
+		delete[] m_colourArray;
+		delete[] m_glyphArray;
+		while (topMipmap != nullptr) {
+			MipmapLevel* next = topMipmap->next;
+			delete topMipmap;
+			topMipmap = next;
+		}
+
+		// Copy basic attributes
+		m_width = other.m_width;
+		m_height = other.m_height;
+		m_illumination = other.m_illumination;
+
+		// Allocate and copy dynamic resources
+		m_colourArray = new short[m_width * m_height];
+		m_glyphArray = new short[m_width * m_height];
+		std::copy(other.m_colourArray, other.m_colourArray + m_width * m_height, m_colourArray);
+		std::copy(other.m_glyphArray, other.m_glyphArray + m_width * m_height, m_glyphArray);
+
+		// Copy the linked list of MipmapLevels
+		topMipmap = copyMipmapLevels(other.topMipmap);
+	}
+	return *this;
+}
+
+// destructor
 Texture::~Texture()
 {
 	delete[] m_colourArray;
@@ -64,6 +91,7 @@ Texture::~Texture()
 	}
 }
 
+// helper function to 
 bool Texture::Initialise(int width, int height, bool illumination, short colour)
 {
 	m_width = width;
@@ -77,8 +105,19 @@ bool Texture::Initialise(int width, int height, bool illumination, short colour)
 		m_colourArray[i] = colour;
 		m_glyphArray[i] = L' ';
 	}
-
 	return true;
+}
+
+// Helper function to copy the linked list of MipmapLevels
+Texture::MipmapLevel* Texture::copyMipmapLevels(const MipmapLevel* source) {
+	if (!source) return nullptr;
+
+	MipmapLevel* copy = new MipmapLevel(source->width, source->height, source->illuminated);
+	std::copy(source->colourArray, source->colourArray + source->width * source->height, copy->colourArray);
+	std::copy(source->glyphArray, source->glyphArray + source->width * source->height, copy->glyphArray);
+
+	copy->next = copyMipmapLevels(source->next); // Recursive call to copy the rest of the list
+	return copy;
 }
 
 // populate texture instance with full complement of mipmaps
@@ -224,7 +263,7 @@ bool Texture::LoadFrom(const std::wstring& filePath)
 	std::fread(&m_illumination, sizeof(int), 1, file);
 
 	// create an empty texture from loaded data
-	Initialise(m_width, m_height, m_illumination);
+	Initialise(m_width, m_height, m_illumination, FG_BLACK);
 
 	// read colours/glyphs into texture
 	std::fread(m_colourArray, sizeof(short), m_width * m_height, file);
@@ -465,17 +504,6 @@ short Texture::GetGlyphFromDelta(float delta) {
 		return PIXEL_HALF;
 }
 
-// for friend classes only for accessing internal arrays
-short* Texture::GetColourArrayPtr() const
-{
-	return m_colourArray;
-}
-
-short* Texture::GetGlyphArrayPtr() const
-{
-	return m_glyphArray;
-}
-
 int Texture::GetIllumination() const
 {
 	return m_illumination;
@@ -555,34 +583,6 @@ int Texture::GetWidth() const
 int Texture::GetHeight() const
 {
 	return m_height;
-}
-
-Texture* Texture::MergeOther(const Texture* other, bool treatSpacesAsValid) {
-	
-	// Create an 'undo' texture
-	Texture* undoTexture = new Texture(m_width, m_height);
-
-	for (size_t i = 0; i < m_width * m_height; i++) {
-		// Always save the current state for undo
-		undoTexture->m_glyphArray[i] = m_glyphArray[i];
-		undoTexture->m_colourArray[i] = m_colourArray[i];
-
-		// Check if we should treat spaces as valid glyphs for overwriting
-		if (treatSpacesAsValid || other->m_glyphArray[i] != L' ') {
-			// 'X' erases the underlying glyph and colour, setting it to a space ' ' and black
-			if (other->m_glyphArray[i] == L'X') {
-				m_glyphArray[i] = L' ';
-				m_colourArray[i] = FG_BLACK;
-			}
-			else {
-				// Overwrite with 'other' texture's glyph and color, including spaces if treatSpacesAsValid is true
-				m_glyphArray[i] = other->m_glyphArray[i];
-				m_colourArray[i] = other->m_colourArray[i];
-			}
-		}
-	}
-
-	return undoTexture; // Return the undo texture for potential undo operations
 }
 
 void Texture::Clear(short colour, short glyph)

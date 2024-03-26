@@ -191,7 +191,7 @@ bool TexturePainter::GetUserStartInput()
 bool TexturePainter::InitCanvasNewTexture(int width, int height, int illumination, const std::wstring& fileName)
 {
     // create new canvas
-    Canvas* canvas = new Canvas(*this, new Texture(width, height, illumination), fileName, SAVE_FOLDER + fileName, CANVAS_XPOS, CANVAS_YPOS);
+    Canvas* canvas = new Canvas(*this, width, height, illumination, SAVE_FOLDER, fileName, CANVAS_XPOS, CANVAS_YPOS);
 
     // save the new texture to save folder (create an empty file)
     canvas->SaveTexture(SAVE_FOLDER + fileName);
@@ -203,10 +203,8 @@ bool TexturePainter::InitCanvasNewTexture(int width, int height, int illuminatio
 
 bool TexturePainter::InitCanvasExistingTexture(const std::wstring& fileName)
 {
-    // load up an existing texture
-    Texture* existingTexture = new Texture(SAVE_FOLDER + fileName);
     // create new canvas with existing texture
-    Canvas* canvas = new Canvas(*this, existingTexture, fileName, SAVE_FOLDER + fileName, CANVAS_XPOS, CANVAS_YPOS);
+    Canvas* canvas = new Canvas(*this, SAVE_FOLDER, fileName, CANVAS_XPOS, CANVAS_YPOS);
 
     // no need to save a file as texture already exists
     // add to current selection of canvases to edit
@@ -270,7 +268,7 @@ bool TexturePainter::HandleKeyPress()
     // when left mouse button held
     if (keyArray[VK_LBUTTON].bHeld)
     {
-        if (currentCanvas->IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y))
+        if (currentCanvas->IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y) && currentCanvas->GetBrushType() == Canvas::BrushType::BRUSH_BLOCK)
         {
             currentCanvas->ApplyPaint(mouseCoords.X, mouseCoords.Y);
         }
@@ -279,7 +277,7 @@ bool TexturePainter::HandleKeyPress()
     // when left mouse lifted
     if (keyArray[VK_LBUTTON].bReleased)
     {
-        if (currentCanvas->IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y))
+        if (currentCanvas->IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y) && currentCanvas->GetBrushType() == Canvas::BrushType::BRUSH_BLOCK)
         {
             currentCanvas->SetPaint();
         }
@@ -288,7 +286,7 @@ bool TexturePainter::HandleKeyPress()
 
     if ( keyArray[VK_LBUTTON].bPressed)
     {
-        if (currentCanvas->IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y))
+        if (currentCanvas->IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y) && currentCanvas->GetBrushType() != Canvas::BrushType::BRUSH_BLOCK)
             currentCanvas->ApplyTool(mouseCoords.X, mouseCoords.Y);
 
         // check if over any of the buttons when clicked

@@ -30,9 +30,6 @@
     <ClCompile Include="ButtonContainer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="BrushStroke.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TexturePainter.h">
@@ -50,10 +47,7 @@
     <ClInclude Include="Command.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="BrushStrokeCommand.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BrushStroke.h">
+    <ClInclude Include="BrushstrokeCommand.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="UndoRedoManager.h">

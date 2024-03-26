@@ -54,19 +54,14 @@ enum PIXEL_TYPE
 	PIXEL_QUARTER = 0x2591,
 };
 
-class BrushStroke;
-
 class Texture
 {
-	friend class BrushStroke;
 	friend class Canvas;
 
 private:
 	int m_width;
 	int m_height;
 	int m_illumination;
-
-public:
 	short* m_colourArray;
 	short* m_glyphArray;
 
@@ -98,20 +93,25 @@ public:
 public:
 
 	// constructors
+
+	// dimensions and illumination needed
 	Texture(int w = 32, int h = 32, int illumination = 0, bool mipmap = false);
 
 	// from saved file
-	Texture(std::wstring sFilePath = L".\\Textures\\Untitled.txr", bool mipmap = false);
+	Texture(std::wstring sFilePath, bool mipmap = false);
 
-	// DELETE Copy constructor
-	//Texture(const Texture& other) = delete;
+	// Copy constructor
+	Texture(const Texture& other);
+
+	// copyassignment operator
+	Texture& operator=(const Texture& other);
 
 	// destructor
 	~Texture();
 
 	// member methods
 private:
-	bool Initialise(int w, int h, bool illuminated = false, short forgroundColour = FG_BLACK);
+	bool Initialise(int w, int h, bool illuminated, short forgroundColour);
 	
 	void GenerateMipmaps();
 
@@ -142,11 +142,8 @@ public:
 
 private:
 	void SetColourAndDeltaFromSecondaryTexel(int ix, int iy, float dx, float dy, short primaryColour, short& secondaryColour, float& delta);
+	
 	short GetGlyphFromDelta(float delta);
-
-	// for accessing internal arrays
-	short* GetColourArrayPtr() const;
-	short* GetGlyphArrayPtr() const;
 
 public:
 	int GetIllumination() const;
@@ -166,8 +163,6 @@ public:
 	int GetWidth() const;
 
 	int GetHeight() const;
-
-	Texture* MergeOther(const Texture* other, bool treatSpacesAsValid = false);
 
 	void Clear(short colour = 0, short glyph = L' ');
 

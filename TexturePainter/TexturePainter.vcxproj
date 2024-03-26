@@ -141,7 +141,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="BrushStroke.cpp" />
     <ClCompile Include="ButtonContainer.cpp" />
     <ClCompile Include="Canvas.cpp" />
     <ClCompile Include="Main.cpp" />
@@ -149,8 +148,7 @@
     <ClCompile Include="Utility.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BrushStroke.h" />
-    <ClInclude Include="BrushStrokeCommand.h" />
+    <ClInclude Include="BrushstrokeCommand.h" />
     <ClInclude Include="ButtonContainer.h" />
     <ClInclude Include="Canvas.h" />
     <ClInclude Include="Command.h" />

@@ -129,7 +129,7 @@ void ButtonContainer::DrawButtons()
         if (button->texture == nullptr)
             drawingClass.DrawRectangleEdgeLength(button->xPos, button->yPos, button->width, button->height, button->colour, true, PIXEL_SOLID);
         else
-            drawingClass.DrawTextureToScreen(button->texture, button->xPos, button->yPos, 1, true);
+            drawingClass.DrawTextureToScreen(*button->texture, button->xPos, button->yPos, 1, true);
 
         drawingClass.DrawRectangleEdgeLength(button->xPos - 1, button->yPos - 1, button->width + 2, button->height + 2, background, false, PIXEL_HALF);
     }

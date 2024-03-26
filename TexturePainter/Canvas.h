@@ -3,12 +3,15 @@
 #include <stack>
 
 #include "Texture.h"
-
 #include "UndoRedoManager.h"
 
-class TexturePainter; // forwawrd decleration for DI
+// forwawrd decleration for DI -  avoids circular dependacy 
+class BrushstrokeCommand;
+class TexturePainter;
 
 class Canvas {
+
+    friend class BrushstrokeCommand;
 
 public:
     enum class BrushType {
@@ -50,21 +53,34 @@ private:
     // texture of brushStroke
     Texture currentBrushStrokeTexture;
 
+    struct TextureChange {
+        int x, y; // Position of the change
+        short oldGlyph, newGlyph; // Character values before and after the change
+        short oldColor, newColor; // Color values before and after the change
+    };
+
+    struct Brushstroke {
+        std::vector<TextureChange> changes;
+    };
+
     // manage the application of brushStrokes
     UndoRedoManager brushMangager;
     
     // DI from parent
     TexturePainter& drawingClass;
 
+    // private initialiser method
+    void Initialise(const std::wstring& saveFolder, const std::wstring& fileName);
+
 public:
-
 // constructors.destructors etc
-    Canvas(TexturePainter& drawer, Texture& texture, std::wstring fileName, std::wstring filePath, short xPos, short yPos);
+    Canvas(TexturePainter& drawer, int width, int height, int illumination, const std::wstring& fileName, const std::wstring& filePath, short xPos, short yPos);
 
-    ~Canvas();
+    Canvas(TexturePainter& drawer, const std::wstring& saveFolder, const std::wstring& fileName, short xPos, short yPos);
 
+    // ~Canvas(); - not needed currently
+    
 // instance methods
-
     bool SaveTexture(const std::wstring& filePath);
 
     bool LoadTexture(const std::wstring& filePath);
@@ -85,13 +101,15 @@ public:
 
     void SetBrushType(BrushType brushType);
 
+    BrushType GetBrushType();
+
     short GetBrushColour();
 
     void SetBrushColour(short colour);
 
     void SetBrushColourAndGlyph(short colour, short glyph);
 
-    const Texture* GetTexture();
+    const Texture& GetTexture();
 
     COORD GetPositionCoords();
 
@@ -102,8 +120,6 @@ public:
     void LeftButtonReleased();
 
     COORD ConvertScreenCoordsToTextureCoords(int x, int y);
-
-    COORD ConvertTextureCoordsToScreenCoords(int x, int y);
    
     // apply painting block - able to hold down mouse button
     void ApplyPaint(int x, int y);
@@ -113,7 +129,11 @@ public:
     // apply a tool requiring initial click and them secondary click
     void ApplyTool(int x, int y);
 
-    Texture* MergeTexture(Texture* other, bool treatSpacesAsValid);
+    void ApplyBrushstroke(const Brushstroke& stroke);
+
+    void UndoBrushstroke(const Brushstroke& stroke);
+
+    Brushstroke CaptureDifferential();
 
     void SetBrushToDelete();
 
@@ -131,7 +151,7 @@ public:
 
     void DrawCanvas();
 
-    void DisplayBrushStroke();
+    void DisplayBrushStroke(int x, int y);
 
     void IncreaseZoomLevel();
 

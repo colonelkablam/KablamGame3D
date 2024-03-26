@@ -1,36 +1,33 @@
 #pragma once
 
-#include "Canvas.h"
 #include "Command.h"
-#include "BrushStroke.h"
+#include "Canvas.h"
 
+class Canvas;
 
-class BrushStrokeCommand : public Command {
+class BrushstrokeCommand : public Command {
+
     Canvas& canvas;  // Reference to the canvas
-    BrushStroke* brushStroke;   // The brush stroke to apply
+    Canvas::Brushstroke brushStroke;  // The brush stroke to apply
+
 
 public:
-    BrushStrokeCommand(Canvas& canvas, BrushStroke* stroke) 
+    BrushstrokeCommand(Canvas& canvas, Canvas::Brushstroke stroke) 
         : canvas{ canvas }, brushStroke{ stroke } {}
 
-    ~BrushStrokeCommand()
-    {
-        delete brushStroke;
-        brushStroke = nullptr;
-    }
 
     // Method to apply the stroke to the canvas
     void execute() override
     {
         // applying the texture to the background canvas populates the undo texture
-        brushStroke->SetUndoTexture(canvas.MergeTexture(brushStroke->GetBrushStrokeTexture(), false));
+        canvas.ApplyBrushstroke(brushStroke);
     }
 
     // Method to remove the stroke from the canvas
     void undo() override
     {
-        if (brushStroke->GetUndoTexture() != nullptr)
-            canvas.MergeTexture(brushStroke->GetUndoTexture(), true);
+        canvas.UndoBrushstroke(brushStroke);
+
     }
 
 };
