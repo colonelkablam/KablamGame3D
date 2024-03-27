@@ -1,7 +1,6 @@
 #include <iostream>
 
 #include "Utility.h"
-
 #include "TexturePainter.h"
 
 // constructor stuff...
@@ -76,12 +75,12 @@ bool TexturePainter::OnGameCreate()
     lineToolIcon = new Texture(L"./ToolIcons/line_tool_icon.txr");
     
     // populate it
-    brushButtonsContainer->AddButton(blockToolIcon, [this]() { currentCanvas->SetBrushType(Canvas::BrushType::BRUSH_BLOCK); });
+    brushButtonsContainer->AddButton(blockToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_BLOCK); });
     brushButtonsContainer->AddButton(increaseToolIcon, [this]() { currentCanvas->ChangeBrushSize(1); });
     brushButtonsContainer->AddButton(decreaseToolIcon, [this]() { currentCanvas->ChangeBrushSize(-1); });
-    brushButtonsContainer->AddButton(rectToolIcon, [this]() { currentCanvas->SetBrushType(Canvas::BrushType::BRUSH_RECT); });
-    brushButtonsContainer->AddButton(rectFillToolIcon, [this]() { currentCanvas->SetBrushType(Canvas::BrushType::BRUSH_RECT_FILLED); });
-    brushButtonsContainer->AddButton(lineToolIcon, [this]() { currentCanvas->SetBrushType(Canvas::BrushType::BRUSH_LINE); });
+    brushButtonsContainer->AddButton(lineToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_LINE); });
+    brushButtonsContainer->AddButton(rectToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_RECT); });
+    brushButtonsContainer->AddButton(rectFillToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_RECT_FILLED); });
 
     return true;
 }
@@ -265,65 +264,52 @@ bool TexturePainter::HandleKeyPress()
 {
     //controls
 
-    // when left mouse button held
-    if (keyArray[VK_LBUTTON].bHeld)
+    // when left mouse button pressed
+    if (keyArray[VK_LBUTTON].bPressed)
     {
-        if (currentCanvas->IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y) && currentCanvas->GetBrushType() == Canvas::BrushType::BRUSH_BLOCK)
+        if (currentCanvas->AreCoordsWithinCanvas(mouseCoords.X, mouseCoords.Y))
+            currentCanvas->ApplyToolToBrushTexture(mouseCoords.X, mouseCoords.Y);
+        else
         {
-            currentCanvas->ApplyPaint(mouseCoords.X, mouseCoords.Y);
+            // check if over any of the buttons when clicked
+            colourButtonsContainer->HandleMouseClick(mouseCoords.X, mouseCoords.Y);
+            brushButtonsContainer->HandleMouseClick(mouseCoords.X, mouseCoords.Y);
         }
+
     }
+    else if (keyArray[VK_LBUTTON].bHeld)
+    {
+        if (currentCanvas->AreCoordsWithinCanvas(mouseCoords.X, mouseCoords.Y))
+            currentCanvas->ApplyToolToBrushTexture(mouseCoords.X, mouseCoords.Y);
+    }
+
 
     // when left mouse lifted
     if (keyArray[VK_LBUTTON].bReleased)
     {
-        if (currentCanvas->IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y) && currentCanvas->GetBrushType() == Canvas::BrushType::BRUSH_BLOCK)
+        currentCanvas->SetBrushTextureToBackground();
+    }
+
+    if (keyArray[VK_RBUTTON].bHeld)
+    {
+        if (currentCanvas->AreCoordsWithinCanvas(mouseCoords.X, mouseCoords.Y))
         {
-            currentCanvas->SetPaint();
+            currentCanvas->SetBrushToDelete();
+            currentCanvas->ApplyToolToBrushTexture(mouseCoords.X, mouseCoords.Y);
         }
     }
 
-
-    if ( keyArray[VK_LBUTTON].bPressed)
+    // when right mouse lifted
+    if (keyArray[VK_RBUTTON].bReleased)
     {
-        if (currentCanvas->IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y) && currentCanvas->GetBrushType() != Canvas::BrushType::BRUSH_BLOCK)
-            currentCanvas->ApplyTool(mouseCoords.X, mouseCoords.Y);
-
-        // check if over any of the buttons when clicked
-        colourButtonsContainer->HandleMouseClick(mouseCoords.X, mouseCoords.Y);
-        brushButtonsContainer->HandleMouseClick(mouseCoords.X, mouseCoords.Y);
+        colourButtonsContainer->ActivateLastClicked();
+        currentCanvas->SetBrushTextureToBackground();
     }
-
-
-
-
-
-
-
-    //if (keyArray[VK_RBUTTON].bHeld)
-    //{
-    //    if (currentCanvas->IsMouseWithinCanvas(mouseCoords.X, mouseCoords.Y))
-    //    {
-    //        currentCanvas->SetBrushToDelete();
-    //        currentCanvas->ApplyPaint(mouseCoords.X, mouseCoords.Y);
-    //    }
-    //}
 
     if (keyArray[VK_OEM_PLUS].bPressed)
     {
         currentCanvas->IncreaseZoomLevel();
     }
-
-    if (keyArray[L'B'].bPressed)
-    {
-        currentCanvas->ChangeBrushSize(1);
-    }
-
-    if (keyArray[L'P'].bPressed)
-    {
-        currentCanvas->ChangeBrushType(Canvas::BrushType::BRUSH_RECT);
-    }
-
 
     for (size_t i{ 0 }; i < 10; i++)
     {
@@ -381,6 +367,11 @@ bool TexturePainter::HandleKeyPress()
     if (keyArray[VK_CONTROL].bHeld && keyArray[L'Z'].bPressed)
     {
         currentCanvas->UndoLastCommand();
+    }
+    // REDO functionality
+    if (keyArray[VK_CONTROL].bHeld && keyArray[L'Y'].bPressed)
+    {
+        currentCanvas->RedoLastCommand();
     }
 
     return true;

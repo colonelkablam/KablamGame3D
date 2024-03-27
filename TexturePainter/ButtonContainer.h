@@ -14,6 +14,7 @@ private:
     // poition of container
     int xPos;
     int yPos;
+
     int lastClicked;
     short background;
 
@@ -55,7 +56,7 @@ private:
             delete texture;
         }
 
-        // Simulate the button being clicked
+        // when button clicked
         void Clicked() {
             if (OnClick) { // Check if the function pointer is not null
                 OnClick(); // Call the function
@@ -87,6 +88,8 @@ public:
     bool AddButton(Texture* texture, std::function<void()> onClickFunction);
 
     void HandleMouseClick(int mouseX, int mouseY);
+
+    void ActivateLastClicked();
 
     void DrawButtons();
 

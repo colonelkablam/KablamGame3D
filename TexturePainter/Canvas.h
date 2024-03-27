@@ -1,38 +1,38 @@
 #pragma once
 
 #include <stack>
-
+#include <unordered_map>
 #include "Texture.h"
 #include "UndoRedoManager.h"
 
-// forwawrd decleration for DI -  avoids circular dependacy 
+// Forward declarations to resolve circular dependencies
 class BrushstrokeCommand;
 class TexturePainter;
+class ToolState;
+
+enum class ToolType {
+    BRUSH_BLOCK,
+    BRUSH_RECT,
+    BRUSH_RECT_FILLED,
+    BRUSH_LINE
+};
 
 class Canvas {
 
     friend class BrushstrokeCommand;
-
-public:
-    enum class BrushType {
-        BRUSH_BLOCK,
-        BRUSH_RECT, // For drawing squares
-        BRUSH_RECT_FILLED,
-        BRUSH_LINE    // For drawing lines
-    };
+    //friend class Concrete
 
 private:
     static const short STARTING_COLOUR = FG_BLACK;
     static const short STARTING_GLYPH = PIXEL_SOLID;
     static const int START_ZOOM_LEVEL = 1;
     static const int START_BRUSH_SIZE = 1;
-    static const BrushType STARTING_BRUSH = BrushType::BRUSH_BLOCK;
+    static const ToolType STARTING_TOOL = ToolType::BRUSH_BLOCK;
 
-    BrushType currentBrushType;
+    ToolType currentBrushType;
     int brushSize;
     bool initialClick;
     COORD initialClickCoords;
-    bool liftedClick;
 
     CHAR_INFO currentPixel;
     CHAR_INFO deletePixel;
@@ -63,14 +63,20 @@ private:
         std::vector<TextureChange> changes;
     };
 
+    // container for the concrete classes
+    std::unordered_map<ToolType, ToolState*> toolStates;
+    // current pointer
+    ToolState* currentToolState;
+
     // manage the application of brushStrokes
     UndoRedoManager brushMangager;
     
     // DI from parent
     TexturePainter& drawingClass;
 
-    // private initialiser method
+    // private initialiser methods
     void Initialise(const std::wstring& saveFolder, const std::wstring& fileName);
+    void PostInitialise();
 
 public:
 // constructors.destructors etc
@@ -78,7 +84,7 @@ public:
 
     Canvas(TexturePainter& drawer, const std::wstring& saveFolder, const std::wstring& fileName, short xPos, short yPos);
 
-    // ~Canvas(); - not needed currently
+    ~Canvas();
     
 // instance methods
     bool SaveTexture(const std::wstring& filePath);
@@ -99,45 +105,35 @@ public:
 
     int GetBrushSize();
 
-    void SetBrushType(BrushType brushType);
-
-    BrushType GetBrushType();
-
     short GetBrushColour();
 
     void SetBrushColour(short colour);
 
     void SetBrushColourAndGlyph(short colour, short glyph);
 
-    const Texture& GetTexture();
-
-    COORD GetPositionCoords();
+    void SwitchTool(ToolType type);
 
     int ChangeCanvasOffset(COORD change);
 
-    bool IsMouseWithinCanvas(int x, int y);
-
-    void LeftButtonReleased();
+    bool AreCoordsWithinCanvas(int x, int y);
 
     COORD ConvertScreenCoordsToTextureCoords(int x, int y);
-   
-    // apply painting block - able to hold down mouse button
-    void ApplyPaint(int x, int y);
+    
+    COORD ConvertTextureCoordsToScreenCoords(int x, int y);
 
-    void SetPaint();
+    void SetBrushTextureToBackground();
 
-    // apply a tool requiring initial click and them secondary click
-    void ApplyTool(int x, int y);
+    void ClearCurrentBrushStrokeTexture();
+
+    void ApplyToolToBrushTexture(int x, int y);
 
     void ApplyBrushstroke(const Brushstroke& stroke);
 
-    void UndoBrushstroke(const Brushstroke& stroke);
+    void ApplyUndoBrushstroke(const Brushstroke& stroke);
 
     Brushstroke CaptureDifferential();
 
     void SetBrushToDelete();
-
-    void ChangeBrushType(BrushType newBrush);
     
     void ChangeBrushSize(int sizeChange);
 
@@ -151,11 +147,13 @@ public:
 
     void DrawCanvas();
 
-    void DisplayBrushStroke(int x, int y);
+    void DisplayBrushPointer(int x, int y);
 
     void IncreaseZoomLevel();
 
     void UndoLastCommand();
+
+    void RedoLastCommand();
 
     int GetSizeUndoStack();
 

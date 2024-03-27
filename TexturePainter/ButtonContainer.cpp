@@ -122,6 +122,11 @@ void ButtonContainer::HandleMouseClick(int mouseX, int mouseY)
     }
 }
 
+void ButtonContainer::ActivateLastClicked()
+{
+    buttons.at(lastClicked)->Clicked();
+}
+
 void ButtonContainer::DrawButtons()
 {
     for (const Button* button : buttons)

@@ -53,6 +53,12 @@
     <ClInclude Include="UndoRedoManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ToolState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ConcreteToolStates.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="events_log.txt">

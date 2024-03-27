@@ -26,7 +26,7 @@ public:
     // Method to remove the stroke from the canvas
     void undo() override
     {
-        canvas.UndoBrushstroke(brushStroke);
+        canvas.ApplyUndoBrushstroke(brushStroke);
 
     }
 
