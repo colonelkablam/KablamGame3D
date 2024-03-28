@@ -15,7 +15,7 @@ void GetDimensionInput(const std::wstring& prompt, int& userInput, int min, int 
 
 bool GetYesNoInput(const std::wstring& prompt);
 
-bool CheckFolderExist(const std::wstring& folderPath);
+bool CheckFolderExists(const std::wstring& folderPath);
 
 bool CreateFolder(const std::wstring& folderPath);
 

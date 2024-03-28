@@ -61,8 +61,6 @@ bool TexturePainter::OnGameCreate()
     deleteToolIcon = new Texture(L"./ToolIcons/delete_tool_icon.txr");
     colourButtonsContainer->AddButton(deleteToolIcon, [this]() { currentCanvas->SetBrushToDelete(); });
 
-
-
     // container for tool bottons
     brushButtonsContainer = new ButtonContainer(*this, BRUSH_BUTTON_XPOS, BRUSH_BUTTON_YPOS, 8, 1);
 
@@ -85,7 +83,6 @@ bool TexturePainter::OnGameCreate()
     return true;
 }
 
-
 bool TexturePainter::OnGameUpdate(float fElapsedTime) {
     FillScreenBuffer(); // clear screen before next frame
     HandleKeyPress();
@@ -101,44 +98,20 @@ bool TexturePainter::OnGameUpdate(float fElapsedTime) {
 
 bool TexturePainter::GetUserStartInput()
 {
-    // lambda expression for resetting
-    auto ResetAsking = []() -> bool {
-        system("pause");  // Wait for key press
-        system("cls");    // Clear the screen
-        return true;      // Indicate to 'continue' the loop
+    auto pauseAndClearScreen = []()
+    {
+        system("pause"); // wait for key press
+        system("cls");   // clear the screen, platform-specific
     };
 
-    bool finishedInput{ false };
-    int inputWidth{ 0 };
-    int inputHeight{ 0 };
-    int inputIllumination{ 0 };
-    std::wstring userFileName;
-    std::vector <std::wstring> availableFileList{};
+    // check if folder exists; create a new one if not. Return false if unable
+    if (CheckIfSaveFolderExists() == false)
+        return false;
 
-
-    // check if folder exists; create a new one if not.
-    if (!CheckFolderExist(SAVE_FOLDER))
+    while (true)
     {
-        AddToLog(L"'" + SAVE_FOLDER + L"' does not exist.");
-        if (!CreateFolder(SAVE_FOLDER))
-        {
-            AddToLog(L"'" + SAVE_FOLDER + L"Unable to create save folder. Exiting program.");
-            return false;
-        }
-        else
-            AddToLog(L"'" + SAVE_FOLDER + L"Created '" + SAVE_FOLDER + L"' save folder.");
-    }
-    else
-        AddToLog(L"'" + SAVE_FOLDER + L"' exists. No need to create save folder.");
-
-    // ask until existing or correct format file name given
-    do {
-        // attempt to get list of saved files
-        availableFileList = PrintAndGetFileList(SAVE_FOLDER, TEXTURE_EXTENSION);
-        std::wcout << std::endl;
-
+        std::vector<std::wstring> availableFileList = PrintAndGetFileList(SAVE_FOLDER, TEXTURE_EXTENSION);
         PrintSelectedTexturesList();
-        std::wcout << std::endl;
 
         // Prompt the user for a file
         int numberOfFiles{ static_cast<int>(availableFileList.size()) };
@@ -146,98 +119,108 @@ bool TexturePainter::GetUserStartInput()
         std::wstring letter{ L"T" };
         if (numberOfFiles > 0)
         {
-            prompt =  L"Please select an existing File Name(1-" + std::to_wstring(numberOfFiles) + L"), or ";
+            prompt = L"\nPlease select an existing File Name(1-" + std::to_wstring(numberOfFiles) + L"), or ";
             letter = L"t";
         }
         prompt += letter + L"ype a new name to start new texture project ('q' to exit): ";
 
+        std::wstring userFileName;
         if (!GetValidFileName(prompt, userFileName))
-            return false; // if 'q' selected returns false and user input terminated
+            return false;
 
-        // returns -1 if not an integer - used to test if user selecting file with index or typing in name
-        int userSelection{ WStringToInteger(userFileName) };
+        int userSelection = WStringToInteger(userFileName);
+        bool validSelection = HandleFileSelection(userSelection, userFileName, availableFileList);
 
-        // if a valid number selection then load existing file 
-        if (userSelection > 0 && userSelection <= numberOfFiles)
-        {
-            std::wstring name{ availableFileList.at(userSelection - 1) };
-
-            if (IsFileAlreadySelected(name))
-            {
-                if (ResetAsking())
-                    continue;
-            }
-            else // load texture from existing file
-            {
-                InitCanvasExistingTexture(name);
-                selectedList.push_back(name);
-            }
+        if (validSelection == false) {
+            pauseAndClearScreen();
+            continue;
         }
-        // if a non-valid number selection then restart
-        else if (userSelection > numberOfFiles)
+
+        if (GetYesNoInput(L"\nDo you want to add more Textures to edit? (y/n): ") == false)
         {
-            std::wcout << L"\nA file name cannot be a number.\n";
-            if (ResetAsking())
-                continue;
+            pauseAndClearScreen();
+            break;
         }
-        // else as userFileName is valid string test to see if file exists
-        else 
-        {
-            if (IsFileAlreadySelected(userFileName + TEXTURE_EXTENSION))
-            {
-                if (ResetAsking())
-                    continue;
-            }
-            else if (FileExistInDir(availableFileList, userFileName + TEXTURE_EXTENSION)) // if exists
-            {
-                // load texture from existing file
-                InitCanvasExistingTexture(userFileName + TEXTURE_EXTENSION);
-                selectedList.push_back(userFileName + TEXTURE_EXTENSION);
-            }
-            else
-            {
-                // get new dimentions
-                GetDimensionInput(L"\nPlease enter an integer value for the new texture width: ", inputWidth, MIN_TEXTURE_WIDTH, MAX_TEXTURE_WIDTH);
-                GetDimensionInput(L"\nPlease enter an integer value for the new texture height: ", inputHeight, MIN_TEXTURE_HEIGHT, MAX_TEXTURE_HEIGHT);
-                GetDimensionInput(L"\nPlease enter illumination value 0 to 255 for the new texture: ", inputIllumination, 0, 255);
 
-                // create and save new .txr file in saves path
-                InitCanvasNewTexture(inputWidth, inputHeight, inputIllumination, userFileName + TEXTURE_EXTENSION);
-                selectedList.push_back(userFileName + TEXTURE_EXTENSION);
-            }
-        }
-        if (!GetYesNoInput(L"\nDo you want to add more Textures to edit? (y/n): "))
-            finishedInput = true;
-
-        // Clear the console screen
-        system("cls"); // Only for Windows - by the nature of project!
-
-    } while (finishedInput == false);
-
-
-    // Output the entered textures (optional, for verification)
-    for (Canvas* canvas : canvases)
-    {
-        std::wcout << L"\nFile Name:      " << canvas->GetFileName();
-        std::wcout << L"\nSize (w * h):   " << canvas->GetTextureWidth() << L" x " << canvas->GetTextureHeight();
-        std::wcout << L"\nIllumination:    " << canvas->GetIllumination() << std::endl << std::endl;
+        system("cls");
     }
 
+    PrintEnteredTextures();
     system("pause"); // wait for key press
-
     return true;
+}
+
+bool TexturePainter::HandleFileSelection(int selection, const std::wstring& fileName, const std::vector<std::wstring>& fileList)
+{
+    // User entered a number
+    if (selection != -1) 
+    { 
+        if (selection > fileList.size())
+        {
+            std::wcout << L"\nInvalid selection. Please try again.\n";
+            return false;
+        }
+
+        std::wstring selectedFile = fileList.at(selection - 1);
+
+        if (IsFileAlreadySelected(selectedFile)) 
+            return false;
+
+        LoadTexture(selectedFile);
+    }
+    // User entered a file name
+    else { 
+        std::wstring fullFileName = fileName + TEXTURE_EXTENSION;
+        if (IsFileAlreadySelected(fullFileName))
+            return false;
+
+        if (FileExistInDir(fileList, fullFileName)) 
+        {
+            LoadTexture(fullFileName);
+        }
+        else
+        {
+            CreateNewTexture(fullFileName);
+        }
+    }
+    return true;
+}
+
+void TexturePainter::LoadTexture(const std::wstring& fileName)
+{
+    InitCanvasExistingTexture(fileName);
+    selectedList.push_back(fileName);
+}
+
+void TexturePainter::CreateNewTexture(const std::wstring& fileName)
+{
+    int width{ 0 }, height{ 0 }, illumination{ 0 };
+    // get new dimentions
+    GetDimensionInput(L"\nPlease enter an integer value for the new texture width: ", width, MIN_TEXTURE_WIDTH, MAX_TEXTURE_WIDTH);
+    GetDimensionInput(L"\nPlease enter an integer value for the new texture height: ", height, MIN_TEXTURE_HEIGHT, MAX_TEXTURE_HEIGHT);
+    GetDimensionInput(L"\nPlease enter illumination value 0 to 255 for the new texture: ", illumination, 0, 255);
+    InitCanvasNewTexture(width, height, illumination, fileName);
+    selectedList.push_back(fileName);
+}
+
+void TexturePainter::PrintEnteredTextures()
+{
+    for (Canvas* canvas : canvases)
+    {
+        std::wcout << L"\nFile Name: " << canvas->GetFileName()
+                   << L"\nSize (w * h): " << canvas->GetTextureWidth() << L" x " << canvas->GetTextureHeight()
+                   << L"\nIllumination: " << canvas->GetIllumination() << std::endl << std::endl;
+    }
 }
 
 bool TexturePainter::InitCanvasNewTexture(int width, int height, int illumination, const std::wstring& fileName)
 {
     // create new canvas
     Canvas* canvas = new Canvas(*this, width, height, illumination, SAVE_FOLDER, fileName, CANVAS_XPOS, CANVAS_YPOS);
-
     // save the new texture to save folder (create an empty file)
     canvas->SaveTexture(SAVE_FOLDER + fileName);
     // add to current selection of canvases to edit
     canvases.push_back(canvas);
-
     return true;
 }
 
@@ -245,11 +228,9 @@ bool TexturePainter::InitCanvasExistingTexture(const std::wstring& fileName)
 {
     // create new canvas with existing texture
     Canvas* canvas = new Canvas(*this, SAVE_FOLDER, fileName, CANVAS_XPOS, CANVAS_YPOS);
-
     // no need to save a file as texture already exists
     // add to current selection of canvases to edit
     canvases.push_back(canvas);
-
     return true;
 }
 
@@ -466,5 +447,24 @@ bool TexturePainter::HandleKeyPress()
         currentCanvas->RedoLastCommand();
     }
 
+    return true;
+}
+
+bool TexturePainter::CheckIfSaveFolderExists()
+{    
+    // check if folder exists; create a new one if not.
+    if (!CheckFolderExists(SAVE_FOLDER))
+    {
+        AddToLog(L"'" + SAVE_FOLDER + L"' does not exist.");
+        if (!CreateFolder(SAVE_FOLDER))
+        {
+            AddToLog(L"'" + SAVE_FOLDER + L"Unable to create save folder. Exiting program.");
+            return false;
+        }
+        else
+            AddToLog(L"'" + SAVE_FOLDER + L"Created '" + SAVE_FOLDER + L"' save folder.");
+    }
+    else
+        AddToLog(L"'" + SAVE_FOLDER + L"' exists. No need to create save folder.");
     return true;
 }

@@ -87,5 +87,17 @@ private:
     void DrawButtons();
     bool HandleKeyPress();
 
+    bool HandleFileSelection(int selection, const std::wstring& fileName, const std::vector<std::wstring>& fileList);
+
+    void LoadTexture(const std::wstring& fileName);
+
+    void CreateNewTexture(const std::wstring& fileName);
+
+    bool AskToAddMoreTextures();
+
+    void PrintEnteredTextures();
+
+    bool CheckIfSaveFolderExists();
+
 }; // end of TexturePainter class definition
 

@@ -149,7 +149,7 @@ bool GetYesNoInput(const std::wstring& prompt) {
     }
 }
 
-bool CheckFolderExist(const std::wstring& folderPath) {
+bool CheckFolderExists(const std::wstring& folderPath) {
     DWORD fileAttributes = GetFileAttributes(folderPath.c_str());
 
     if (fileAttributes == INVALID_FILE_ATTRIBUTES) {
