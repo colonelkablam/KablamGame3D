@@ -139,12 +139,11 @@ public:
     // member methods
     int BuildConsole(int screenWidth, int screenHeight, int fontWidth, int fontHeight);
 
-    void Start();
+    void Start(); // starts engine
 
 
 private:
     int GameThread();
-
 
 protected:
     // User MUST OVERRIDE THESE!!
@@ -168,51 +167,31 @@ public:
     int DrawPartialTextureToScreen(const Texture& texture, int xScreen, int yScreen, float scale = 1);
     int DrawSectionOfTextureToScreen(const Texture& texture, int xScreen, int yScreen, int x0, int y0, int x1, int y1, float scale = 1, bool showEmptyPix = false);
 
-
-
-protected:
-    void ApplyBilinearFilterScreen();
-
 private:
     void SampleSurroundingTexels(int x, int y, Colour5Sample& sample);
     void TwoMainColourCounts(const std::map<short, int>& colourMap, std::pair<short, int>& firstColour, std::pair<short, int>& secondColour);
 
 protected:
+    void ApplyBilinearFilterScreen();
     void UpdateInputStates();
-
     void SetConsoleFocusPause(bool state);
-
     bool GetConsoleFocus();
-
     void PauseGameUpdate();
-
     void UnPauseGameUpdate();
-
     KeyState GetKeyState(short key);
-
     int SetResizeWindowLock(bool state);
-
     int SetWindowPosition(int x, int y);
-
     int SetFullScreen(bool state);
-
     void FillScreenBuffer(short colour = FG_BLACK, short glyph = PIXEL_SOLID);
-
     std::wstring GetFormattedDateTime();
-
     int Error(const wchar_t* msg, short errorCode = 1);
-
     int CleanUp();
-
     void DisplayAlertMessage(const std::wstring& message);
-
     float GetAverageFPS(float elapsedTimeValue);
-    
     void WaitForKeyPress();
 
 public:
     COORD GetMousePosition();
-
     static void AddToLog(std::wstring message);
 
 private:

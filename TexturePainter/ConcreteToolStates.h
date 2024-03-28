@@ -1,14 +1,14 @@
 #pragma once
 
-#include "ToolState.h";
+#include "IToolState.h";
 #include "Canvas.h"
 
-class BlockBrushState : public ToolState
+class BlockBrushState : public IToolState
 {
 public:
 
     BlockBrushState(Canvas& canvas)
-        : ToolState{ canvas } {}
+        : IToolState{ canvas } {}
 
     // Correct placement of handleBrushStroke
     void HandleBrushStroke(COORD mouseCoords) override {
@@ -21,10 +21,10 @@ public:
     }
 };
 
-class RectBrushState : public ToolState {
+class RectBrushState : public IToolState {
 public:
     RectBrushState(Canvas& canvas)
-        : ToolState{ canvas } {}
+        : IToolState{ canvas } {}
 
 
     void HandleBrushStroke(COORD mouseCoords) override {
@@ -36,7 +36,7 @@ public:
         else
         {
             int size = canvas.GetBrushSize();
-            canvas.ClearCurrentBrushStrokeTexture();
+            canvas.ClearCurrentBrushstrokeTexture();
             canvas.PaintRectangleCoords(initialClickCoords.X, initialClickCoords.Y, mouseCoords.X + size - 1, mouseCoords.Y + size - 1, false, size);
         }
     }
@@ -47,10 +47,10 @@ public:
     }
 };
 
-class FilledRectBrushState : public ToolState {
+class FilledRectBrushState : public IToolState {
 public:
     FilledRectBrushState(Canvas& canvas)
-        : ToolState{ canvas } {}
+        : IToolState{ canvas } {}
 
     void HandleBrushStroke(COORD mouseCoords) override {
         if (!initialClick)
@@ -61,7 +61,7 @@ public:
         else
         {
             int size = canvas.GetBrushSize();
-            canvas.ClearCurrentBrushStrokeTexture();
+            canvas.ClearCurrentBrushstrokeTexture();
             canvas.PaintRectangleCoords(initialClickCoords.X, initialClickCoords.Y, mouseCoords.X + size - 1, mouseCoords.Y + size - 1, true);
         }
     }
@@ -72,10 +72,10 @@ public:
     }
 };
 
-class LineBrushState : public ToolState {
+class LineBrushState : public IToolState {
 public:
     LineBrushState(Canvas& canvas)
-        : ToolState{ canvas } {}
+        : IToolState{ canvas } {}
 
     void HandleBrushStroke(COORD mouseCoords) override {
         if (!initialClick)
@@ -85,7 +85,7 @@ public:
         }
         else
         {
-            canvas.ClearCurrentBrushStrokeTexture();
+            canvas.ClearCurrentBrushstrokeTexture();
             canvas.PaintLine(initialClickCoords.X, initialClickCoords.Y, mouseCoords.X, mouseCoords.Y, canvas.GetBrushSize());
         }
     }

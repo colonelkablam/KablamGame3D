@@ -1,11 +1,9 @@
 #pragma once
 
-#include "Command.h"
+#include "ICommand.h"
 #include "Canvas.h"
 
-class Canvas;
-
-class BrushstrokeCommand : public Command {
+class BrushstrokeCommand : public ICommand {
 
     Canvas& canvas;  // Reference to the canvas
     Canvas::Brushstroke brushStroke;  // The brush stroke to apply

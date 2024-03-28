@@ -5,17 +5,17 @@
 // Forward declaration of Canvas
 class Canvas;
 
-class ToolState {
+class IToolState {
 protected:
     Canvas& canvas;
     COORD initialClickCoords{ 0,0 };
     bool initialClick{ false };
 
 public:
-    ToolState(Canvas& canvas) : canvas(canvas) {}
+    IToolState(Canvas& canvas) : canvas(canvas) {}
     virtual void HandleBrushStroke(COORD mouseCoords) = 0;
     virtual void ResetTool() = 0;
 
-    virtual ~ToolState() {}
+    virtual ~IToolState() {}
 };
 

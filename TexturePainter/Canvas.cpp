@@ -8,8 +8,9 @@
 #include "TexturePainter.h"
 #include "Canvas.h"
 #include "BrushstrokeCommand.h"
-#include "ToolState.h"
+#include "IToolState.h"
 #include "ConcreteToolStates.h" // Contains definitions for BlockBrushState, RectBrushState, etc.
+#include "CanvasCoordinateStrategy.h"
 
 
 
@@ -18,7 +19,10 @@ Canvas::Canvas(TexturePainter& drawer, int width, int height, int illumination, 
     : drawingClass{ drawer },
     backgroundTexture{ width, height, illumination },
     topLeft{ xPos, yPos },
-    currentToolState{ nullptr }
+    canvasViewOffset{ 0, 0 },
+    zoomLevel{ START_ZOOM_LEVEL },
+    currentToolState{ nullptr },
+    coordinateStrategy{std::move(std::make_unique<CanvasCoordinateStrategy>(topLeft, canvasViewOffset, zoomLevel))}
 {
     Initialise(saveFolder, fileName);
     PostInitialise();
@@ -43,7 +47,6 @@ void Canvas::Initialise(const std::wstring& saveFolder, const std::wstring& file
     filePath = saveFolder + this->fileName;
     currentBrushType = STARTING_TOOL;
     brushSize = START_BRUSH_SIZE;
-    zoomLevel = START_ZOOM_LEVEL;
     currentPixel = { STARTING_GLYPH, STARTING_COLOUR };
     deletePixel = { L'X', FG_WHITE };
     bottomRight = { static_cast<short>(topLeft.X + TexturePainter::CANVAS_DISPLAY_WIDTH),
@@ -105,6 +108,25 @@ int Canvas::GetIllumination()
 int Canvas::GetZoomLevel()
 {
     return zoomLevel;
+}
+
+void Canvas::SetZoomLevel(int newZoomLevel)
+{
+    zoomLevel = newZoomLevel;
+}
+
+void Canvas::IncreaseZoomLevel()
+{
+    zoomLevel = (zoomLevel % 3) + 1;
+}
+
+void Canvas::DecreaseZoomLevel() {
+    if (zoomLevel == 1) {
+        zoomLevel = 3; // Wrap around to the max zoom level
+    }
+    else {
+        zoomLevel -= 1; // Decrease zoom level by 1
+    }
 }
 
 int Canvas::GetTextureWidth()
@@ -186,10 +208,10 @@ int Canvas::ChangeCanvasOffset(COORD change)
     return 0;
 }
 
-bool Canvas::AreCoordsWithinCanvas(int x, int y)
+bool Canvas::AreCoordsWithinCanvas(COORD coords)
 {
     // Check if the mouse coordinates are within the zoom-adjusted canvas boundaries
-    if (x >= topLeft.X && x < bottomRight.X && y >= topLeft.Y && y < bottomRight.Y)
+    if (coords.X >= topLeft.X && coords.X < bottomRight.X && coords.Y >= topLeft.Y && coords.Y < bottomRight.Y)
         return true;
     else
         return false;
@@ -211,10 +233,10 @@ COORD Canvas::ConvertTextureCoordsToScreenCoords(int x, int y) {
     return screenCoords;
 }
 
-void Canvas::ApplyToolToBrushTexture(int x, int y) {
-    COORD mouseCoords = ConvertScreenCoordsToTextureCoords(x, y);
+void Canvas::ApplyToolToBrushTexture(COORD mouseCoords) {
+    COORD textureCoords = coordinateStrategy->ConvertScreenToTexture(mouseCoords);
     if (currentToolState) {
-        currentToolState->HandleBrushStroke(mouseCoords);
+        currentToolState->HandleBrushStroke(textureCoords);
     }
 }
 
@@ -230,7 +252,7 @@ void Canvas::SetBrushTextureToBackground()
     }
 
     // clear to start new brushstroke
-    ClearCurrentBrushStrokeTexture();
+    ClearCurrentBrushstrokeTexture();
 }
 
 // used to make the (brushStroke) differential between the brushTexture and backgroundTexture
@@ -263,7 +285,7 @@ Canvas::Brushstroke Canvas::CaptureDifferential() {
     return stroke;
 }
 
-void Canvas::ClearCurrentBrushStrokeTexture() {
+void Canvas::ClearCurrentBrushstrokeTexture() {
     currentBrushStrokeTexture.Clear();
 }
 
@@ -367,13 +389,11 @@ void Canvas::DrawCanvas()
     COORD mouseCoords = drawingClass.GetMousePosition();
 
     // if coords withing canvas diplay (index starting from 1 for user)
-    if (AreCoordsWithinCanvas(mouseCoords.X, mouseCoords.Y))
+    if (AreCoordsWithinCanvas(mouseCoords))
     {
         COORD textureCoords = ConvertScreenCoordsToTextureCoords(mouseCoords.X, mouseCoords.Y);
         drawingClass.WriteStringToBuffer(topLeft.X + 11, topLeft.Y - 3, std::to_wstring(textureCoords.X + 1));
         drawingClass.WriteStringToBuffer(topLeft.X + 18, topLeft.Y - 3, std::to_wstring(textureCoords.Y + 1));
-        DisplayBrushPointer(mouseCoords.X, mouseCoords.Y);
-
     }
 
     // currently drawing offset for debugging
@@ -400,21 +420,25 @@ void Canvas::DrawCanvas()
     // draw border around maximum display panel
     drawingClass.DrawRectangleEdgeLength(topLeft.X - 1, topLeft.Y - 1, TexturePainter::CANVAS_DISPLAY_WIDTH + 2, TexturePainter::CANVAS_DISPLAY_HEIGHT + 2, FG_RED, false, PIXEL_HALF);
     
-    if (AreCoordsWithinCanvas(mouseCoords.X, mouseCoords.Y))
-        DisplayBrushPointer(mouseCoords.X, mouseCoords.Y);
+    // draw mouse pointer
+    if (AreCoordsWithinCanvas(mouseCoords))
+        DisplayBrushPointer(mouseCoords);
 }
 
-void Canvas::DisplayBrushPointer(int x, int y)
+void Canvas::DisplayBrushPointer(COORD mouseCoords)
 {
     // converts the mouse coordinates to the texture and back to screen to 'snap' pointer to correct pixels - accounts for zoom/scrolling etc
-    COORD textureCoords{ ConvertScreenCoordsToTextureCoords(x,y) };
-    COORD pointerCoords{ ConvertTextureCoordsToScreenCoords(textureCoords.X,textureCoords.Y) };
-    drawingClass.DrawBlock(pointerCoords.X, pointerCoords.Y, brushSize * zoomLevel, currentPixel.Attributes, PIXEL_HALF);
-}
 
-void Canvas::IncreaseZoomLevel()
-{
-    zoomLevel = (zoomLevel % 3) + 1;
+
+    //COORD textureCoords{ coordinateStrategy->ConvertScreenToTexture(x,y) };
+    //COORD pointerCoords{ coordinateStrategy->ConvertTextureToScreen(textureCoords.X,textureCoords.Y) };
+
+    COORD pointerCoords{ coordinateStrategy->ConvertCoordsToCanvasPixel(mouseCoords) };
+
+    //COORD textureCoords{ ConvertScreenCoordsToTextureCoords(x,y) };
+    //COORD pointerCoords{ ConvertTextureCoordsToScreenCoords(textureCoords.X,textureCoords.Y) };
+    drawingClass.DrawBlock(pointerCoords.X, pointerCoords.Y, brushSize * zoomLevel, currentPixel.Attributes, PIXEL_HALF);
+
 }
 
 void Canvas::UndoLastCommand()

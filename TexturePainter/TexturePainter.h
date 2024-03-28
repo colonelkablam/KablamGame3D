@@ -14,14 +14,18 @@ public:
     static const int CANVAS_DISPLAY_WIDTH = 128;
     static const int CANVAS_DISPLAY_HEIGHT = 64;
 private:
-    static const int MIN_TEXTURE_SIZE = 4;
-    static const int MAX_TEXTURE_SIZE = 64;
+    static const int MIN_TEXTURE_WIDTH = 4;
+    static const int MIN_TEXTURE_HEIGHT = 4;
+    static const int MAX_TEXTURE_WIDTH = 128;
+    static const int MAX_TEXTURE_HEIGHT = 64;
+
 
     const std::wstring SAVE_FOLDER = L"Textures\\"; // relative path to subDir
     const std::wstring TEXTURE_EXTENSION = L".txr";
     const int CANVAS_XPOS = 17;
     const int CANVAS_YPOS = 23;
 
+    // button containers
     const int COLOUR_BUTTON_XPOS = 1;
     const int COLOUR_BUTTON_YPOS = 22;
     const int COLOUR_BUTTON_SIZE = 5;
@@ -30,7 +34,8 @@ private:
     const int BRUSH_BUTTON_YPOS = 12;
     const int BRUSH_BUTTON_SIZE = 5;
 
-
+    // vestor for selected textures to work on
+    std::vector <std::wstring> selectedList;
 
     // vector for storing canvases and textures together for editing
     std::vector<Canvas*> canvases;
@@ -62,7 +67,6 @@ public:
 
     bool GetUserStartInput(); // needed to load up textures
 
-
 protected:
     // virtual methods from KablamEngine to be defined
     virtual bool OnGameCreate();
@@ -74,17 +78,13 @@ protected:
 private:
 
     bool InitCanvasExistingTexture(const std::wstring& fileName);
-
     bool InitCanvasNewTexture(int width, int height, int illuminated, const std::wstring& fileName);
-
+    void PrintSelectedTexturesList();
+    bool IsFileAlreadySelected(std::wstring fileName);
     bool ChangeCanvas(size_t index);
-
     void DrawHeadingInfo(int x, int y);
-
     void DrawToolInfo(int x, int y);
-
     void DrawButtons();
-
     bool HandleKeyPress();
 
 }; // end of TexturePainter class definition

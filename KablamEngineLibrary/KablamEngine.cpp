@@ -869,16 +869,13 @@ std::wstring KablamEngine::GetFormattedDateTime() {
 
     // Get current time as time_point
     auto now = std::chrono::system_clock::now();
-
     // Convert to time_t for compatibility with traditional C time functions
     auto now_c = std::chrono::system_clock::to_time_t(now);
-
     // Convert to tm struct for formatting
     std::tm now_tm{};
     localtime_s(&now_tm, &now_c);  // Use localtime_s for a safer conversion
-
     // Buffer to hold the formatted date and time
-    wchar_t buffer[100];
+    wchar_t buffer[60];
 
     // Format
     std::wcsftime(buffer, sizeof(buffer) / sizeof(wchar_t), L"%Y-%m-%d %H:%M:%S", &now_tm);

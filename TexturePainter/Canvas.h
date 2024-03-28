@@ -4,11 +4,13 @@
 #include <unordered_map>
 #include "Texture.h"
 #include "UndoRedoManager.h"
+#include "ICoordinateStrategy.h"
+
 
 // Forward declarations to resolve circular dependencies
 class BrushstrokeCommand;
 class TexturePainter;
-class ToolState;
+class IToolState;
 
 enum class ToolType {
     BRUSH_BLOCK,
@@ -18,9 +20,9 @@ enum class ToolType {
 };
 
 class Canvas {
-
+    
+    //friend class as will be using this parent classes methods
     friend class BrushstrokeCommand;
-    //friend class Concrete
 
 private:
     static const short STARTING_COLOUR = FG_BLACK;
@@ -53,25 +55,30 @@ private:
     // texture of brushStroke
     Texture currentBrushStrokeTexture;
 
+    // data structures for holding brushstroke changes to canvas
     struct TextureChange {
         int x, y; // Position of the change
         short oldGlyph, newGlyph; // Character values before and after the change
         short oldColor, newColor; // Color values before and after the change
     };
-
+    // container of TextureChanges
     struct Brushstroke {
         std::vector<TextureChange> changes;
     };
 
     // container for the concrete classes
-    std::unordered_map<ToolType, ToolState*> toolStates;
-    // current pointer
-    ToolState* currentToolState;
+    std::unordered_map<ToolType, IToolState*> toolStates;
+    // current toolState pointer
+    IToolState* currentToolState;
+
+    // TRYING OUT SMART POINTERS - 'bout time
+    // pointer to the coordinate converter strategy
+    std::unique_ptr<ICoordinateStrategy> coordinateStrategy;
 
     // manage the application of brushStrokes
     UndoRedoManager brushMangager;
     
-    // DI from parent
+    // Dependancy Injection from parent - able to draw to screen using the KABLAM engine
     TexturePainter& drawingClass;
 
     // private initialiser methods
@@ -99,6 +106,12 @@ public:
 
     int GetZoomLevel();
 
+    void SetZoomLevel(int newZoomLevel);
+
+    void IncreaseZoomLevel();
+
+    void DecreaseZoomLevel();
+
     int GetTextureWidth();
 
     int GetTextureHeight();
@@ -115,7 +128,7 @@ public:
 
     int ChangeCanvasOffset(COORD change);
 
-    bool AreCoordsWithinCanvas(int x, int y);
+    bool AreCoordsWithinCanvas(COORD coords);
 
     COORD ConvertScreenCoordsToTextureCoords(int x, int y);
     
@@ -123,9 +136,9 @@ public:
 
     void SetBrushTextureToBackground();
 
-    void ClearCurrentBrushStrokeTexture();
+    void ClearCurrentBrushstrokeTexture();
 
-    void ApplyToolToBrushTexture(int x, int y);
+    void ApplyToolToBrushTexture(COORD mouseCoords);
 
     void ApplyBrushstroke(const Brushstroke& stroke);
 
@@ -147,9 +160,7 @@ public:
 
     void DrawCanvas();
 
-    void DisplayBrushPointer(int x, int y);
-
-    void IncreaseZoomLevel();
+    void DisplayBrushPointer(COORD);
 
     void UndoLastCommand();
 

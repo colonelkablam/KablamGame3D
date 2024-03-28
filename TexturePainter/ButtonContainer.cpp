@@ -70,7 +70,6 @@ bool ButtonContainer::AddButton(Texture* iconTexture, std::function<void()> onCl
     }
     else
     {
-
         int height{ iconTexture->GetHeight() };
         int width{ iconTexture->GetWidth() };
         // Calculate the column and row position for this button based on its ID
@@ -107,12 +106,12 @@ bool ButtonContainer::AddButton(Texture* iconTexture, std::function<void()> onCl
 }
 
 
-void ButtonContainer::HandleMouseClick(int mouseX, int mouseY)
+void ButtonContainer::HandleMouseClick(COORD mouseCoord)
 {
     int count{ 0 };
     for (Button* button : buttons)
     {
-        if (button->IsMouseClickOnButton(mouseX, mouseY))
+        if (button->IsMouseClickOnButton(mouseCoord))
         {
             button->Clicked();
             lastClicked = count;

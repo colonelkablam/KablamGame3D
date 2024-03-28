@@ -26,7 +26,6 @@ bool GetValidFileName(const std::wstring& prompt, std::wstring& userInput) {
                 break; // No need to check further characters
             }
         }
-
         if (hasIllegalChars) {
             std::wcout << L"Press Enter to continue...\n";
             std::wcin.get();
@@ -38,8 +37,8 @@ bool GetValidFileName(const std::wstring& prompt, std::wstring& userInput) {
     return true; // Filename is valid
 }
 
-bool FileExistInDir(const std::vector <std::wstring>* fileList, const std::wstring fileName) {
-    for (const auto& file : *fileList) {
+bool FileExistInDir(const std::vector <std::wstring>& fileList, const std::wstring& fileName) {
+    for (const auto& file : fileList) {
         if (file == fileName) {
             return true; // The file was found in the list
         }
@@ -65,10 +64,10 @@ int WStringToInteger(const std::wstring& input)
 }
 
 // makes a list of files in a given subdirectory
-std::vector<std::wstring>* GetFileList(const std::wstring& folderName, const std::wstring& extensionName = L'\0')
+std::vector<std::wstring> PrintAndGetFileList(const std::wstring& folderName, const std::wstring& extensionName = L'\0')
 {
-    // create ptr to empty list
-    std::vector<std::wstring>* fileList{ new std::vector<std::wstring>{} };
+    // create an empty list vector
+    std::vector<std::wstring> fileList;
 
     WIN32_FIND_DATA findFileData;
     HANDLE hFind;
@@ -76,7 +75,7 @@ std::vector<std::wstring>* GetFileList(const std::wstring& folderName, const std
     // Construct the search pattern, e.g., "C:\\path\\*.spr"
     std::wstring searchPattern = std::wstring(folderName) + L"*" + extensionName;
 
-    std::wcout << L"\n--------- Searching for " << extensionName << " Files in " << folderName << " ------------\n\n";
+    std::wcout << L"\n --------- Searching for " << extensionName << " Files in " << folderName << " ------------\n\n";
 
     // Start the file search
     hFind = FindFirstFile(searchPattern.c_str(), &findFileData);
@@ -87,10 +86,10 @@ std::vector<std::wstring>* GetFileList(const std::wstring& folderName, const std
         return fileList; // list will be empty
     }
     else {
-        short i = 1;
+        short i{ 1 };
         do {
             // push name onto list
-            fileList->push_back(findFileData.cFileName);
+            fileList.push_back(findFileData.cFileName);
             std::wcout << i << L". " << findFileData.cFileName << std::endl;
             i++;
         } while (FindNextFile(hFind, &findFileData) != 0);

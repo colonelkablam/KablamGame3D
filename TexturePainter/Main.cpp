@@ -18,7 +18,7 @@ int main()
 
 	if (texturePainter.GetUserStartInput())
 	{
-		texturePainter.BuildConsole(148, 90, 8.5, 8.5);
+		texturePainter.BuildConsole(TexturePainter::CANVAS_DISPLAY_WIDTH + 20, TexturePainter::CANVAS_DISPLAY_HEIGHT + 26, 8.5, 8.5);
 		texturePainter.Start();
 	}
 

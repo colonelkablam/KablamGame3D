@@ -44,7 +44,7 @@
     <ClInclude Include="ButtonContainer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Command.h">
+    <ClInclude Include="ICommand.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="BrushstrokeCommand.h">
@@ -53,10 +53,16 @@
     <ClInclude Include="UndoRedoManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ToolState.h">
+    <ClInclude Include="IToolState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ConcreteToolStates.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ICoordinateStrategy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CanvasCoordinateStrategy.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

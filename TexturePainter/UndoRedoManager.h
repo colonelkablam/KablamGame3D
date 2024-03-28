@@ -2,34 +2,34 @@
 
 #include <stack>
 
-#include "Command.h"
+#include "ICommand.h"
 
 class UndoRedoManager {
-    std::stack<Command*> undoStack;
-    std::stack<Command*> redoStack;
+    std::stack<ICommand*> undoStack;
+    std::stack<ICommand*> redoStack;
 
 public:
     ~UndoRedoManager() {
         while (!undoStack.empty()) {
-            Command* com = undoStack.top(); // Get the top command pointer
+            ICommand* com = undoStack.top(); // Get the top command pointer
             undoStack.pop();               // Remove the top element from the stack
             delete com;                    // Delete the command object
         }
 
         // Repeat the same for redoStack
         while (!redoStack.empty()) {
-            Command* com = redoStack.top(); // Get the top command pointer
+            ICommand* com = redoStack.top(); // Get the top command pointer
             redoStack.pop();                // Remove the top element from the stack
             delete com;                     // Delete the command object
         }
     }
 
-    void PerformAction(Command* command) {
+    void PerformAction(ICommand* command) {
         command->execute();
         undoStack.push(command);
         // Clear the redoStack
         while (!redoStack.empty()) {
-            Command* commandToBeDeleted = redoStack.top(); // Get the top command from redoStack
+            ICommand* commandToBeDeleted = redoStack.top(); // Get the top command from redoStack
             redoStack.pop();                               // Remove the top element from redoStack
             delete commandToBeDeleted;                     // Delete the command object
         }
@@ -37,7 +37,7 @@ public:
 
     void Undo() {
         if (undoStack.empty() == false) {
-            Command* command = undoStack.top();
+            ICommand* command = undoStack.top();
             undoStack.pop();
             command->undo();
             redoStack.push(command);
@@ -46,7 +46,7 @@ public:
 
     void Redo() {
         if (!redoStack.empty()) {
-            Command* command = redoStack.top();
+            ICommand* command = redoStack.top();
             redoStack.pop();
             command->execute();
             undoStack.push(command);

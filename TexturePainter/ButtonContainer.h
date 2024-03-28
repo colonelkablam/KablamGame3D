@@ -64,8 +64,8 @@ private:
         }
 
         // Determine if a mouse click is on the button
-        bool IsMouseClickOnButton(int x, int y) {
-            return x >= xPos && x < (xPos + width) && y >= yPos && y < (yPos + height);
+        bool IsMouseClickOnButton(COORD mouseClick) {
+            return mouseClick.X >= xPos && mouseClick.X < (xPos + width) && mouseClick.Y >= yPos && mouseClick.Y < (yPos + height);
         }
     };
 
@@ -87,7 +87,7 @@ public:
 
     bool AddButton(Texture* texture, std::function<void()> onClickFunction);
 
-    void HandleMouseClick(int mouseX, int mouseY);
+    void HandleMouseClick(COORD);
 
     void ActivateLastClicked();
 

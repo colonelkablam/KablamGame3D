@@ -151,9 +151,11 @@
     <ClInclude Include="BrushstrokeCommand.h" />
     <ClInclude Include="ButtonContainer.h" />
     <ClInclude Include="Canvas.h" />
-    <ClInclude Include="Command.h" />
+    <ClInclude Include="CanvasCoordinateStrategy.h" />
+    <ClInclude Include="ICommand.h" />
     <ClInclude Include="ConcreteToolStates.h" />
-    <ClInclude Include="ToolState.h" />
+    <ClInclude Include="ICoordinateStrategy.h" />
+    <ClInclude Include="IToolState.h" />
     <ClInclude Include="UndoRedoManager.h" />
     <ClInclude Include="TexturePainter.h" />
     <ClInclude Include="Utility.h" />
