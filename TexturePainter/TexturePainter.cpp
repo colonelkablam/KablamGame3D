@@ -163,7 +163,7 @@ bool TexturePainter::HandleFileSelection(int selection, const std::wstring& file
 
         std::wstring selectedFile = fileList.at(selection - 1);
 
-        if (IsFileAlreadySelected(selectedFile)) 
+        if (IsFileAlreadySelected(selectedFile) == true) 
             return false;
 
         LoadTexture(selectedFile);
@@ -171,10 +171,10 @@ bool TexturePainter::HandleFileSelection(int selection, const std::wstring& file
     // User entered a file name
     else { 
         std::wstring fullFileName = fileName + TEXTURE_EXTENSION;
-        if (IsFileAlreadySelected(fullFileName))
+        if (IsFileAlreadySelected(fullFileName) == true)
             return false;
 
-        if (FileExistInDir(fileList, fullFileName)) 
+        if (FileExistInDir(fileList, fullFileName) == true) 
         {
             LoadTexture(fullFileName);
         }
