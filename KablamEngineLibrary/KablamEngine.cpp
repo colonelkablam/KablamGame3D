@@ -530,6 +530,32 @@ int KablamEngine::DrawPartialTextureToScreen(const Texture& texture, int xScreen
     return 0;
 }
 
+
+// overloaded to take a COORD 
+int KablamEngine::DrawPartialTextureToScreen(const Texture& texture, COORD screenPos, float scale)
+{
+    for (int x = 0; x < static_cast<int>(texture.GetWidth() * scale); x++)
+    {
+        for (int y = 0; y < static_cast<int>(texture.GetHeight() * scale); y++)
+        {
+            // Find the corresponding texture coordinates, adjusted for scale
+            int texX = static_cast<int>(x / scale);
+            int texY = static_cast<int>(y / scale);
+
+            short glyph{ texture.GetGlyph(texX, texY) };
+            short colour{ texture.GetColour(texX, texY) };
+
+            // Only draw pixels, not 'empty' spaces represented by ' '
+            if (glyph != L' ')
+            {
+                // Add screenPos to the calculated position to get the final screen coordinates
+                DrawPoint(screenPos.X + x, screenPos.Y + y, colour, glyph);
+            }
+        }
+    }
+    return 0;
+}
+
 // drawing a rectangular section defined by x0 y0 and x1  y1 to screen - xScreen, yScreen will be top left
 int KablamEngine::DrawSectionOfTextureToScreen(const Texture& texture, int xScreen, int yScreen, int x0, int y0, int x1, int y1, float scale, bool showEmptyPix)
 {
@@ -557,6 +583,39 @@ int KablamEngine::DrawSectionOfTextureToScreen(const Texture& texture, int xScre
             }
             
             DrawBlock(xScreen + static_cast<int>((x - x0) * scale), yScreen + static_cast<int>((y - y0) * scale), scale, colour, glyph);
+        }
+    }
+    return 0;
+}
+
+
+// overloaded method for using COORD for positions and rectangle corners
+int KablamEngine::DrawSectionOfTextureToScreen(const Texture& texture, COORD screenPos, COORD topLeft, COORD bottomRight, float scale, bool showEmptyPix)
+{
+    // Clamp the rectangle coordinates to ensure they are within the texture's dimensions
+    topLeft.X = std::max(topLeft.X, (short)0);
+    topLeft.Y = std::max(topLeft.Y, (short)0);
+    bottomRight.X = std::min(bottomRight.X, (short)(texture.GetWidth() - 1));
+    bottomRight.Y = std::min(bottomRight.Y, (short)(texture.GetHeight() - 1));
+
+    for (int x = topLeft.X; x <= bottomRight.X; x++)
+    {
+        for (int y = topLeft.Y; y <= bottomRight.Y; y++)
+        {
+            // Find the corresponding texture coordinates
+            int texX = x; // No need to adjust by scale since we're looping over actual texture coordinates
+            int texY = y;
+
+            short glyph{ texture.GetGlyph(texX, texY) };
+            short colour{ texture.GetColour(texX, texY) };
+
+            // Modify behavior based on showEmptyPix flag
+            if (showEmptyPix && glyph == L' ') {
+                glyph = L'X';  // Change glyph to 'X'
+                colour = FG_DARK_GREY;
+            }
+
+            DrawBlock(screenPos.X + static_cast<int>((x - topLeft.X) * scale), screenPos.Y + static_cast<int>((y - topLeft.Y) * scale), scale, colour, glyph);
         }
     }
     return 0;

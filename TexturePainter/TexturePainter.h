@@ -56,6 +56,7 @@ private:
     Texture* rectToolIcon;
     Texture* rectFillToolIcon;
     Texture* lineToolIcon;
+    Texture* copyToolIcon;
 
 public:
     // constructor

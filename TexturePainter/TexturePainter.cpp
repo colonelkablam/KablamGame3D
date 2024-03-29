@@ -16,6 +16,7 @@ TexturePainter::TexturePainter(std::wstring newTitle)
     rectToolIcon = nullptr;
     rectFillToolIcon = nullptr;
     lineToolIcon = nullptr;
+    copyToolIcon = nullptr;
 }
 
 TexturePainter::~TexturePainter()
@@ -33,6 +34,8 @@ TexturePainter::~TexturePainter()
      delete rectToolIcon;
      delete rectFillToolIcon;
      delete lineToolIcon;
+     delete copyToolIcon;
+
 }
 
 bool TexturePainter::OnGameCreate() 
@@ -71,6 +74,7 @@ bool TexturePainter::OnGameCreate()
     rectToolIcon = new Texture(L"./ToolIcons/rect_tool_icon.txr");
     rectFillToolIcon = new Texture(L"./ToolIcons/rect_fill_tool_icon.txr");
     lineToolIcon = new Texture(L"./ToolIcons/line_tool_icon.txr");
+    copyToolIcon = new Texture(L"./ToolIcons/copy_tool_icon.txr");
     
     // populate it
     brushButtonsContainer->AddButton(blockToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_BLOCK); });
@@ -79,6 +83,8 @@ bool TexturePainter::OnGameCreate()
     brushButtonsContainer->AddButton(lineToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_LINE); });
     brushButtonsContainer->AddButton(rectToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_RECT); });
     brushButtonsContainer->AddButton(rectFillToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_RECT_FILLED); });
+    brushButtonsContainer->AddButton(copyToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_COPY); });
+
 
     return true;
 }
@@ -331,7 +337,7 @@ bool TexturePainter::HandleKeyPress()
     if (keyArray[VK_LBUTTON].bPressed)
     {
         if (currentCanvas->AreCoordsWithinCanvas(mouseCoords))
-            currentCanvas->ApplyToolToBrushTexture(mouseCoords);
+            currentCanvas->HandleLeftMouseClick(mouseCoords);
         else
         {
             // check if over any of the buttons when clicked
@@ -339,11 +345,11 @@ bool TexturePainter::HandleKeyPress()
             brushButtonsContainer->HandleMouseClick(mouseCoords);
         }
 
-    }
+    } // if continues to be held
     else if (keyArray[VK_LBUTTON].bHeld)
     {
         if (currentCanvas->AreCoordsWithinCanvas(mouseCoords))
-            currentCanvas->ApplyToolToBrushTexture(mouseCoords);
+            currentCanvas->HandleLeftMouseClick(mouseCoords);
     }
 
 
@@ -351,7 +357,7 @@ bool TexturePainter::HandleKeyPress()
     if (keyArray[VK_LBUTTON].bReleased)
     {
         if (currentCanvas->AreCoordsWithinCanvas(mouseCoords))
-            currentCanvas->SetBrushTextureToBackground();
+            currentCanvas->HandleLeftMouseRelease(mouseCoords);
     }
 
     if (keyArray[VK_RBUTTON].bHeld)
@@ -359,7 +365,7 @@ bool TexturePainter::HandleKeyPress()
         if (currentCanvas->AreCoordsWithinCanvas(mouseCoords))
         {
             currentCanvas->SetBrushToDelete();
-            currentCanvas->ApplyToolToBrushTexture(mouseCoords);
+            currentCanvas->HandleLeftMouseClick(mouseCoords);
         }
     }
 

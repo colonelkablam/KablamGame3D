@@ -16,13 +16,15 @@ enum class ToolType {
     BRUSH_BLOCK,
     BRUSH_RECT,
     BRUSH_RECT_FILLED,
-    BRUSH_LINE
+    BRUSH_LINE,
+    BRUSH_COPY
 };
 
 class Canvas {
     
     //friend class as will be using this parent classes methods
     friend class BrushstrokeCommand;
+    friend class CopyBrushState;
 
 private:
     static const short STARTING_COLOUR = FG_BLACK;
@@ -38,6 +40,7 @@ private:
 
     CHAR_INFO currentPixel;
     CHAR_INFO deletePixel;
+    CHAR_INFO cutPixel;
 
     std::wstring fileName;
     std::wstring filePath;
@@ -59,11 +62,23 @@ private:
     struct TextureChange {
         int x, y; // Position of the change
         short oldGlyph, newGlyph; // Character values before and after the change
-        short oldColor, newColor; // Color values before and after the change
+        short oldColour, newColour; // Color values before and after the change
     };
     // container of TextureChanges
     struct Brushstroke {
         std::vector<TextureChange> changes;
+    };
+
+    // data structures for holding texture sample
+    struct PixelSample {
+        int x, y; // Position of the change
+        short glyph; // Character values before and after the change
+        short colour; // Color values before and after the change
+    };
+    // container of TextureChanges
+    struct TextureSample {
+        int width, height;
+        std::vector<PixelSample> pixels;
     };
 
     // container for the concrete classes
@@ -130,21 +145,21 @@ public:
 
     bool AreCoordsWithinCanvas(COORD coords);
 
-    COORD ConvertScreenCoordsToTextureCoords(int x, int y);
-    
-    COORD ConvertTextureCoordsToScreenCoords(int x, int y);
-
     void SetBrushTextureToBackground();
 
     void ClearCurrentBrushstrokeTexture();
 
-    void ApplyToolToBrushTexture(COORD mouseCoords);
+    void HandleLeftMouseClick(COORD mouseCoords);
+
+    void HandleLeftMouseRelease(COORD mouseCoords);
 
     void ApplyBrushstroke(const Brushstroke& stroke);
-
+    
     void ApplyUndoBrushstroke(const Brushstroke& stroke);
 
     Brushstroke CaptureDifferential();
+
+    TextureSample GrabTextureSample(COORD topLeft, COORD bottomRight);
 
     void SetBrushToDelete();
     
@@ -157,6 +172,8 @@ public:
     void PaintBlock(int x, int y, int sideLength);
 
     void PaintRectangleCoords(int x0, int y0, int x1, int y1, bool filled = true, int lineWidth = 1);
+
+    void PaintTextureSample(const TextureSample& sample, COORD topLeft);
 
     void DrawCanvas();
 

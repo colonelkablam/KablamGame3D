@@ -165,7 +165,10 @@ public:
     void DrawCircle(int x, int y, int radius, short colour = FG_WHITE, short glyph = PIXEL_SOLID, bool filled = false);
     int DrawTextureToScreen(const Texture& texture, int x, int y, float scale = 1, bool showEmptyPix = false);
     int DrawPartialTextureToScreen(const Texture& texture, int xScreen, int yScreen, float scale = 1);
+    int DrawPartialTextureToScreen(const Texture& texture, COORD screenPos, float scale);
     int DrawSectionOfTextureToScreen(const Texture& texture, int xScreen, int yScreen, int x0, int y0, int x1, int y1, float scale = 1, bool showEmptyPix = false);
+    int DrawSectionOfTextureToScreen(const Texture& texture, COORD screenPos, COORD topLeft, COORD bottomRight, float scale, bool showEmptyPix);
+
 
 private:
     void SampleSurroundingTexels(int x, int y, Colour5Sample& sample);

@@ -14,6 +14,10 @@ protected:
 public:
     IToolState(Canvas& canvas) : canvas(canvas) {}
     virtual void HandleBrushStroke(COORD mouseCoords) = 0;
+    virtual void HandleMouseRelease(COORD mouseCoords) = 0;
+    virtual void DisplayPointer(COORD mouseCoords) = 0;
+
+
     virtual void ResetTool() = 0;
 
     virtual ~IToolState() {}

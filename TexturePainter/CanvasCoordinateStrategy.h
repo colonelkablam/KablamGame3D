@@ -35,4 +35,13 @@ public:
         return pixelCoords;
     }
 
+    // for displaying the texture brush to screen accounting for zoom and offset
+    COORD AdjustForOffset(COORD coords) const override
+    {
+        COORD screenCoords{ static_cast<SHORT>((coords.X - canvasViewOffset.X * zoom)),
+                            static_cast<SHORT>((coords.Y - canvasViewOffset.Y * zoom)) };
+        return screenCoords;
+
+    }
+
 };
