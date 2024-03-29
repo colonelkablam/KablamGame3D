@@ -186,10 +186,10 @@ public:
 
     void DisplayPointer(COORD mouseCoords)
     {
-        canvas.ClearCurrentBrushstrokeTexture();
-
-        COORD placement{ mouseCoords.X - (short)textureSample.width, mouseCoords.Y - (short)textureSample.height };
-        canvas.PaintTextureSample(textureSample, placement);
+        for (const auto& pixel : textureSample.pixels)
+        {
+            canvas.drawingClass.DrawPoint(mouseCoords.X - pixel.x, mouseCoords.Y - pixel.y, pixel.colour, pixel.glyph);
+        }
     }
 
     void ResetTool() override
