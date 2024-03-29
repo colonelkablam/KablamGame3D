@@ -34,7 +34,8 @@ private:
     const int BRUSH_BUTTON_YPOS = 12;
     const int BRUSH_BUTTON_SIZE = 5;
 
-    // vestor for selected textures to work on
+    // vectors for selecteding textures to work on
+    std::vector<std::wstring> availableFileList;
     std::vector <std::wstring> selectedList;
 
     // vector for storing canvases and textures together for editing
@@ -77,27 +78,24 @@ protected:
 
 private:
 
+    bool HandleFileSelection(int selection, const std::wstring& fileName, const std::vector<std::wstring>& fileList);
+    void LoadTexture(const std::wstring& fileName);
+    void CreateNewTexture(const std::wstring& fileName);
+    void PrintFiles();
+    void PrintEnteredTextures();
+
     bool InitCanvasExistingTexture(const std::wstring& fileName);
     bool InitCanvasNewTexture(int width, int height, int illuminated, const std::wstring& fileName);
-    void PrintSelectedTexturesList();
     bool IsFileAlreadySelected(std::wstring fileName);
     bool ChangeCanvas(size_t index);
     void DrawHeadingInfo(int x, int y);
     void DrawToolInfo(int x, int y);
     void DrawButtons();
     bool HandleKeyPress();
-
-    bool HandleFileSelection(int selection, const std::wstring& fileName, const std::vector<std::wstring>& fileList);
-
-    void LoadTexture(const std::wstring& fileName);
-
-    void CreateNewTexture(const std::wstring& fileName);
-
-    bool AskToAddMoreTextures();
-
-    void PrintEnteredTextures();
-
     bool CheckIfSaveFolderExists();
+
+
+
 
 }; // end of TexturePainter class definition
 

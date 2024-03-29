@@ -5,6 +5,7 @@
 int main()
 {
 	std::cout << "Welcome to Texture Painter!" << std::endl;
+	system("pause");
 
 	TexturePainter texturePainter(L"Texture Painter!");
 

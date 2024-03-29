@@ -98,21 +98,15 @@ bool TexturePainter::OnGameUpdate(float fElapsedTime) {
 
 bool TexturePainter::GetUserStartInput()
 {
-    auto pauseAndClearScreen = []()
-    {
-        system("pause"); // wait for key press
-        system("cls");   // clear the screen, platform-specific
-    };
-
     // check if folder exists; create a new one if not. Return false if unable
     if (CheckIfSaveFolderExists() == false)
         return false;
 
+    availableFileList = GetFileList(SAVE_FOLDER, TEXTURE_EXTENSION);
+    PrintFiles(); // clear screen and print file lists
+
     while (true)
     {
-        std::vector<std::wstring> availableFileList = PrintAndGetFileList(SAVE_FOLDER, TEXTURE_EXTENSION);
-        PrintSelectedTexturesList();
-
         // Prompt the user for a file
         int numberOfFiles{ static_cast<int>(availableFileList.size()) };
         std::wstring prompt{};
@@ -125,26 +119,32 @@ bool TexturePainter::GetUserStartInput()
         prompt += letter + L"ype a new name to start new texture project ('q' to exit): ";
 
         std::wstring userFileName;
-        if (!GetValidFileName(prompt, userFileName))
+        if (GetValidFileName(prompt, userFileName) == false)
+        {
+            system("pause");
+            PrintFiles();
+            continue;
+        }
+
+        if (LetterListener(userFileName, L'q')) // quit
             return false;
 
         int userSelection = WStringToInteger(userFileName);
         bool validSelection = HandleFileSelection(userSelection, userFileName, availableFileList);
 
         if (validSelection == false) {
-            pauseAndClearScreen();
+            system("pause");
+            PrintFiles();
             continue;
         }
 
+        PrintFiles();
+
         if (GetYesNoInput(L"\nDo you want to add more Textures to edit? (y/n): ") == false)
-        {
-            pauseAndClearScreen();
             break;
-        }
 
-        system("cls");
     }
-
+    // display choices
     PrintEnteredTextures();
     system("pause"); // wait for key press
     return true;
@@ -152,12 +152,19 @@ bool TexturePainter::GetUserStartInput()
 
 bool TexturePainter::HandleFileSelection(int selection, const std::wstring& fileName, const std::vector<std::wstring>& fileList)
 {
+    size_t size{ fileList.size() };
+
     // User entered a number
     if (selection != -1) 
     { 
-        if (selection > fileList.size())
+        if (size == 0)
         {
-            std::wcout << L"\nInvalid selection. Please try again.\n";
+            std::wcout << L"\nNo files to select. Please type a valid file name.\n\n";
+            return false;
+        }
+        if (selection > size)
+        {
+            std::wcout << L"\nInvalid selection. Please enter a number from 1 - " << size << ".\n\n";
             return false;
         }
 
@@ -203,8 +210,16 @@ void TexturePainter::CreateNewTexture(const std::wstring& fileName)
     selectedList.push_back(fileName);
 }
 
+void TexturePainter::PrintFiles()
+{
+    system("cls");   // clear the screen
+    PrintFileList(L"--- " + TEXTURE_EXTENSION + L" files in " + SAVE_FOLDER + L" ---", availableFileList);
+    PrintFileList(L"--- Selected File List ---", selectedList);
+}
+
 void TexturePainter::PrintEnteredTextures()
 {
+    system("cls");
     for (Canvas* canvas : canvases)
     {
         std::wcout << L"\nFile Name: " << canvas->GetFileName()
@@ -234,27 +249,11 @@ bool TexturePainter::InitCanvasExistingTexture(const std::wstring& fileName)
     return true;
 }
 
-void TexturePainter::PrintSelectedTexturesList()
-{
-    std::wcout << L"\n      --------- Displaying Current Canvas List ---------\n\n";
-
-    short count{ 1 };
-    if (canvases.size() != 0)
-        for (Canvas* canvas : canvases)
-        {
-            std::wstring name{ canvas->GetFileName() };
-            std::wcout << count << L". " << name << std::endl;
-            count++;
-        }
-    else
-        std::wcout << L"No canvases selected...\n";
-}
-
 bool TexturePainter::IsFileAlreadySelected(std::wstring fileName)
 {
     if (std::find(selectedList.begin(), selectedList.end(), fileName) != selectedList.end())
     {
-        std::wcout << L"\n **** The name '" << fileName << L"' is already selected. Please choose a different name ****" << std::endl;
+        std::wcout << L"\nThe file '" << fileName << L"' is already selected. Please choose a different file.\n\n";
         // If the name is found in the selection list, inform the user and continue the loop by returning true
         return true;
     }
