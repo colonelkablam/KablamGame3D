@@ -184,3 +184,65 @@ bool CreateFolder(const std::wstring& folderPath) {
 
     return true; // Successfully created the directory
 }
+
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+#include <string>
+
+// Defines the 'pixels' for each character in a chunky font
+std::unordered_map<char, std::vector<std::string>> charMap = {
+    {'A', {" #  ", "# # ", "### ", "# # ", "# # "}},
+    {'B', {"##  ", "# # ", "##  ", "# # ", "##  "}},
+    {'C', {" ## ", "#  #", "#   ", "#  #", " ## "}},
+    {'D', {"##  ", "# # ", "# # ", "# # ", "##  "}},
+    {'E', {"### ", "#   ", "##  ", "#   ", "### "}},
+    {'F', {"### ", "#   ", "##  ", "#   ", "#   "}},
+    {'G', {" ## ", "#   ", "# # ", "# # ", " ## "}},
+    {'H', {"# # ", "# # ", "### ", "# # ", "# # "}},
+    {'I', {"### ", " #  ", " #  ", " #  ", "### "}},
+    {'J', {"  # ", "  # ", "  # ", "# # ", " #  "}},
+    {'K', {"# # ", "# # ", "##  ", "# # ", "# # "}},
+    {'L', {"#   ", "#   ", "#   ", "#   ", "### "}},
+    {'M', {"# # ", "### ", "### ", "# # ", "# # "}},
+    {'N', {"# # ", "### ", "### ", "### ", "# # "}},
+    {'O', {" #  ", "# # ", "# # ", "# # ", " #  "}},
+    {'P', {"##  ", "# # ", "##  ", "#   ", "#   "}},
+    {'Q', {" ## ", "# # ", "# # ", " ## ", "  #"}},
+    {'R', {"##  ", "# # ", "##  ", "# # ", "# # "}},
+    {'S', {" ## ", "#   ", " #  ", "  # ", "##  "}},
+    {'T', {"### ", " #  ", " #  ", " #  ", " #  "}},
+    {'U', {"# # ", "# # ", "# # ", "# # ", " #  "}},
+    {'V', {"# # ", "# # ", "# # ", "# # ", " #  "}},
+    {'W', {"# # ", "# # ", "### ", "### ", "# # "}},
+    {'X', {"# # ", "# # ", " #  ", "# # ", "# # "}},
+    {'Y', {"# # ", "# # ", " #  ", " #  ", " #  "}},
+    {'Z', {"### ", "  # ", " #  ", "#   ", "### "}},
+    {' ', {"    ", "    ", "    ", "    ", "    "}}
+};
+
+void printChunkyString(const std::string & text) {
+    // Get the console handle
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    // Define the purple color attribute (FOREGROUND_BLUE | FOREGROUND_RED)
+    const int purple = FOREGROUND_BLUE | FOREGROUND_RED;
+
+    for (int row = 0; row < 5; ++row) { // Assuming 5 rows per character
+        for (char ch : text) {
+            ch = std::toupper(ch); // Convert character to uppercase
+            if (charMap.find(ch) != charMap.end()) {
+                SetConsoleTextAttribute(hConsole, purple); // Set text color to purple
+                std::cout << charMap[ch][row] << "  ";
+                SetConsoleTextAttribute(hConsole, 7); // Reset to default color
+            }
+            else {
+                SetConsoleTextAttribute(hConsole, purple); // Set text color to purple
+                std::cout << "???? ";
+                SetConsoleTextAttribute(hConsole, 7); // Reset to default color
+            }
+        }
+        std::cout << std::endl; // Newline after each row
+    }
+    std::cout << std::endl; // Newline after
+};
+

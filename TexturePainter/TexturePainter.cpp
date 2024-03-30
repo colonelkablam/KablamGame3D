@@ -360,6 +360,7 @@ bool TexturePainter::HandleKeyPress()
             currentCanvas->HandleLeftMouseRelease(mouseCoords);
     }
 
+    // makes right click a delete action
     if (keyArray[VK_RBUTTON].bHeld)
     {
         if (currentCanvas->AreCoordsWithinCanvas(mouseCoords))
@@ -373,10 +374,7 @@ bool TexturePainter::HandleKeyPress()
     if (keyArray[VK_RBUTTON].bReleased)
     {
         if (currentCanvas->AreCoordsWithinCanvas(mouseCoords))
-        {
-            colourButtonsContainer->ActivateLastClicked();
-            currentCanvas->SetBrushTextureToBackground();
-        }
+            currentCanvas->HandleLeftMouseRelease(mouseCoords);
     }
 
     if (keyArray[VK_OEM_PLUS].bPressed)

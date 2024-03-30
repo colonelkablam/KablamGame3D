@@ -17,18 +17,25 @@ public:
 
     void HandleMouseRelease(COORD mouseCoords) override {
         canvas.SetBrushTextureToBackground();
-
+        ResetClicks();
     }
 
     void DisplayPointer(COORD mouseCoords)
     {
-
+        // need to display pointer
+    }
+    
+    void ResetClicks()
+    {
+        initialClick = false;
     }
 
     void ResetTool() override
     {
         initialClick = false;
+
     }
+
 };
 
 class RectBrushState : public IToolState {
@@ -53,7 +60,7 @@ public:
 
     void HandleMouseRelease(COORD mouseCoords) override {
         canvas.SetBrushTextureToBackground();
-
+        ResetClicks();
     }
 
     void DisplayPointer(COORD mouseCoords)
@@ -61,10 +68,15 @@ public:
 
     }
 
+    void ResetClicks()
+    {
+        initialClick = false;
+    }
 
     void ResetTool() override
     {
         initialClick = false;
+
     }
 };
 
@@ -89,7 +101,7 @@ public:
 
     void HandleMouseRelease(COORD mouseCoords) override {
         canvas.SetBrushTextureToBackground();
-
+        ResetClicks();
     }
 
     void DisplayPointer(COORD mouseCoords)
@@ -97,9 +109,15 @@ public:
 
     }
 
+    void ResetClicks()
+    {
+        initialClick = false;
+    }
+
     void ResetTool() override
     {
         initialClick = false;
+
     }
 };
 
@@ -124,7 +142,7 @@ public:
     
     void HandleMouseRelease(COORD mouseCoords) override {
         canvas.SetBrushTextureToBackground();
-
+        ResetClicks();
     }
 
     void DisplayPointer(COORD mouseCoords)
@@ -132,9 +150,15 @@ public:
 
     }
 
+    void ResetClicks()
+    {
+        initialClick = false;
+    }
+
     void ResetTool() override
     {
         initialClick = false;
+
     }
 };
 
@@ -165,7 +189,7 @@ public:
         }
         else
         {
-            COORD placement{ mouseCoords.X - (short)textureSample.width, mouseCoords.Y - (short)textureSample.height };
+            COORD placement{ mouseCoords.X - (short)textureSample.width + 1, mouseCoords.Y - (short)textureSample.height + 1};
             canvas.PaintTextureSample(textureSample, placement);
         }
 
@@ -186,10 +210,21 @@ public:
 
     void DisplayPointer(COORD mouseCoords)
     {
+        int w{ textureSample.width };
+        int h{ textureSample.height };
+
         for (const auto& pixel : textureSample.pixels)
         {
-            canvas.drawingClass.DrawPoint(mouseCoords.X - pixel.x, mouseCoords.Y - pixel.y, pixel.colour, pixel.glyph);
+            int x{ mouseCoords.X + pixel.x - w + 1 };
+            int y{ mouseCoords.Y + pixel.y - h + 1 };
+
+            canvas.drawingClass.DrawPoint(x, y, pixel.colour, pixel.glyph);
         }
+    }
+
+    void ResetClicks()
+    {
+        initialClick = false;
     }
 
     void ResetTool() override

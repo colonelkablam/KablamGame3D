@@ -1,10 +1,13 @@
 #include <iostream>
 
 #include "TexturePainter.h"
+#include "Utility.h"
 
 int main()
 {
-	std::cout << "Welcome to Texture Painter!" << std::endl;
+	std::cout << "Welcome to...\n\n";
+	printChunkyString("Texture Painter");
+
 	system("pause");
 
 	TexturePainter texturePainter(L"Texture Painter!");

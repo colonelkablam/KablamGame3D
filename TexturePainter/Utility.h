@@ -23,3 +23,6 @@ bool CheckFolderExists(const std::wstring& folderPath);
 
 bool CreateFolder(const std::wstring& folderPath);
 
+void printChunkyString(const std::string& text);
+
+

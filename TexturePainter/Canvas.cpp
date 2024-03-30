@@ -220,8 +220,6 @@ bool Canvas::AreCoordsWithinCanvas(COORD coords)
         return false;
 }
 
-
-
 void Canvas::HandleLeftMouseClick(COORD mouseCoords) {
     COORD textureCoords = coordinateStrategy->ConvertScreenToTexture(mouseCoords);
     if (currentToolState) {
@@ -241,10 +239,6 @@ void Canvas::SetBrushTextureToBackground()
     // create a new brushstroke to add to the brushManager
     BrushstrokeCommand* newStroke = new BrushstrokeCommand(*this, CaptureDifferential());
     brushMangager.PerformAction(newStroke);
-
-    if (currentToolState) {
-        currentToolState->ResetTool();
-    }
 
     // clear to start new brushstroke
     ClearCurrentBrushstrokeTexture();
