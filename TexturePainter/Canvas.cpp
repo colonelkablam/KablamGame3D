@@ -261,7 +261,7 @@ Canvas::Brushstroke Canvas::CaptureDifferential() {
 
             // Check if there is a difference and the glyph in the brush stroke is not a space
             if ((bgGlyph != cbstGlyph || bgColour != cbstColour) && cbstGlyph != L' ') {
-                stroke.changes.push_back(TextureChange{
+                stroke.changes.push_back(TextureChangePixel{
                     x, y,
                     bgGlyph,
                     cbstGlyph,

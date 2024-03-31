@@ -6,7 +6,7 @@
 int main()
 {
 	std::cout << "Welcome to...\n\n";
-	printChunkyString("Texture Painter");
+	printChunkyString("Texture Painter"); // in utility
 
 	system("pause");
 

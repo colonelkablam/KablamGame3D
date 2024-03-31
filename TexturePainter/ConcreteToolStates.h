@@ -213,12 +213,28 @@ public:
         int w{ textureSample.width };
         int h{ textureSample.height };
 
-        for (const auto& pixel : textureSample.pixels)
-        {
-            int x{ mouseCoords.X + pixel.x - w + 1 };
-            int y{ mouseCoords.Y + pixel.y - h + 1 };
+        COORD pixelCoord{ canvas.coordinateStrategy->ConvertCoordsToCanvasPixel(mouseCoords) };
 
-            canvas.drawingClass.DrawPoint(x, y, pixel.colour, pixel.glyph);
+        COORD textureCoord{ canvas.coordinateStrategy->ConvertScreenToTexture(mouseCoords) };
+
+        short backgroundColour = canvas.backgroundTexture.GetColour(textureCoord.X, textureCoord.Y);
+
+        backgroundColour = backgroundColour << 4;
+
+        int zoom{ canvas.GetZoomLevel() };
+
+        canvas.drawingClass.DrawBlock(pixelCoord.X, pixelCoord.Y, zoom, FG_DARK_YELLOW | (backgroundColour << 4), L'#');
+
+        for (const Canvas::PixelSample& pixel : textureSample.pixels)
+        {
+            // Calculate the top-left corner of the block representing this pixel
+            int x{ (mouseCoords.X + 1 + pixel.x - w*zoom) };
+            int y{ (mouseCoords.Y + 1 + pixel.y - h*zoom) };
+
+            // Draw a block at the calculated position
+            // The size of the block is determined by the zoom factor
+            // This will effectively scale up the drawing of each pixel in the texture
+            canvas.drawingClass.DrawBlock(x, y, zoom, pixel.colour, pixel.glyph);
         }
     }
 
@@ -231,6 +247,7 @@ public:
     {
         initialClick = false;
         textureBeenSampled = false;
+        textureSample.Reset();
     }
 };
 

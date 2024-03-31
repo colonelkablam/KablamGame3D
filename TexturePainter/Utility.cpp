@@ -221,28 +221,37 @@ std::unordered_map<char, std::vector<std::string>> charMap = {
     {' ', {"    ", "    ", "    ", "    ", "    "}}
 };
 
-void printChunkyString(const std::string & text) {
+void printChunkyString(const std::string& text) {
     // Get the console handle
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    // Define the purple color attribute (FOREGROUND_BLUE | FOREGROUND_RED)
-    const int purple = FOREGROUND_BLUE | FOREGROUND_RED;
+    // Define the purple color attribute to make block
+    const int purple = FOREGROUND_BLUE | FOREGROUND_RED | BACKGROUND_BLUE | BACKGROUND_RED;
 
     for (int row = 0; row < 5; ++row) { // Assuming 5 rows per character
         for (char ch : text) {
             ch = std::toupper(ch); // Convert character to uppercase
             if (charMap.find(ch) != charMap.end()) {
-                SetConsoleTextAttribute(hConsole, purple); // Set text color to purple
-                std::cout << charMap[ch][row] << "  ";
-                SetConsoleTextAttribute(hConsole, 7); // Reset to default color
+
+                for (char pixel : charMap[ch][row]) { // Use a different variable name here
+                    if (pixel != ' ') {
+                        SetConsoleTextAttribute(hConsole, purple); // Set text color to purple
+                        std::cout << pixel;
+                        SetConsoleTextAttribute(hConsole, 7); // Reset to default color
+                    }
+                    else {
+                        std::cout << ' ';
+                    }
+                }
+                std::cout << ' ';
+
             }
             else {
-                SetConsoleTextAttribute(hConsole, purple); // Set text color to purple
-                std::cout << "???? ";
+                SetConsoleTextAttribute(hConsole, purple); // Set text color to purple for unknown characters
+                std::cout << "????";
                 SetConsoleTextAttribute(hConsole, 7); // Reset to default color
             }
         }
         std::cout << std::endl; // Newline after each row
     }
-    std::cout << std::endl; // Newline after
-};
+}
 

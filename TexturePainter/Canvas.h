@@ -59,14 +59,14 @@ private:
     Texture currentBrushStrokeTexture;
 
     // data structures for holding brushstroke changes to canvas
-    struct TextureChange {
+    struct TextureChangePixel {
         int x, y; // Position of the change
         short oldGlyph, newGlyph; // Character values before and after the change
         short oldColour, newColour; // Color values before and after the change
     };
     // container of TextureChanges
     struct Brushstroke {
-        std::vector<TextureChange> changes;
+        std::vector<TextureChangePixel> changes;
     };
 
     // data structures for holding texture sample
@@ -79,6 +79,10 @@ private:
     struct TextureSample {
         int width, height;
         std::vector<PixelSample> pixels;
+        void Reset()
+        {
+            pixels.clear();
+        }
     };
 
     // container for the concrete classes
