@@ -17,8 +17,8 @@ public:
     // Method to apply the stroke to the canvas
     void execute() override
     {
-        // applying the texture to the background canvas populates the undo texture
-        canvas.ApplyBrushstroke(brushStroke);
+        // applying the texture to the background canvas 
+        canvas.ApplyBrushstrokeTextureToBackground(brushStroke);
     }
 
     // Method to remove the stroke from the canvas

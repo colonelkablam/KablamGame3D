@@ -7,7 +7,7 @@ int main()
 {
 	std::cout << "Welcome to...\n\n";
 	printChunkyString("Texture Painter"); // in utility
-
+	std::cout << "\n";
 	system("pause");
 
 	TexturePainter texturePainter(L"Texture Painter!");

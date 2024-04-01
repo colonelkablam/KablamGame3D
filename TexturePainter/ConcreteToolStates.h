@@ -22,7 +22,7 @@ public:
 
     void DisplayPointer(COORD mouseCoords)
     {
-        // need to display pointer
+        canvas.DisplayBrushPointer(mouseCoords);
     }
     
     void ResetClicks()
@@ -65,7 +65,7 @@ public:
 
     void DisplayPointer(COORD mouseCoords)
     {
-
+        canvas.DisplayBrushPointer(mouseCoords);
     }
 
     void ResetClicks()
@@ -106,7 +106,7 @@ public:
 
     void DisplayPointer(COORD mouseCoords)
     {
-
+        canvas.DisplayBrushPointer(mouseCoords);
     }
 
     void ResetClicks()
@@ -147,7 +147,7 @@ public:
 
     void DisplayPointer(COORD mouseCoords)
     {
-
+        canvas.DisplayBrushPointer(mouseCoords);
     }
 
     void ResetClicks()
@@ -184,7 +184,7 @@ public:
             {
                 int size = canvas.GetBrushSize();
                 canvas.ClearCurrentBrushstrokeTexture();
-                canvas.PaintRectangleCoords(initialClickCoords.X - 1, initialClickCoords.Y - 1, mouseCoords.X + size, mouseCoords.Y + size, false, 1);
+                canvas.PaintRectangleGlyphs(initialClickCoords.X, initialClickCoords.Y, mouseCoords.X, mouseCoords.Y, false, 1);
             }
         }
         else
@@ -210,31 +210,28 @@ public:
 
     void DisplayPointer(COORD mouseCoords)
     {
-        int w{ textureSample.width };
-        int h{ textureSample.height };
-
-        COORD pixelCoord{ canvas.coordinateStrategy->ConvertCoordsToCanvasPixel(mouseCoords) };
-
-        COORD textureCoord{ canvas.coordinateStrategy->ConvertScreenToTexture(mouseCoords) };
-
-        short backgroundColour = canvas.backgroundTexture.GetColour(textureCoord.X, textureCoord.Y);
-
-        backgroundColour = backgroundColour << 4;
-
+        int width{ textureSample.width };
+        int height{ textureSample.height };
         int zoom{ canvas.GetZoomLevel() };
 
-        canvas.drawingClass.DrawBlock(pixelCoord.X, pixelCoord.Y, zoom, FG_DARK_YELLOW | (backgroundColour << 4), L'#');
+        // get correct coordinates for sample and display
+        COORD pixelCoord{ canvas.coordinateStrategy->ConvertCoordsToCanvasPixel(mouseCoords) };
+        COORD textureCoord{ canvas.coordinateStrategy->ConvertScreenToTexture(mouseCoords) };
 
+        // Pre-calculate parts of the position that don't change per pixel
+        int baseX = pixelCoord.X + zoom - width * zoom;
+        int baseY = pixelCoord.Y + zoom - height * zoom;
+
+        // iterate though sample - this could be done in engine but currently only needed when drawing textures
         for (const Canvas::PixelSample& pixel : textureSample.pixels)
         {
+            // Effectively scale up the drawing of each pixel in the texture
             // Calculate the top-left corner of the block representing this pixel
-            int x{ (mouseCoords.X + 1 + pixel.x - w*zoom) };
-            int y{ (mouseCoords.Y + 1 + pixel.y - h*zoom) };
+            int x = baseX + pixel.x * zoom;
+            int y = baseY + pixel.y * zoom;
 
-            // Draw a block at the calculated position
-            // The size of the block is determined by the zoom factor
-            // This will effectively scale up the drawing of each pixel in the texture
-            canvas.drawingClass.DrawBlock(x, y, zoom, pixel.colour, pixel.glyph);
+            // add 'shade' so cut cna easily be seen
+            canvas.drawingClass.DrawBlock(x, y, zoom, canvas.cutPixel.Attributes | pixel.colour << 4, canvas.cutPixel.Char.UnicodeChar);
         }
     }
 

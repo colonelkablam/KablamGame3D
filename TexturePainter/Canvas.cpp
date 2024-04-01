@@ -49,7 +49,7 @@ void Canvas::Initialise(const std::wstring& saveFolder, const std::wstring& file
     brushSize = START_BRUSH_SIZE;
     currentPixel = { STARTING_GLYPH, STARTING_COLOUR };
     deletePixel = { L'X', FG_WHITE };
-    cutPixel = { L'#', FG_DARK_YELLOW };
+    cutPixel = { L'.', FG_DARK_YELLOW };
     bottomRight = { static_cast<short>(topLeft.X + TexturePainter::CANVAS_DISPLAY_WIDTH),
                     static_cast<short>(topLeft.Y + TexturePainter::CANVAS_DISPLAY_HEIGHT) };
 
@@ -295,6 +295,9 @@ Canvas::TextureSample Canvas::GrabTextureSample(COORD topLeft, COORD bottomRight
             // Get the glyph and color from the background texture
             short glyph = backgroundTexture.GetGlyph(x, y);
             short colour = backgroundTexture.GetColour(x, y);
+            
+            if (glyph == L' ')
+                glyph = deletePixel.Char.UnicodeChar;
 
             // Record the texture's glyph and color, normalized to start from (0, 0)
             sample.pixels.push_back(PixelSample{
@@ -315,12 +318,22 @@ void Canvas::ClearCurrentBrushstrokeTexture() {
 }
 
 // used by UndoRedoManager to apply the brushTexture to the background
-void Canvas::ApplyBrushstroke(const Brushstroke& stroke) 
+void Canvas::ApplyBrushstrokeTextureToBackground(const Brushstroke& stroke) 
 {
     for (const auto& change : stroke.changes) {
-        // Set the glyph and color at the specified position to their new values
-        backgroundTexture.SetGlyph(change.x, change.y, change.newGlyph);
-        backgroundTexture.SetColour(change.x, change.y, change.newColour);
+
+        short glyph = change.newGlyph;
+        short colour = change.newColour;
+
+        // check if brushstroke glyph signalling a delete with deletePixel glyph
+        if (change.newGlyph == deletePixel.Char.UnicodeChar)
+        {
+            glyph = L' ';
+            colour = FG_BLACK;
+        }
+            // Set the glyph and color at the specified position to their new values
+        backgroundTexture.SetGlyph(change.x, change.y, glyph);
+        backgroundTexture.SetColour(change.x, change.y, colour);
     }
 }
 
@@ -343,6 +356,16 @@ void Canvas::ChangeBrushSize(int sizeChange)
 void Canvas::PaintPoint(int x, int y)
 {
     currentBrushStrokeTexture.SetPixel(x, y, currentPixel);
+}
+
+// paint a glyph over existing background colour
+void Canvas::PaintGlyph(int x, int y)
+{
+    // turn background texture colour (will be a fg_colour) into a background colour by bitshifting)
+    short bgColour = backgroundTexture.GetColour(x, y) << 4;
+
+    currentBrushStrokeTexture.SetGlyph(x, y, cutPixel.Char.UnicodeChar);
+    currentBrushStrokeTexture.SetColour(x, y, cutPixel.Attributes | bgColour);
 }
 
 void Canvas::PaintLine(int x0, int y0, int x1, int y1, int lineThickness)
@@ -407,6 +430,39 @@ void Canvas::PaintRectangleCoords(int x0, int y0, int x1, int y1, bool filled, i
     }
 }
 
+// paints glyphs over the texture
+void Canvas::PaintRectangleGlyphs(int x0, int y0, int x1, int y1, bool filled, int lineWidth) {
+    // Normalize coordinates
+    int left = std::min(x0, x1);
+    int top = std::min(y0, y1);
+    int right = std::max(x0, x1);
+    int bottom = std::max(y0, y1);
+
+    if (filled) {
+        for (int y = top; y <= bottom; ++y) {
+            for (int x = left; x <= right; ++x) {
+                PaintGlyph(x, y); // Use PaintGlyph to paint the filled rectangle
+            }
+        }
+    }
+    else {
+        // Top and bottom sides
+        for (int i = 0; i < lineWidth; ++i) {
+            for (int x = left; x <= right; ++x) {
+                PaintGlyph(x, top + i); // Top side
+                PaintGlyph(x, bottom - i); // Bottom side
+            }
+        }
+        // Left and right sides
+        for (int i = 0; i < lineWidth; ++i) {
+            for (int y = top; y <= bottom; ++y) {
+                PaintGlyph(left + i, y); // Left side
+                PaintGlyph(right - i, y); // Right side
+            }
+        }
+    }
+}
+
 void Canvas::PaintTextureSample(const TextureSample& sample, COORD topLeft) {
     for (const auto& pixel : sample.pixels) {
         // Calculate the new position by adding the top-left offset
@@ -414,7 +470,8 @@ void Canvas::PaintTextureSample(const TextureSample& sample, COORD topLeft) {
         int newY = pixel.y + topLeft.Y;
 
         // Ensure the new positions are within the texture's dimensions before applying the change
-        if (newX < currentBrushStrokeTexture.GetWidth() && newY < currentBrushStrokeTexture.GetHeight()) {
+        if (newX < currentBrushStrokeTexture.GetWidth() && newY < currentBrushStrokeTexture.GetHeight()) 
+        {
             currentBrushStrokeTexture.SetGlyph(newX, newY, pixel.glyph);
             currentBrushStrokeTexture.SetColour(newX, newY, pixel.colour);
         }
@@ -460,9 +517,8 @@ void Canvas::DrawCanvas()
     
     // draw mouse pointer
     if (AreCoordsWithinCanvas(mouseCoords))
-        DisplayBrushPointer(mouseCoords);
+        currentToolState->DisplayPointer(mouseCoords);
 
-    currentToolState->DisplayPointer(mouseCoords);
 }
 
 void Canvas::DisplayBrushPointer(COORD mouseCoords)

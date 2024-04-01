@@ -69,7 +69,7 @@ private:
         std::vector<TextureChangePixel> changes;
     };
 
-    // data structures for holding texture sample
+    // data structures for holding pixel sampled from texture
     struct PixelSample {
         int x, y; // Position of the change
         short glyph; // Character values before and after the change
@@ -157,7 +157,7 @@ public:
 
     void HandleLeftMouseRelease(COORD mouseCoords);
 
-    void ApplyBrushstroke(const Brushstroke& stroke);
+    void ApplyBrushstrokeTextureToBackground(const Brushstroke& stroke);
     
     void ApplyUndoBrushstroke(const Brushstroke& stroke);
 
@@ -171,11 +171,15 @@ public:
 
     void PaintPoint(int x, int y);
 
+    void PaintGlyph(int x, int y);
+
     void PaintLine(int x0, int y0, int x1, int y1, int lineThickness = 1);
 
     void PaintBlock(int x, int y, int sideLength);
 
     void PaintRectangleCoords(int x0, int y0, int x1, int y1, bool filled = true, int lineWidth = 1);
+
+    void PaintRectangleGlyphs(int x0, int y0, int x1, int y1, bool filled = true, int lineWidth = 1);
 
     void PaintTextureSample(const TextureSample& sample, COORD topLeft);
 
