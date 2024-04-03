@@ -181,7 +181,7 @@ public:
 
     void PaintRectangleGlyphs(int x0, int y0, int x1, int y1, bool filled = true, int lineWidth = 1);
 
-    void PaintTextureSample(const TextureSample& sample, COORD topLeft);
+    void PaintTextureSample(const TextureSample& sample, COORD topLeft, bool partialSample = false);
 
     void DrawCanvas();
 

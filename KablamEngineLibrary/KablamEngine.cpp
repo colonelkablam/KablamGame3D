@@ -511,29 +511,6 @@ int KablamEngine::DrawTextureToScreen(const Texture& texture, int xScreen, int y
 // this is for drawing texture directly to screen pixels - any L' ' glyphs will be ignored (can see background)
 int KablamEngine::DrawPartialTextureToScreen(const Texture& texture, int xScreen, int yScreen, float scale)
 {
-    for (int x{ 0 }; x < texture.GetWidth() * scale; x++)
-    {
-        for (int y = 0; y < texture.GetHeight() * scale; y++)
-        {
-            // Find the corresponding texture coordinates
-            int texX = static_cast<int>(x / scale);
-            int texY = static_cast<int>(y / scale);
-
-            short glyph{ texture.GetGlyph(texX, texY) };
-            short colour{ texture.GetColour(texX, texY) };
-
-            // Only draw pixels, not 'empty' spaces
-            if (glyph != L' ')
-                DrawPoint(xScreen + x, yScreen + y, colour, glyph);
-        }
-    }
-    return 0;
-}
-
-
-// overloaded to take a COORD 
-int KablamEngine::DrawPartialTextureToScreen(const Texture& texture, COORD screenPos, float scale)
-{
     for (int x = 0; x < static_cast<int>(texture.GetWidth() * scale); x++)
     {
         for (int y = 0; y < static_cast<int>(texture.GetHeight() * scale); y++)
@@ -549,11 +526,17 @@ int KablamEngine::DrawPartialTextureToScreen(const Texture& texture, COORD scree
             if (glyph != L' ')
             {
                 // Add screenPos to the calculated position to get the final screen coordinates
-                DrawPoint(screenPos.X + x, screenPos.Y + y, colour, glyph);
+                DrawPoint(xScreen + x, yScreen + y, colour, glyph);
             }
         }
     }
     return 0;
+}
+
+// overloaded to take a COORD 
+int KablamEngine::DrawPartialTextureToScreen(const Texture& texture, COORD screenPos, float scale)
+{
+    return DrawPartialTextureToScreen(texture, screenPos.X, screenPos.Y, scale);
 }
 
 // drawing a rectangular section defined by x0 y0 and x1  y1 to screen - xScreen, yScreen will be top left

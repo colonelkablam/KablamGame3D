@@ -259,7 +259,7 @@ Canvas::Brushstroke Canvas::CaptureDifferential() {
             short bgColour = backgroundTexture.GetColour(x, y);
             short cbstColour = currentBrushStrokeTexture.GetColour(x, y);
 
-            // Check if there is a difference and the glyph in the brush stroke is not a space
+            // Check if there is a difference and the glyph in the brush stroke is not a space (otherwise whole texture is captured)
             if ((bgGlyph != cbstGlyph || bgColour != cbstColour) && cbstGlyph != L' ') {
                 stroke.changes.push_back(TextureChangePixel{
                     x, y,
@@ -292,17 +292,21 @@ Canvas::TextureSample Canvas::GrabTextureSample(COORD topLeft, COORD bottomRight
 
     for (int y = actualTopLeft.Y; y <= actualBottomRight.Y; ++y) {
         for (int x = actualTopLeft.X; x <= actualBottomRight.X; ++x) {
-            // Get the glyph and color from the background texture
+            // Get the glyph and colour from the background texture
             short glyph = backgroundTexture.GetGlyph(x, y);
             short colour = backgroundTexture.GetColour(x, y);
             
+            // if an empty pixel then make it a 'delete' pixel
             if (glyph == L' ')
+            {
                 glyph = deletePixel.Char.UnicodeChar;
+                colour = deletePixel.Attributes;
+            }
 
-            // Record the texture's glyph and color, normalized to start from (0, 0)
+            // Record the texture's glyph and colour, normalised to start from (0, 0)
             sample.pixels.push_back(PixelSample{
-                x - actualTopLeft.X, // Normalize X position
-                y - actualTopLeft.Y, // Normalize Y position
+                x - actualTopLeft.X, // Normalise positions
+                y - actualTopLeft.Y,
                 glyph,
                 colour
                 });
@@ -463,17 +467,28 @@ void Canvas::PaintRectangleGlyphs(int x0, int y0, int x1, int y1, bool filled, i
     }
 }
 
-void Canvas::PaintTextureSample(const TextureSample& sample, COORD topLeft) {
+void Canvas::PaintTextureSample(const TextureSample& sample, COORD topLeft, bool partialSample)
+{
     for (const auto& pixel : sample.pixels) {
         // Calculate the new position by adding the top-left offset
         int newX = pixel.x + topLeft.X;
         int newY = pixel.y + topLeft.Y;
 
+        short glyph = pixel.glyph;
+        short colour = pixel.colour;
+
         // Ensure the new positions are within the texture's dimensions before applying the change
-        if (newX < currentBrushStrokeTexture.GetWidth() && newY < currentBrushStrokeTexture.GetHeight()) 
-        {
-            currentBrushStrokeTexture.SetGlyph(newX, newY, pixel.glyph);
-            currentBrushStrokeTexture.SetColour(newX, newY, pixel.colour);
+        if (newX < currentBrushStrokeTexture.GetWidth() && newY < currentBrushStrokeTexture.GetHeight()) {
+            // If partialSample is false, draw all pixels
+            if (!partialSample) {
+                currentBrushStrokeTexture.SetGlyph(newX, newY, glyph);
+                currentBrushStrokeTexture.SetColour(newX, newY, colour);
+            }
+            // If partialSample is true, only draw pixels that are not the deletePixel
+            else if (glyph != deletePixel.Char.UnicodeChar) {
+                currentBrushStrokeTexture.SetGlyph(newX, newY, glyph);
+                currentBrushStrokeTexture.SetColour(newX, newY, colour);
+            }
         }
     }
 }

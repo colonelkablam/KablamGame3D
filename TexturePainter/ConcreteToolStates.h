@@ -165,6 +165,7 @@ public:
 class CopyBrushState : public IToolState {
 
     bool textureBeenSampled{ false };
+    bool drawPartialSample{ true };
     Canvas::TextureSample textureSample{};
 
 public:
@@ -190,7 +191,7 @@ public:
         else
         {
             COORD placement{ mouseCoords.X - (short)textureSample.width + 1, mouseCoords.Y - (short)textureSample.height + 1};
-            canvas.PaintTextureSample(textureSample, placement);
+            canvas.PaintTextureSample(textureSample, placement, drawPartialSample);
         }
 
     }
@@ -208,30 +209,36 @@ public:
         }
     }
 
-    void DisplayPointer(COORD mouseCoords)
-    {
-        int width{ textureSample.width };
-        int height{ textureSample.height };
-        int zoom{ canvas.GetZoomLevel() };
+    void DisplayPointer(COORD mouseCoords) {
+        int width = textureSample.width;
+        int height = textureSample.height;
+        int zoom = canvas.GetZoomLevel();
 
-        // get correct coordinates for sample and display
-        COORD pixelCoord{ canvas.coordinateStrategy->ConvertCoordsToCanvasPixel(mouseCoords) };
-        COORD textureCoord{ canvas.coordinateStrategy->ConvertScreenToTexture(mouseCoords) };
+        // Calculate base coordinates for drawing
+        COORD pixelCoord = canvas.coordinateStrategy->ConvertCoordsToCanvasPixel(mouseCoords);
+        int baseX = pixelCoord.X - (width - 1) * zoom;
+        int baseY = pixelCoord.Y - (height - 1) * zoom;
 
-        // Pre-calculate parts of the position that don't change per pixel
-        int baseX = pixelCoord.X + zoom - width * zoom;
-        int baseY = pixelCoord.Y + zoom - height * zoom;
-
-        // iterate though sample - this could be done in engine but currently only needed when drawing textures
-        for (const Canvas::PixelSample& pixel : textureSample.pixels)
-        {
-            // Effectively scale up the drawing of each pixel in the texture
-            // Calculate the top-left corner of the block representing this pixel
+        // Iterate through sample pixels
+        for (const Canvas::PixelSample& pixel : textureSample.pixels) {
             int x = baseX + pixel.x * zoom;
             int y = baseY + pixel.y * zoom;
 
-            // add 'shade' so cut cna easily be seen
-            canvas.drawingClass.DrawBlock(x, y, zoom, canvas.cutPixel.Attributes | pixel.colour << 4, canvas.cutPixel.Char.UnicodeChar);
+            // Check for valid drawing position
+            if (canvas.AreCoordsWithinCanvas(COORD{(short)x, (short)y}))
+            {
+                short glyph = pixel.glyph;
+                short colour = pixel.colour;
+
+                // When drawPartialSample is true, draw all pixels except delete pixels
+                if (drawPartialSample && glyph != canvas.deletePixel.Char.UnicodeChar) {
+                    canvas.drawingClass.DrawBlock(x, y, zoom, colour, glyph);
+                }
+                // When drawPartialSample is false, draw all pixels
+                else if (!drawPartialSample) {
+                    canvas.drawingClass.DrawBlock(x, y, zoom, colour, glyph);
+                }
+            }
         }
     }
 
