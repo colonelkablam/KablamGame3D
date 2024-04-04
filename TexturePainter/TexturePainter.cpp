@@ -87,7 +87,7 @@ bool TexturePainter::OnGameCreate()
     brushButtonsContainer->AddButton(rectToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_RECT); });
     brushButtonsContainer->AddButton(rectFillToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_RECT_FILLED); });
     brushButtonsContainer->AddButton(copyToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_COPY); });
-    brushButtonsContainer->AddButton(copyToolToggleIcon, [this]() { currentCanvas->currentToo; });
+    brushButtonsContainer->AddButton(copyToolToggleIcon, [this]() { currentCanvas->ToggleCurrentToolOption(); });
 
 
 

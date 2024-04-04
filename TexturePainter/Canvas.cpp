@@ -181,6 +181,11 @@ void Canvas::SwitchTool(ToolType type) {
     }
 }
 
+void Canvas::ToggleCurrentToolOption()
+{
+    currentToolState->ToggleOption();
+}
+
 void Canvas::SetBrushToDelete()
 {
         currentPixel = deletePixel;

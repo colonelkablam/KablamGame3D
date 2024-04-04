@@ -145,6 +145,8 @@ public:
 
     void SwitchTool(ToolType type);
 
+    void ToggleCurrentToolOption();
+
     int ChangeCanvasOffset(COORD change);
 
     bool AreCoordsWithinCanvas(COORD coords);
