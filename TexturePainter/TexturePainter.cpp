@@ -17,6 +17,7 @@ TexturePainter::TexturePainter(std::wstring newTitle)
     rectFillToolIcon = nullptr;
     lineToolIcon = nullptr;
     copyToolIcon = nullptr;
+    copyToolToggleIcon = nullptr;
 }
 
 TexturePainter::~TexturePainter()
@@ -35,7 +36,7 @@ TexturePainter::~TexturePainter()
      delete rectFillToolIcon;
      delete lineToolIcon;
      delete copyToolIcon;
-
+     delete copyToolToggleIcon;    
 }
 
 bool TexturePainter::OnGameCreate() 
@@ -75,6 +76,8 @@ bool TexturePainter::OnGameCreate()
     rectFillToolIcon = new Texture(L"./ToolIcons/rect_fill_tool_icon.txr");
     lineToolIcon = new Texture(L"./ToolIcons/line_tool_icon.txr");
     copyToolIcon = new Texture(L"./ToolIcons/copy_tool_icon.txr");
+    copyToolToggleIcon = new Texture(L"./ToolIcons/copy_tool_toggle_icon.txr");
+
     
     // populate it
     brushButtonsContainer->AddButton(blockToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_BLOCK); });
@@ -84,6 +87,8 @@ bool TexturePainter::OnGameCreate()
     brushButtonsContainer->AddButton(rectToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_RECT); });
     brushButtonsContainer->AddButton(rectFillToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_RECT_FILLED); });
     brushButtonsContainer->AddButton(copyToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_COPY); });
+    brushButtonsContainer->AddButton(copyToolToggleIcon, [this]() { currentCanvas->currentToo; });
+
 
 
     return true;

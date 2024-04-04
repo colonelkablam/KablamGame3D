@@ -24,6 +24,11 @@ public:
     {
         canvas.DisplayBrushPointer(mouseCoords);
     }
+
+    void ToggleOption()
+    {
+        // do nothing
+    }
     
     void ResetClicks()
     {
@@ -68,6 +73,11 @@ public:
         canvas.DisplayBrushPointer(mouseCoords);
     }
 
+    void ToggleOption()
+    {
+        // do nothing
+    }
+
     void ResetClicks()
     {
         initialClick = false;
@@ -107,6 +117,11 @@ public:
     void DisplayPointer(COORD mouseCoords)
     {
         canvas.DisplayBrushPointer(mouseCoords);
+    }
+
+    void ToggleOption()
+    {
+        // do nothing
     }
 
     void ResetClicks()
@@ -150,6 +165,10 @@ public:
         canvas.DisplayBrushPointer(mouseCoords);
     }
 
+    void ToggleOption()
+    {
+        // do nothing
+    }
     void ResetClicks()
     {
         initialClick = false;
@@ -242,6 +261,10 @@ public:
         }
     }
 
+    void ToggleOption()
+    {
+        drawPartialSample = !drawPartialSample;
+    }
     void ResetClicks()
     {
         initialClick = false;
