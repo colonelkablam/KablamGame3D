@@ -411,12 +411,20 @@ bool TexturePainter::HandleKeyPress()
 
     if (keyArray[VK_F5].bPressed)
     {
-        currentCanvas->SaveTexture(currentCanvas->GetFilePath());
+        std::wstring filePath{ currentCanvas->GetFilePath() };
+        if (currentCanvas->SaveTexture(filePath))
+            DisplayAlertMessage(filePath + L" saved");
+        else
+            DisplayAlertMessage(L"Unable to save " + filePath);
     }
 
     if (keyArray[VK_F9].bPressed)
     {
-        currentCanvas->LoadTexture(currentCanvas->GetFilePath());
+        std::wstring filePath{ currentCanvas->GetFilePath() };
+        if (currentCanvas->LoadTexture(filePath))
+            DisplayAlertMessage(filePath + L" re-loaded");
+        else
+            DisplayAlertMessage(L"Unable to load " + filePath);
     }
 
     // arrow keys to scroll canvas view
