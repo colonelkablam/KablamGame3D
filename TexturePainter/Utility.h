@@ -3,7 +3,9 @@
 #include <vector>
 #include <string>
 
-bool GetValidFileName(const std::wstring& filename, std::wstring& userInput);
+bool GetValidFileName(const std::wstring& prompt, std::wstring& userInput, const std::wstring& illegalChars, const int maxLength);
+
+bool IsValidFileName(const std::wstring& fileName, const std::wstring& illegalChars, const int maxLength);
 
 std::vector<std::wstring> GetFileList(const std::wstring& folderName, const std::wstring& extensionName);
 

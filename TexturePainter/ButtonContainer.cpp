@@ -15,7 +15,7 @@ ButtonContainer::~ButtonContainer()
 }
 
 // button made with dimentions and colour
-bool ButtonContainer::AddButton(int width, int height, short colour, std::function<void()> onClickFunction)
+bool ButtonContainer::AddButton(bool highlightable, int width, int height, short colour, std::function<void()> onClickFunction)
 {
     int buttonId = buttons.size();
     if (buttonId >= rows * columns)
@@ -49,7 +49,7 @@ bool ButtonContainer::AddButton(int width, int height, short colour, std::functi
                 tallestInRow = height;
 
         // add button
-        Button* newButton = new Button(nextXPos, nextYPos, width, height, colour, onClickFunction);
+        Button* newButton = new Button(nextXPos, nextYPos, highlightable, width, height, colour, onClickFunction);
         buttons.push_back(newButton);
 
         nextXPos += width + spacing; // Prepare nextXPos for the next button in the same row
@@ -59,7 +59,7 @@ bool ButtonContainer::AddButton(int width, int height, short colour, std::functi
 }
 
 // button made with a texture
-bool ButtonContainer::AddButton(Texture* iconTexture, std::function<void()> onClickFunction)
+bool ButtonContainer::AddButton(bool highlightable, Texture* iconTexture, std::function<void()> onClickFunction)
 {
 
     int buttonId = buttons.size();
@@ -96,7 +96,7 @@ bool ButtonContainer::AddButton(Texture* iconTexture, std::function<void()> onCl
                 tallestInRow = height;
 
         // add button
-        Button* newButton = new Button(nextXPos, nextYPos, iconTexture, onClickFunction);
+        Button* newButton = new Button(nextXPos, nextYPos, highlightable, iconTexture, onClickFunction);
         buttons.push_back(newButton);
 
         nextXPos += width + spacing; // Prepare nextXPos for the next button in the same row
@@ -114,7 +114,8 @@ void ButtonContainer::HandleMouseClick(COORD mouseCoord)
         if (button->IsMouseClickOnButton(mouseCoord))
         {
             button->Clicked();
-            lastClicked = count;
+            if (button->highlightable)
+                lastClicked = count;
             break;
         }
         count++;

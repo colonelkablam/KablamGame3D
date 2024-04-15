@@ -988,6 +988,70 @@ void KablamEngine::DisplayAlertMessage(const std::wstring& message)
     UnPauseGameUpdate();
 }
 
+void KablamEngine::DisplayAlertMessageWithInput(const std::wstring& message, std::wstring& userInput)
+{
+    int border = 3;
+    int maxMessageLength = nScreenWidth - border * 2; // Maximum message length considering the border
+    std::wstring truncatedMessage = message.substr(0, maxMessageLength); // Truncate message accordingly
+    int messageLength = std::max(static_cast<int>(truncatedMessage.length()), 28); // 28 is minimum width to fit "Enter input: "
+    int messageLines = 4; // Increased number of lines for the message and input area
+    // Center the message
+    int x = nScreenWidth / 2 - messageLength / 2;
+    int y = nScreenHeight / 2 - messageLines / 2;
+
+    // Draw background of message box
+    DrawRectangleEdgeLength(x - border, y - border, messageLength + border * 2, messageLines + border * 2, FG_DARK_MAGENTA, true, PIXEL_SOLID);
+    // Draw border
+    DrawRectangleEdgeLength(x - border, y - border, messageLength + border * 2, messageLines + border * 2, FG_WHITE | FG_DARK_MAGENTA, false, L'*');
+
+    // Write the truncated message and prompt for input
+    WriteStringToBuffer(x, y, truncatedMessage, FG_WHITE | BG_DARK_MAGENTA);
+    WriteStringToBuffer(x, y + 2, L"Enter input: ", FG_WHITE | BG_DARK_MAGENTA);
+
+    // Display the input field
+    std::wstring inputBuffer;
+    bool enterPressed = false;
+
+    HANDLE hInput = GetStdHandle(STD_INPUT_HANDLE);
+    DWORD prevConsoleMode;
+    GetConsoleMode(hInput, &prevConsoleMode);
+    SetConsoleMode(hInput, prevConsoleMode & ~(ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT));
+
+    INPUT_RECORD inputRecords[128];
+    DWORD numRead;
+
+    // Update Console Buffer with screen buffer
+    WriteConsoleOutput(hNewBuffer, screen, { (short)nScreenWidth, (short)nScreenHeight }, { 0,0 }, &windowSize);
+
+    while (!enterPressed) {
+        if (ReadConsoleInput(hInput, inputRecords, 128, &numRead)) {
+            for (DWORD i = 0; i < numRead; ++i) {
+                if (inputRecords[i].EventType == KEY_EVENT && inputRecords[i].Event.KeyEvent.bKeyDown) {
+                    wchar_t ch = inputRecords[i].Event.KeyEvent.uChar.UnicodeChar;
+                    if (ch == '\r') { // Enter key
+                        enterPressed = true;
+                    }
+                    else if (ch == '\b' && !inputBuffer.empty()) { // Backspace
+                        inputBuffer.pop_back();
+                    }
+                    else if (ch != '\b') {
+                        inputBuffer.push_back(ch);
+                    }
+                    // Update the input display area
+                    std::wstring displayBuffer = L"Enter input: " + inputBuffer;
+                    WriteStringToBuffer(x, y + 2, displayBuffer, FG_WHITE | BG_DARK_MAGENTA);
+                    WriteConsoleOutput(hNewBuffer, screen, { (short)nScreenWidth, (short)nScreenHeight }, { 0,0 }, &windowSize);
+                }
+            }
+        }
+    }
+
+    // Restore the original console mode
+    SetConsoleMode(hInput, prevConsoleMode);
+
+    userInput = inputBuffer; // Return the user input
+}
+
 float KablamEngine::GetAverageFPS(float anotherTimeValue)
 {
     float total{ 0.0f };

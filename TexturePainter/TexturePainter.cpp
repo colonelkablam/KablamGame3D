@@ -59,11 +59,11 @@ bool TexturePainter::OnGameCreate()
     // populate it 
     for (short colour = 0; colour < 8; ++colour) // For simplicity directly using the index as the color here and OR with FG_INTENSITY.
     {
-        colourButtonsContainer->AddButton(5, 5, colour, [this, colour]() { currentCanvas->SetBrushColour(colour); });
-        colourButtonsContainer->AddButton(5, 5, colour | FG_INTENSITY, [this, colour]() { currentCanvas->SetBrushColour(colour | FG_INTENSITY); });
+        colourButtonsContainer->AddButton(true, 5, 5, colour, [this, colour]() { currentCanvas->SetBrushColour(colour); });
+        colourButtonsContainer->AddButton(true, 5, 5, colour | FG_INTENSITY, [this, colour]() { currentCanvas->SetBrushColour(colour | FG_INTENSITY); });
     }
     deleteToolIcon = new Texture(L"./ToolIcons/delete_tool_icon.txr");
-    colourButtonsContainer->AddButton(deleteToolIcon, [this]() { currentCanvas->SetBrushToDelete(); });
+    colourButtonsContainer->AddButton(true, deleteToolIcon, [this]() { currentCanvas->SetBrushToDelete(); });
 
     // container for tool bottons
     brushButtonsContainer = new ButtonContainer(*this, BRUSH_BUTTON_XPOS, BRUSH_BUTTON_YPOS, 8, 1);
@@ -80,14 +80,14 @@ bool TexturePainter::OnGameCreate()
 
     
     // populate it
-    brushButtonsContainer->AddButton(blockToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_BLOCK); });
-    brushButtonsContainer->AddButton(increaseToolIcon, [this]() { currentCanvas->ChangeBrushSize(1); });
-    brushButtonsContainer->AddButton(decreaseToolIcon, [this]() { currentCanvas->ChangeBrushSize(-1); });
-    brushButtonsContainer->AddButton(lineToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_LINE); });
-    brushButtonsContainer->AddButton(rectToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_RECT); });
-    brushButtonsContainer->AddButton(rectFillToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_RECT_FILLED); });
-    brushButtonsContainer->AddButton(copyToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_COPY); });
-    brushButtonsContainer->AddButton(copyToolToggleIcon, [this]() { currentCanvas->ToggleCurrentToolOption(); });
+    brushButtonsContainer->AddButton(true, blockToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_BLOCK); });
+    brushButtonsContainer->AddButton(false, increaseToolIcon, [this]() { currentCanvas->ChangeBrushSize(1); });
+    brushButtonsContainer->AddButton(false, decreaseToolIcon, [this]() { currentCanvas->ChangeBrushSize(-1); });
+    brushButtonsContainer->AddButton(true, lineToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_LINE); });
+    brushButtonsContainer->AddButton(true, rectToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_RECT); });
+    brushButtonsContainer->AddButton(true, rectFillToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_RECT_FILLED); });
+    brushButtonsContainer->AddButton(true, copyToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_COPY); });
+    brushButtonsContainer->AddButton(false, copyToolToggleIcon, [this]() { currentCanvas->ToggleCurrentToolOption(); });
 
 
 
@@ -130,7 +130,7 @@ bool TexturePainter::GetUserStartInput()
         prompt += letter + L"ype a new name to start new texture project ('q' to exit): ";
 
         std::wstring userFileName;
-        if (GetValidFileName(prompt, userFileName) == false)
+        if (GetValidFileName(prompt, userFileName, ILLEGAL_CHARS, MAX_FILE_NAME_LENGTH) == false)
         {
             system("pause");
             PrintFiles();
@@ -392,22 +392,81 @@ bool TexturePainter::HandleKeyPress()
         currentCanvas->DecreaseZoomLevel();
     }
 
-    for (size_t i{ 0 }; i < 10; i++)
+    // loop through keys 1-9 to swap between preloaded textures
+    for (size_t i{ 0 }; i < 9; i++)
     {
-        wchar_t num = L'0' + i; // Convert the digit to its corresponding wchar_t character
+        wchar_t numKey = L'1' + i; // Correctly convert the digit to its corresponding wchar_t character for the keyArray
 
-        if (keyArray[num].bPressed)
+        if (keyArray[numKey].bPressed)
         {
             if (i < canvases.size())
             {
-                std::wstring message = L"Loading Canvas " + std::to_wstring(i) + L". " + canvases.at(i)->GetFileName();
+                // i is position in the canvas vector
+                std::wstring fileName = canvases.at(i)->GetFileName();
+                std::wstring message = L"Loading Canvas " + std::to_wstring(i + 1) + L". " + fileName;
                 DisplayAlertMessage(message);
                 ChangeCanvas(i);
             }
             else
-                DisplayAlertMessage(L"No canvas loaded at position " + std::to_wstring(i));
+            {
+                DisplayAlertMessage(L"No canvas loaded at position " + std::to_wstring(i + 1));
+            }
         }
     }
+
+    if (keyArray[L'0'].bPressed)
+    {
+        if (canvases.size() >= 9) // only allow up to 9 canvases
+        {
+            DisplayAlertMessage(L"Maximum number of textures loaded, new texture aborted.");
+        }
+        else
+        {
+            std::wstring userInput;
+            bool validInput = false;
+
+            while (!validInput)
+            {
+                DisplayAlertMessageWithInput(L"Please enter a new texture name (enter 'Q' to quit): ", userInput);
+
+                // Check if the user wants to abort the input
+                if (userInput == L"Q" || userInput == L"q") {
+                    DisplayAlertMessage(L"Creating new texture aborted.");
+                    break; // exit
+                }
+
+                // Perform existing checks
+                validInput = IsValidFileName(userInput, ILLEGAL_CHARS, MAX_FILE_NAME_LENGTH);
+                if (!validInput) {
+                    DisplayAlertMessage(L"Invalid file name. Please try again.");
+                    continue; // Skip the next check if the file name is not valid
+                }
+
+                // add texture file extension to end of user input
+                userInput = userInput + TEXTURE_EXTENSION;
+
+                validInput = !FileExistInDir(availableFileList, userInput);
+                if (!validInput) {
+                    DisplayAlertMessage(L"File name already exists. Please enter a new name.");
+                    continue; // Again ask for new input if the file already exists
+                }
+
+                // If all checks are passed
+                if (validInput)
+                {
+                    while (!validInput)
+                    {
+                        DisplayAlertMessageWithInput(L"texture width: ", userInput);
+                    }
+
+                    InitCanvasNewTexture(64, 64, 0, userInput);
+                    selectedList.push_back(userInput);
+                    break; // Break the loop if the new texture is created
+                }
+            }
+        }
+    }
+
 
     if (keyArray[VK_F5].bPressed)
     {

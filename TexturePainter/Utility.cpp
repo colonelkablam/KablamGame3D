@@ -5,20 +5,41 @@
 
 #include "Utility.h"
 
-bool GetValidFileName(const std::wstring& prompt, std::wstring& userInput) {
-    // illegal characters
-    const std::wstring illegalChars{ L".*<>:\"/\\|?" };
+bool GetValidFileName(const std::wstring& prompt, std::wstring& userInput, const std::wstring& illegalChars, const int maxLength) {
 
     std::wcout << prompt;
     std::getline(std::wcin, userInput);
+
+    if (userInput.size() > maxLength)
+    {
+        std::wcout << L"\nFile name must be less than " << maxLength << " characters in length...\n\n";
+        return false; // No need to check further characters
+    }
 
     // Check for illegal characters
     bool hasIllegalChars = false;
     for (wchar_t ch : userInput) {
         if (ch < 32 || illegalChars.find(ch) != std::wstring::npos) {
             hasIllegalChars = true;
-            std::wcout << L"\nInput must not contain illegal characters (.*<>:\"/\\|?)...\n\n";
+            std::wcout << L"\nInput must not contain illegal characters (" << illegalChars << ")...\n\n";
             return false; // No need to check further characters
+        }
+    }
+    return true; // Filename is valid
+}
+
+bool IsValidFileName(const std::wstring& fileName, const std::wstring& illegalChars, const int maxLength) {
+
+    // check input length
+    if (fileName.size() > maxLength)
+    {
+        return false; // No need to check further characters
+    }
+
+    // Check for illegal characters
+    for (wchar_t ch : fileName) {
+        if (ch < 32 || illegalChars.find(ch) != std::wstring::npos) {
+            return false; // Illegal character found, return immediately
         }
     }
     return true; // Filename is valid
@@ -192,33 +213,33 @@ bool CreateFolder(const std::wstring& folderPath) {
 
 // Defines the 'pixels' for each character in a chunky font
 std::unordered_map<char, std::vector<std::string>> charMap = {
-    {'A', {" #  ", "# # ", "### ", "# # ", "# # "}},
-    {'B', {"##  ", "# # ", "##  ", "# # ", "##  "}},
-    {'C', {" ## ", "#  #", "#   ", "#  #", " ## "}},
-    {'D', {"##  ", "# # ", "# # ", "# # ", "##  "}},
-    {'E', {"### ", "#   ", "##  ", "#   ", "### "}},
-    {'F', {"### ", "#   ", "##  ", "#   ", "#   "}},
-    {'G', {" ## ", "#   ", "# # ", "# # ", " ## "}},
-    {'H', {"# # ", "# # ", "### ", "# # ", "# # "}},
-    {'I', {"### ", " #  ", " #  ", " #  ", "### "}},
-    {'J', {"  # ", "  # ", "  # ", "# # ", " #  "}},
-    {'K', {"# # ", "# # ", "##  ", "# # ", "# # "}},
-    {'L', {"#   ", "#   ", "#   ", "#   ", "### "}},
-    {'M', {"# # ", "### ", "### ", "# # ", "# # "}},
-    {'N', {"# # ", "### ", "### ", "### ", "# # "}},
-    {'O', {" #  ", "# # ", "# # ", "# # ", " #  "}},
-    {'P', {"##  ", "# # ", "##  ", "#   ", "#   "}},
-    {'Q', {" ## ", "# # ", "# # ", " ## ", "  #"}},
-    {'R', {"##  ", "# # ", "##  ", "# # ", "# # "}},
-    {'S', {" ## ", "#   ", " #  ", "  # ", "##  "}},
-    {'T', {"### ", " #  ", " #  ", " #  ", " #  "}},
-    {'U', {"# # ", "# # ", "# # ", "# # ", " #  "}},
-    {'V', {"# # ", "# # ", "# # ", "# # ", " #  "}},
-    {'W', {"# # ", "# # ", "### ", "### ", "# # "}},
-    {'X', {"# # ", "# # ", " #  ", "# # ", "# # "}},
-    {'Y', {"# # ", "# # ", " #  ", " #  ", " #  "}},
-    {'Z', {"### ", "  # ", " #  ", "#   ", "### "}},
-    {' ', {"    ", "    ", "    ", "    ", "    "}}
+    {'A', {"  #  ", " # # ", "#####", "#   #", "#   #"}},
+    {'B', {"#### ", "#   #", "#####", "#   #", "#### "}},
+    {'C', {" ### ", "#    ", "#    ", "#    ", " ### "}},
+    {'D', {"#### ", "#   #", "#   #", "#   #", "#### "}},
+    {'E', {"#####", "#    ", "#####", "#    ", "#####"}},
+    {'F', {"#####", "#    ", "#####", "#    ", "#    "}},
+    {'G', {" ### ", "#    ", "# ###", "#   #", " ### "}},
+    {'H', {"#   #", "#   #", "#####", "#   #", "#   #"}},
+    {'I', {"#####", "  #  ", "  #  ", "  #  ", "#####"}},
+    {'J', {"    #", "    #", "    #", "#   #", " ### "}},
+    {'K', {"#   #", "#  # ", "###  ", "#  # ", "#   #"}},
+    {'L', {"#    ", "#    ", "#    ", "#    ", "#####"}},
+    {'M', {"#   #", "## ##", "# # #", "#   #", "#   #"}},
+    {'N', {"#   #", "##  #", "# # #", "#  ##", "#   #"}},
+    {'O', {" ### ", "#   #", "#   #", "#   #", " ### "}},
+    {'P', {"#### ", "#   #", "#### ", "#    ", "#    "}},
+    {'Q', {" ### ", "#   #", "#   #", " ### ", "    #"}},
+    {'R', {"#### ", "#   #", "#### ", "#  # ", "#   #"}},
+    {'S', {" ####", "#    ", " ### ", "    #", "#### "}},
+    {'T', {"#####", "  #  ", "  #  ", "  #  ", "  #  "}},
+    {'U', {"#   #", "#   #", "#   #", "#   #", " ### "}},
+    {'V', {"#   #", "#   #", "#   #", " # # ", "  #  "}},
+    {'W', {"#   #", "#   #", "# # #", "## ##", "#   #"}},
+    {'X', {"#   #", " # # ", "  #  ", " # # ", "#   #"}},
+    {'Y', {"#   #", "#   #", " ### ", "  #  ", "  #  "}},
+    {'Z', {"#####", "   # ", "  #  ", " #   ", "#####"}},
+    {' ', {"     ", "     ", "     ", "     ", "     "}}
 };
 
 void printChunkyString(const std::string& text) {

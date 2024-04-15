@@ -32,6 +32,7 @@ private:
         int yPos;
         int width;
         int height;
+        bool highlightable;
         short colour;
         Texture* texture;
         // Function pointer type that takes no arguments and returns void
@@ -39,12 +40,12 @@ private:
 
         
         // Constructor with width and height
-        Button(int x, int y, int w, int h, short c, std::function<void()> onClickFunction)
-            : xPos{ x }, yPos{ y }, texture{ nullptr }, width{ w }, height{ h }, colour{ c }, OnClick(onClickFunction) { }
+        Button(int x, int y, bool highlight, int w, int h, short c, std::function<void()> onClickFunction)
+            : xPos{ x }, yPos{ y }, highlightable{ highlight }, texture{ nullptr }, width{ w }, height{ h }, colour{ c }, OnClick(onClickFunction) { }
 
         // Constructor with texture
-        Button(int x, int y, Texture* iconTexture, std::function<void()> onClickFunction)
-            : xPos{ x }, yPos{ y }, texture{ iconTexture }, width{ iconTexture->GetWidth() }, 
+        Button(int x, int y, bool highlight, Texture* iconTexture, std::function<void()> onClickFunction)
+            : xPos{ x }, yPos{ y }, highlightable{ highlight }, texture{ iconTexture }, width{ iconTexture->GetWidth() },
                 height{ iconTexture->GetHeight() }, colour{ FG_DARK_BLUE }, OnClick(onClickFunction) { }
 
         // Deleted copy constructor and copy assignment operator as not needed
@@ -83,9 +84,9 @@ public:
 
     ~ButtonContainer();
 
-    bool AddButton(int width, int height, short colour, std::function<void()> onClickFunction);
+    bool AddButton(bool highlightable, int width, int height, short colour, std::function<void()> onClickFunction);
 
-    bool AddButton(Texture* texture, std::function<void()> onClickFunction);
+    bool AddButton(bool highlightable, Texture* texture, std::function<void()> onClickFunction);
 
     void HandleMouseClick(COORD);
 

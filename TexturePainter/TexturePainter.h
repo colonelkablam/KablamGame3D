@@ -13,15 +13,18 @@ public:
     static const short HIGHLIGHT_COLOUR = FG_RED;
     static const int CANVAS_DISPLAY_WIDTH = 128;
     static const int CANVAS_DISPLAY_HEIGHT = 64;
+
 private:
     static const int MIN_TEXTURE_WIDTH = 4;
     static const int MIN_TEXTURE_HEIGHT = 4;
     static const int MAX_TEXTURE_WIDTH = 128;
     static const int MAX_TEXTURE_HEIGHT = 64;
 
-
     const std::wstring SAVE_FOLDER = L"Textures\\"; // relative path to subDir
     const std::wstring TEXTURE_EXTENSION = L".txr";
+    const std::wstring ILLEGAL_CHARS = L".*<>:\"/\\|?";
+    const int MAX_FILE_NAME_LENGTH = 16;
+
     const int CANVAS_XPOS = 17;
     const int CANVAS_YPOS = 23;
 

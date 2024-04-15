@@ -190,6 +190,8 @@ protected:
     int Error(const wchar_t* msg, short errorCode = 1);
     int CleanUp();
     void DisplayAlertMessage(const std::wstring& message);
+    void DisplayAlertMessageWithInput(const std::wstring& message, std::wstring& userInput);
+
     float GetAverageFPS(float elapsedTimeValue);
     void WaitForKeyPress();
 
