@@ -461,6 +461,8 @@ bool TexturePainter::HandleKeyPress()
 
                     InitCanvasNewTexture(64, 64, 0, userInput);
                     selectedList.push_back(userInput);
+                    ChangeCanvas(canvases.size() - 1);
+
                     break; // Break the loop if the new texture is created
                 }
             }

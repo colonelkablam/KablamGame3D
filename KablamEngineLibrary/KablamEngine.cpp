@@ -1028,15 +1028,17 @@ void KablamEngine::DisplayAlertMessageWithInput(const std::wstring& message, std
             for (DWORD i = 0; i < numRead; ++i) {
                 if (inputRecords[i].EventType == KEY_EVENT && inputRecords[i].Event.KeyEvent.bKeyDown) {
                     wchar_t ch = inputRecords[i].Event.KeyEvent.uChar.UnicodeChar;
-                    if (ch == '\r') { // Enter key
+                    // Only add printable characters
+                    if (ch >= L' ' && ch <= L'~') {
+                        inputBuffer.push_back(ch);
+                    }
+                    else if (ch == '\r') { // Enter key
                         enterPressed = true;
                     }
                     else if (ch == '\b' && !inputBuffer.empty()) { // Backspace
                         inputBuffer.pop_back();
                     }
-                    else if (ch != '\b') {
-                        inputBuffer.push_back(ch);
-                    }
+
                     // Update the input display area
                     std::wstring displayBuffer = L"Enter input: " + inputBuffer;
                     WriteStringToBuffer(x, y + 2, displayBuffer, FG_WHITE | BG_DARK_MAGENTA);
