@@ -42,6 +42,8 @@ private:
     CHAR_INFO deletePixel;
     CHAR_INFO cutPixel;
 
+    bool textureSaved;
+
     std::wstring fileName;
     std::wstring filePath;
 
@@ -120,6 +122,8 @@ public:
     const std::wstring& GetFileName();
 
     const std::wstring& GetFilePath();
+
+    bool GetSavedState();
 
     int GetIllumination();
 

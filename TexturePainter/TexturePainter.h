@@ -92,7 +92,7 @@ private:
 
     bool InitCanvasExistingTexture(const std::wstring& fileName);
     bool InitCanvasNewTexture(int width, int height, int illuminated, const std::wstring& fileName);
-    bool IsFileAlreadySelected(std::wstring fileName);
+    bool IsFileAlreadySelected(const std::wstring& fileName);
     bool ChangeCanvas(size_t index);
     void DrawHeadingInfo(int x, int y);
     void DrawToolInfo(int x, int y);

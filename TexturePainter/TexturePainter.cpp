@@ -260,15 +260,18 @@ bool TexturePainter::InitCanvasExistingTexture(const std::wstring& fileName)
     return true;
 }
 
-bool TexturePainter::IsFileAlreadySelected(std::wstring fileName)
+bool TexturePainter::IsFileAlreadySelected(const std::wstring& fileName)
 {
-    if (std::find(selectedList.begin(), selectedList.end(), fileName) != selectedList.end())
+    // Iterate over the vector of canvases
+    for (const auto& canvas : canvases)
     {
-        std::wcout << L"\nThe file '" << fileName << L"' is already selected. Please choose a different file.\n\n";
-        // If the name is found in the selection list, inform the user and continue the loop by returning true
-        return true;
+        if (canvas->GetFileName() == fileName)
+        {
+            std::wcout << L"\nThe file '" << fileName << L"' is already selected. Please choose a different file.\n\n";
+            return true;
+        }
     }
-    return false;
+    return false; // Return false if no matching file name is found
 }
 
 bool TexturePainter::ChangeCanvas(size_t index)
@@ -287,9 +290,10 @@ bool TexturePainter::ChangeCanvas(size_t index)
 
 void TexturePainter::DrawHeadingInfo(int x, int y)
 {
+    // positions of screen info rows
     int row1{ x };
-    int row2{ x + 70 };
-    int row3{ x + 100 };
+    int row2{ x + 74 };
+    int row3{ x + 116 };
 
     // texture info
     WriteStringToBuffer(row1, y,     L"Current File Name:  " + currentCanvas->GetFileName(), FG_CYAN);
@@ -299,11 +303,13 @@ void TexturePainter::DrawHeadingInfo(int x, int y)
 
 
     // current textures
-    WriteStringToBuffer(row2, y,     L"Texture List:", FG_BLUE);
+    WriteStringToBuffer(row2, y,     L"Texture List (number key to switch):", FG_BLUE);
     int count{ 1 };
-    for (const auto fileName : selectedList)
+    for (const auto& canvas : canvases)
     {
-        WriteStringToBuffer(row2, y + count + 1, std::to_wstring(count) + L". " + fileName, FG_BLUE);
+        std::wstring fileName{ canvas->GetFileName() };
+        std::wstring savedState = canvas->GetSavedState() ? L"  " : L" *"; // add '*' after name if not saved
+        WriteStringToBuffer(row2, y + count + 1, std::to_wstring(count) + L". " + fileName + savedState, FG_BLUE);
         count++;
     }
 

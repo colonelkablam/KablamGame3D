@@ -45,6 +45,7 @@ Canvas::Canvas(TexturePainter& drawer, const std::wstring& saveFolder, const std
 void Canvas::Initialise(const std::wstring& saveFolder, const std::wstring& fileName) {
     this->fileName = fileName;
     filePath = saveFolder + this->fileName;
+    textureSaved = true;
     currentBrushType = STARTING_TOOL;
     brushSize = START_BRUSH_SIZE;
     currentPixel = { STARTING_GLYPH, STARTING_COLOUR };
@@ -80,7 +81,10 @@ Canvas::~Canvas() {
 bool Canvas::SaveTexture(const std::wstring& filePath)
 {
     if (backgroundTexture.SaveAs(filePath))
+    {
+        textureSaved = true;
         return true;
+    }
     else
         return false;
 }
@@ -88,7 +92,10 @@ bool Canvas::SaveTexture(const std::wstring& filePath)
 bool Canvas::LoadTexture(const std::wstring& filePath)
 {
     if (backgroundTexture.LoadFrom(filePath))
+    {
+        textureSaved = true;
         return true;
+    }
     else
         return false;
 }
@@ -101,6 +108,11 @@ const std::wstring& Canvas::GetFileName()
 const std::wstring& Canvas::GetFilePath()
 {
     return filePath;
+}
+
+bool Canvas::GetSavedState()
+{
+    return textureSaved;
 }
 
 int Canvas::GetIllumination()
@@ -329,6 +341,8 @@ void Canvas::ClearCurrentBrushstrokeTexture() {
 // used by UndoRedoManager to apply the brushTexture to the background
 void Canvas::ApplyBrushstrokeTextureToBackground(const Brushstroke& stroke) 
 {
+    textureSaved = false;
+
     for (const auto& change : stroke.changes) {
 
         short glyph = change.newGlyph;
@@ -349,6 +363,8 @@ void Canvas::ApplyBrushstrokeTextureToBackground(const Brushstroke& stroke)
 // used by UndoRedoManager to apply the undo of the brushTexture to the background
 void Canvas::ApplyUndoBrushstroke(const Brushstroke& stroke)
 {
+    textureSaved = false;
+
     for (const auto& change : stroke.changes) {
         // Set the glyph and color at the specified position to their new values
         backgroundTexture.SetGlyph(change.x, change.y, change.oldGlyph);

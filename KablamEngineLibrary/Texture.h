@@ -111,7 +111,7 @@ public:
 
 	// member methods
 private:
-	bool Initialise(int w, int h, bool illuminated, short forgroundColour);
+	bool Initialise(int w, int h, int illuminated, short forgroundColour);
 	
 	void GenerateMipmaps();
 
