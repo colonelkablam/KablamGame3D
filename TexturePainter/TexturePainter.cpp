@@ -216,7 +216,7 @@ void TexturePainter::CreateNewTexture(const std::wstring& fileName)
     // get new dimentions
     GetDimensionInput(L"\nPlease enter an integer value for the new texture width: ", width, MIN_TEXTURE_WIDTH, MAX_TEXTURE_WIDTH);
     GetDimensionInput(L"\nPlease enter an integer value for the new texture height: ", height, MIN_TEXTURE_HEIGHT, MAX_TEXTURE_HEIGHT);
-    GetDimensionInput(L"\nPlease enter illumination value 0 to 255 for the new texture: ", illumination, 0, 255);
+    GetDimensionInput(L"\nPlease enter illumination value 0 to 255 for the new texture: ", illumination, 0, MAX_ILLUMINATION_VALUE);
     InitCanvasNewTexture(width, height, illumination, fileName);
     selectedList.push_back(fileName);
 }
@@ -288,7 +288,7 @@ bool TexturePainter::ChangeCanvas(size_t index)
 void TexturePainter::DrawHeadingInfo(int x, int y)
 {
     int row1{ x };
-    int row2{ x + 60 };
+    int row2{ x + 70 };
     int row3{ x + 100 };
 
     // texture info
@@ -414,57 +414,26 @@ bool TexturePainter::HandleKeyPress()
         }
     }
 
-    if (keyArray[L'0'].bPressed)
-    {
-        if (canvases.size() >= 9) // only allow up to 9 canvases
-        {
-            DisplayAlertMessage(L"Maximum number of textures loaded, new texture aborted.");
+    if (keyArray[L'0'].bPressed) {
+        if (canvases.size() >= 9) {
+            DisplayAlertMessage(L"Maximum number of textures loaded, new texture creation aborted.");
         }
-        else
-        {
-            std::wstring userInput;
-            bool validInput = false;
+        else {
+            std::wstring textureName;
+            int textureWidth{ 0 }, textureHeight{ 0 }, illumination{ 0 };
 
-            while (!validInput)
+            // populate the new values
+            if (GatherNewTextureValues(textureName, textureWidth, textureHeight, illumination))
             {
-                DisplayAlertMessageWithInput(L"Please enter a new texture name (enter 'Q' to quit)...", userInput);
-
-                // Check if the user wants to abort the input
-                if (userInput == L"Q" || userInput == L"q") {
-                    DisplayAlertMessage(L"Creating new texture aborted.");
-                    break; // exit
-                }
-
-                // Perform existing checks
-                validInput = IsValidFileName(userInput, ILLEGAL_CHARS, MAX_FILE_NAME_LENGTH);
-                if (!validInput) {
-                    DisplayAlertMessage(L"Invalid file name. Please try again.");
-                    continue; // Skip the next check if the file name is not valid
-                }
-
-                // add texture file extension to end of user input
-                userInput = userInput + TEXTURE_EXTENSION;
-
-                validInput = !FileExistInDir(availableFileList, userInput);
-                if (!validInput) {
-                    DisplayAlertMessage(L"File name already exists. Please enter a new name.");
-                    continue; // Again ask for new input if the file already exists
-                }
-
-                // If all checks are passed
-                if (validInput)
-                {
-                    while (!validInput)
-                    {
-                        DisplayAlertMessageWithInput(L"texture width: ", userInput);
-                    }
-
-                    InitCanvasNewTexture(64, 64, 0, userInput);
-                    selectedList.push_back(userInput);
-                    ChangeCanvas(canvases.size() - 1);
-
-                    break; // Break the loop if the new texture is created
-                }
+                // Create the texture
+                InitCanvasNewTexture(textureWidth, textureHeight, illumination, textureName);
+                selectedList.push_back(textureName);
+                ChangeCanvas(canvases.size() - 1);
+                DisplayAlertMessage(L"Texture created successfully.");
+            }
+            else
+            {
+                DisplayAlertMessage(L"Texture creation unsuccessful.");
             }
         }
     }
@@ -525,6 +494,71 @@ bool TexturePainter::HandleKeyPress()
     }
 
     return true;
+}
+
+bool TexturePainter::GatherNewTextureValues(std::wstring& textureName, int& textureWidth, int& textureHeight, int& illumination)
+{
+    while (true) // keep asking if input incorrect
+    {
+        DisplayAlertMessageWithInput(L"Please enter a new texture name (enter 'Q' to quit)...", textureName);
+        if (textureName == L"Q" || textureName == L"q") {
+            DisplayAlertMessage(L"Creating new texture aborted.");
+            return false;  // Exit if user chooses to quit
+        }
+
+        textureName += TEXTURE_EXTENSION;
+        if (FileExistInDir(availableFileList, textureName)) {
+            DisplayAlertMessage(L"File name already exists. Please enter a new name.");
+            continue;
+        }
+
+        // Get texture width
+        if (!GetInputWithValidation(
+            L"Please enter texture width (" + std::to_wstring(MIN_TEXTURE_WIDTH) + L" - " + std::to_wstring(MAX_TEXTURE_WIDTH) + L")",
+            textureWidth,
+            [](int w) { return w >= MIN_TEXTURE_WIDTH && w <= MAX_TEXTURE_WIDTH; },
+            L"Width must be between " + std::to_wstring(MIN_TEXTURE_WIDTH) + L" and " + std::to_wstring(MAX_TEXTURE_WIDTH) + L"."
+        )) continue;
+
+        // Get texture height
+        if (!GetInputWithValidation(
+            L"Please enter texture height (" + std::to_wstring(MIN_TEXTURE_HEIGHT) + L" - " + std::to_wstring(MAX_TEXTURE_HEIGHT) + L")", textureHeight,
+            [](int h) { return h >= MIN_TEXTURE_HEIGHT && h <= MAX_TEXTURE_HEIGHT; },
+            L"Height must be between " + std::to_wstring(MIN_TEXTURE_HEIGHT) + L" and " + std::to_wstring(MAX_TEXTURE_HEIGHT) + L"."
+        )) continue;
+
+        // Get illumination value
+        if (!GetInputWithValidation(
+            L"Please enter illumination value (0 - " + std::to_wstring(MAX_ILLUMINATION_VALUE) + L"): ",
+            illumination,
+            [](int i) { return i >= 0 && i <= MAX_ILLUMINATION_VALUE; },
+            L"Illumination value must be between 0 and " + std::to_wstring(MAX_ILLUMINATION_VALUE) + L"."
+        )) continue;
+
+        return true; // all inputs correct
+    }
+}
+
+// Function to handle input with custom validation
+bool TexturePainter::GetInputWithValidation(const std::wstring& prompt, int& value, std::function<bool(int)> validator, const std::wstring& errorMessage) {
+    std::wstring userInput;
+    bool validInput = false;
+    while (!validInput) {
+        DisplayAlertMessageWithInput(prompt, userInput);
+        try {
+            value = std::stoi(userInput);
+            if (validator(value)) {
+                validInput = true;
+            }
+            else {
+                DisplayAlertMessage(errorMessage);
+            }
+        }
+        catch (const std::exception&) {
+            DisplayAlertMessage(L"Invalid input. Please enter a valid number.");
+        }
+    }
+    return validInput;
 }
 
 bool TexturePainter::CheckIfSaveFolderExists()

@@ -1031,7 +1031,6 @@ void KablamEngine::DisplayAlertMessageWithInput(const std::wstring& message, std
                     }
                     else if (ch == '\r') {
                         enterPressed = true;
-                        DisplayAlertMessage(L"blah");
                     }
                     else if (ch == '\b' && !inputBuffer.empty()) {
                         inputBuffer.pop_back();

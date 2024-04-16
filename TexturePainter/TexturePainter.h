@@ -19,6 +19,7 @@ private:
     static const int MIN_TEXTURE_HEIGHT = 4;
     static const int MAX_TEXTURE_WIDTH = 128;
     static const int MAX_TEXTURE_HEIGHT = 64;
+    static const int MAX_ILLUMINATION_VALUE = 255;
 
     const std::wstring SAVE_FOLDER = L"Textures\\"; // relative path to subDir
     const std::wstring TEXTURE_EXTENSION = L".txr";
@@ -97,10 +98,9 @@ private:
     void DrawToolInfo(int x, int y);
     void DrawButtons();
     bool HandleKeyPress();
+    bool GatherNewTextureValues(std::wstring& textureName, int& textureWidth, int& textureHeight, int& illumination);
+    bool GetInputWithValidation(const std::wstring& prompt, int& value, std::function<bool(int)> validator, const std::wstring& errorMessage);
     bool CheckIfSaveFolderExists();
-
-
-
 
 }; // end of TexturePainter class definition
 

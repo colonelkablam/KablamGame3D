@@ -92,7 +92,7 @@ Texture::~Texture()
 }
 
 // helper function to 
-bool Texture::Initialise(int width, int height, bool illumination, short colour)
+bool Texture::Initialise(int width, int height, int illumination, short colour)
 {
 	m_width = width;
 	m_height = height;

@@ -163,7 +163,7 @@ bool LetterListener(const std::wstring& userInput, const wchar_t checkLetter) {
 
 int WStringToInteger(const std::wstring& input)
 {
-    int number = 0;
+    int number{ 0 };
 
     // Convert std::wstring to int using std::wstringstream
     std::wstringstream wss(input);
