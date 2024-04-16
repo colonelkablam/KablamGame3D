@@ -960,118 +960,105 @@ int KablamEngine::CleanUp()
     return 0; // if successful 
 }
 
-void KablamEngine::DisplayAlertMessage(const std::wstring& message)
-{
-    int border = 3;
-    int maxMessageLength = nScreenWidth - border * 2; // Maximum message length considering the border
-    std::wstring truncatedMessage = message.substr(0, maxMessageLength); // Truncate message accordingly
-    int messageLength = std::max(static_cast<int>(truncatedMessage.length()), 28); // 28 is "Press any key" message length
-    int messageLines = 3; // Number of lines for the message
-    // Center the message
+void KablamEngine::DrawMessageBox(const std::wstring& message, int messageLines, bool inputMode) {
+    
+    short textColour{};
+    short bgColour{};
+
+    if (inputMode) // select appropriate colour scheme
+    {
+        textColour = INPUT_MESSAGE_TEXT_COLOUR;
+        bgColour = INPUT_MESSAGE_RECT_COLOUR;
+    }
+    else
+    {
+        textColour = ALERT_MESSAGE_TEXT_COLOUR;
+        bgColour = ALERT_MESSAGE_RECT_COLOUR;
+    }
+
+    short colourScheme{ textColour | bgColour << 4 }; // create the text and bg colour appropriate for message type
+
+    int maxMessageLength = nScreenWidth - MESSAGE_BORDER_SIZE * 2;
+    std::wstring truncatedMessage = message.substr(0, maxMessageLength);
+    int messageLength = std::max(static_cast<int>(truncatedMessage.length()), MIN_MESSAGE_LENGTH);
     int x = nScreenWidth / 2 - messageLength / 2;
     int y = nScreenHeight / 2 - messageLines / 2;
 
-    // Draw background of message box
-    DrawRectangleEdgeLength(x - border, y - border, messageLength + border * 2, messageLines + border * 2, FG_DARK_MAGENTA, true, PIXEL_SOLID);
-    // Draw border
-    DrawRectangleEdgeLength(x - border, y - border, messageLength + border * 2, messageLines + border * 2, FG_WHITE | FG_DARK_MAGENTA, false, L'*');
+    DrawRectangleEdgeLength(x - MESSAGE_BORDER_SIZE, y - MESSAGE_BORDER_SIZE, messageLength + MESSAGE_BORDER_SIZE * 2, messageLines + MESSAGE_BORDER_SIZE * 2, bgColour, true, PIXEL_SOLID);
+    DrawRectangleEdgeLength(x - MESSAGE_BORDER_SIZE, y - MESSAGE_BORDER_SIZE, messageLength + MESSAGE_BORDER_SIZE * 2, messageLines + MESSAGE_BORDER_SIZE * 2, bgColour, false, L'*');
+    WriteStringToBuffer(x, y, truncatedMessage, colourScheme);
 
-    // Write the truncated message and the "Press any key" instruction
-    WriteStringToBuffer(x, y, truncatedMessage, FG_WHITE | BG_DARK_MAGENTA);
-    WriteStringToBuffer(x, y + 2, L"Press any key to continue...", FG_WHITE | BG_DARK_MAGENTA);
-
-    // Update Console Buffer with screen buffer
+    if (inputMode) {
+        WriteStringToBuffer(x, y + 2, INPUT_BASE_MESSAGE, colourScheme);
+    }
+    else {
+        WriteStringToBuffer(x, y + 2, ALERT_BASE_MESSAGE, colourScheme);
+    }
     WriteConsoleOutput(hNewBuffer, screen, { (short)nScreenWidth, (short)nScreenHeight }, { 0,0 }, &windowSize);
+}
 
+void KablamEngine::DisplayAlertMessage(const std::wstring& message) {
     PauseGameUpdate();
+    DrawMessageBox(message, MESSAGE_LINES, false);
     WaitForKeyPress();
     UnPauseGameUpdate();
 }
 
-void KablamEngine::DisplayAlertMessageWithInput(const std::wstring& message, std::wstring& userInput)
-{
-    int border = 3;
-    int maxMessageLength = nScreenWidth - border * 2; // Maximum message length considering the border
-    std::wstring truncatedMessage = message.substr(0, maxMessageLength); // Truncate message accordingly
-    int messageLength = std::max(static_cast<int>(truncatedMessage.length()), 28); // 28 is minimum width to fit "Enter input: "
-    int messageLines = 4; // Increased number of lines for the message and input area
-    // Center the message
-    int x = nScreenWidth / 2 - messageLength / 2;
-    int y = nScreenHeight / 2 - messageLines / 2;
+void KablamEngine::DisplayAlertMessageWithInput(const std::wstring& message, std::wstring& userInput) {
+    DrawMessageBox(message, MESSAGE_LINES, true);  // Draw the initial message box for input
 
-    // Draw background of message box
-    DrawRectangleEdgeLength(x - border, y - border, messageLength + border * 2, messageLines + border * 2, FG_DARK_MAGENTA, true, PIXEL_SOLID);
-    // Draw border
-    DrawRectangleEdgeLength(x - border, y - border, messageLength + border * 2, messageLines + border * 2, FG_WHITE | FG_DARK_MAGENTA, false, L'*');
-
-    // Write the truncated message and prompt for input
-    WriteStringToBuffer(x, y, truncatedMessage, FG_WHITE | BG_DARK_MAGENTA);
-    WriteStringToBuffer(x, y + 2, L"Enter input: ", FG_WHITE | BG_DARK_MAGENTA);
-
-    // Display the input field
     std::wstring inputBuffer;
     bool enterPressed = false;
-
     HANDLE hInput = GetStdHandle(STD_INPUT_HANDLE);
-    DWORD prevConsoleMode;
-    GetConsoleMode(hInput, &prevConsoleMode);
-    SetConsoleMode(hInput, prevConsoleMode & ~(ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT));
+
+    SetConsoleInputMode(~(ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT));
 
     INPUT_RECORD inputRecords[128];
     DWORD numRead;
 
-    // Update Console Buffer with screen buffer
-    WriteConsoleOutput(hNewBuffer, screen, { (short)nScreenWidth, (short)nScreenHeight }, { 0,0 }, &windowSize);
+    // calculate position of input line
+    int xPos{ nScreenWidth / 2 - (int)message.size() / 2 };
+    int yPos{ nScreenHeight / 2 - MESSAGE_LINES / 2 + 2 };
 
+    // update and display the input buffer with untul enter pressed
     while (!enterPressed) {
         if (ReadConsoleInput(hInput, inputRecords, 128, &numRead)) {
             for (DWORD i = 0; i < numRead; ++i) {
                 if (inputRecords[i].EventType == KEY_EVENT && inputRecords[i].Event.KeyEvent.bKeyDown) {
                     wchar_t ch = inputRecords[i].Event.KeyEvent.uChar.UnicodeChar;
-                    // Only add printable characters
-                    if (ch >= L' ' && ch <= L'~') {
+                    if (ch >= L' ' && ch <= L'~') { // printable characters
                         inputBuffer.push_back(ch);
                     }
-                    else if (ch == '\r') { // Enter key
+                    else if (ch == '\r') {
                         enterPressed = true;
+                        DisplayAlertMessage(L"blah");
                     }
-                    else if (ch == '\b' && !inputBuffer.empty()) { // Backspace
+                    else if (ch == '\b' && !inputBuffer.empty()) {
                         inputBuffer.pop_back();
                     }
 
-                    // Update the input display area
-                    std::wstring displayBuffer = L"Enter input: " + inputBuffer;
-                    WriteStringToBuffer(x, y + 2, displayBuffer, FG_WHITE | BG_DARK_MAGENTA);
+                    std::wstring displayBuffer = INPUT_BASE_MESSAGE + inputBuffer + L" "; // L" " to delete previous chars
+                    WriteStringToBuffer(xPos, yPos, displayBuffer, INPUT_MESSAGE_COLOUR_SCHEME);
                     WriteConsoleOutput(hNewBuffer, screen, { (short)nScreenWidth, (short)nScreenHeight }, { 0,0 }, &windowSize);
                 }
             }
         }
     }
 
-    // Restore the original console mode
-    SetConsoleMode(hInput, prevConsoleMode);
-
-    userInput = inputBuffer; // Return the user input
+    RestoreConsoleInputMode();
+    userInput = inputBuffer;
 }
 
-float KablamEngine::GetAverageFPS(float anotherTimeValue)
-{
-    float total{ 0.0f };
+void KablamEngine::SetConsoleInputMode(DWORD modeFlags) {
+    DWORD prevConsoleMode;
+    GetConsoleMode(hConsoleInput, &prevConsoleMode);
+    SetConsoleMode(hConsoleInput, prevConsoleMode & modeFlags);
+}
 
-    // add new value
-    elapsedTimeDeque.push_back(anotherTimeValue);
-
-    // If the deque exceeds the maximum size, remove the oldest element
-    if (elapsedTimeDeque.size() > MAX_SIZE_DEQUE) {
-        elapsedTimeDeque.pop_front();
-    }
-
-    // get total
-    for (float &time : elapsedTimeDeque)
-        total += time;
-
-    // return average FPS
-    return 1.0f / (total / elapsedTimeDeque.size());
+void KablamEngine::RestoreConsoleInputMode() {
+    DWORD prevConsoleMode;
+    GetConsoleMode(hConsoleInput, &prevConsoleMode);
+    SetConsoleMode(hConsoleInput, prevConsoleMode);
 }
 
 void KablamEngine::WaitForKeyPress()
@@ -1079,13 +1066,8 @@ void KablamEngine::WaitForKeyPress()
     // Flush the console input buffer to clear out any prior key presses
     FlushConsoleInputBuffer(hConsoleInput);
 
-    // Save the current console mode
-    DWORD prevConsoleMode;
-    GetConsoleMode(hConsoleInput, &prevConsoleMode);
-
-    // Disable echo input (to prevent showing typed characters) and line input
-    DWORD newConsoleMode = prevConsoleMode & ~(ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT);
-    SetConsoleMode(hConsoleInput, newConsoleMode);
+    // set input mode
+    SetConsoleInputMode(~(ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT));
 
     INPUT_RECORD ir;
     DWORD numRead;
@@ -1103,8 +1085,28 @@ void KablamEngine::WaitForKeyPress()
         Sleep(100);
     }
 
-    // Restore the original console mode
-    SetConsoleMode(hConsoleInput, prevConsoleMode);
+    // restore input
+    RestoreConsoleInputMode();
+}
+
+float KablamEngine::GetAverageFPS(float anotherTimeValue)
+{
+    float total{ 0.0f };
+
+    // add new value
+    elapsedTimeDeque.push_back(anotherTimeValue);
+
+    // If the deque exceeds the maximum size, remove the oldest element
+    if (elapsedTimeDeque.size() > MAX_SIZE_DEQUE) {
+        elapsedTimeDeque.pop_front();
+    }
+
+    // get total
+    for (float& time : elapsedTimeDeque)
+        total += time;
+
+    // return average FPS
+    return 1.0f / (total / elapsedTimeDeque.size());
 }
 
 // STATIC MEMBERS

@@ -51,6 +51,21 @@ protected:
     // constants
     constexpr static short INPUT_BUFFER_SIZE{ 32 };
 
+    // pop-up message constants
+    const short ALERT_MESSAGE_TEXT_COLOUR = FG_WHITE;
+    const short ALERT_MESSAGE_RECT_COLOUR = FG_DARK_MAGENTA;
+    const short ALERT_MESSAGE_COLOUR_SCHEME = ALERT_MESSAGE_TEXT_COLOUR | FG_DARK_MAGENTA << 4;
+    const std::wstring ALERT_BASE_MESSAGE = L"Press any key to continue...";
+
+    const short INPUT_MESSAGE_TEXT_COLOUR = FG_WHITE;
+    const short INPUT_MESSAGE_RECT_COLOUR = FG_DARK_BLUE;
+    const short INPUT_MESSAGE_COLOUR_SCHEME = INPUT_MESSAGE_TEXT_COLOUR | FG_DARK_BLUE << 4;
+    const std::wstring INPUT_BASE_MESSAGE = L"Input > ";
+
+    const int MESSAGE_BORDER_SIZE = 3;
+    const int MESSAGE_LINES = 3;
+    const int MIN_MESSAGE_LENGTH = 28; // accommodate base message/input area
+
     // pointer to instance
     static KablamEngine* instance;
 
@@ -189,11 +204,16 @@ protected:
     std::wstring GetFormattedDateTime();
     int Error(const wchar_t* msg, short errorCode = 1);
     int CleanUp();
+
+    void DrawMessageBox(const std::wstring& message, int messageLines, bool inputMode);
     void DisplayAlertMessage(const std::wstring& message);
     void DisplayAlertMessageWithInput(const std::wstring& message, std::wstring& userInput);
+    void WaitForKeyPress();
+    void SetConsoleInputMode(DWORD modeFlags);
+    void RestoreConsoleInputMode();
+
 
     float GetAverageFPS(float elapsedTimeValue);
-    void WaitForKeyPress();
 
 public:
     COORD GetMousePosition();

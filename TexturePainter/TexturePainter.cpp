@@ -427,7 +427,7 @@ bool TexturePainter::HandleKeyPress()
 
             while (!validInput)
             {
-                DisplayAlertMessageWithInput(L"Please enter a new texture name (enter 'Q' to quit): ", userInput);
+                DisplayAlertMessageWithInput(L"Please enter a new texture name (enter 'Q' to quit)...", userInput);
 
                 // Check if the user wants to abort the input
                 if (userInput == L"Q" || userInput == L"q") {
