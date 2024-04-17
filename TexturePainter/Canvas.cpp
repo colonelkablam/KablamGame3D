@@ -341,7 +341,7 @@ void Canvas::ClearCurrentBrushstrokeTexture() {
 // used by UndoRedoManager to apply the brushTexture to the background
 void Canvas::ApplyBrushstrokeTextureToBackground(const Brushstroke& stroke) 
 {
-    textureSaved = false;
+    textureSaved = false; // changed background texture
 
     for (const auto& change : stroke.changes) {
 
@@ -363,7 +363,7 @@ void Canvas::ApplyBrushstrokeTextureToBackground(const Brushstroke& stroke)
 // used by UndoRedoManager to apply the undo of the brushTexture to the background
 void Canvas::ApplyUndoBrushstroke(const Brushstroke& stroke)
 {
-    textureSaved = false;
+    textureSaved = false; // changed background texture
 
     for (const auto& change : stroke.changes) {
         // Set the glyph and color at the specified position to their new values
