@@ -77,7 +77,8 @@ private:
         short glyph; // Character values before and after the change
         short colour; // Color values before and after the change
     };
-    // container of TextureChanges
+
+    // container of pixel samples (makes a texture sample)
     struct TextureSample {
         int width{ 0 }, height{ 0 };
         std::vector<PixelSample> pixels;
