@@ -22,7 +22,7 @@ Canvas::Canvas(TexturePainter& drawer, int width, int height, int illumination, 
     canvasViewOffset{ 0, 0 },
     zoomLevel{ START_ZOOM_LEVEL },
     currentToolState{ nullptr },
-    clipboardTexture{ nullptr },
+    clipboardTexture{ new TextureSample },
     coordinateStrategy{std::move(std::make_unique<CanvasCoordinateStrategy>(topLeft, canvasViewOffset, zoomLevel))}
 {
     Initialise(saveFolder, fileName);
@@ -295,20 +295,20 @@ Canvas::Brushstroke Canvas::CaptureDifferential() {
 }
 
 // used to grab the background backgroundTexture within a rectangle
-Canvas::TextureSample Canvas::GrabTextureSample(COORD topLeft, COORD bottomRight) {
-    Canvas::TextureSample sample;
+void Canvas::AddTextureSampleToClipboard(COORD topLeft, COORD bottomRight) {
+    TextureSample* sample = new TextureSample;
 
     // Determine the actual top-left and bottom-right corners considering any orientation
     COORD actualTopLeft = { std::min(topLeft.X, bottomRight.X), std::min(topLeft.Y, bottomRight.Y) };
     COORD actualBottomRight = { std::max(topLeft.X, bottomRight.X), std::max(topLeft.Y, bottomRight.Y) };
 
     // Clamp the coordinates within the texture's dimensions
-    actualBottomRight.X = std::min(actualBottomRight.X, (short)(backgroundTexture.GetWidth() - 1));
-    actualBottomRight.Y = std::min(actualBottomRight.Y, (short)(backgroundTexture.GetHeight() - 1));
+    actualBottomRight.X = std::min(actualBottomRight.X, static_cast<short>(backgroundTexture.GetWidth() - 1));
+    actualBottomRight.Y = std::min(actualBottomRight.Y, static_cast<short>(backgroundTexture.GetHeight() - 1));
 
     // Set sample width and height
-    sample.width = actualBottomRight.X - actualTopLeft.X + 1;
-    sample.height = actualBottomRight.Y - actualTopLeft.Y + 1;
+    sample->width = actualBottomRight.X - actualTopLeft.X + 1;
+    sample->height = actualBottomRight.Y - actualTopLeft.Y + 1;
 
     for (int y = actualTopLeft.Y; y <= actualBottomRight.Y; ++y) {
         for (int x = actualTopLeft.X; x <= actualBottomRight.X; ++x) {
@@ -324,7 +324,7 @@ Canvas::TextureSample Canvas::GrabTextureSample(COORD topLeft, COORD bottomRight
             }
 
             // Record the texture's glyph and colour, normalised to start from (0, 0)
-            sample.pixels.push_back(PixelSample{
+            sample->pixels.push_back(PixelSample{
                 x - actualTopLeft.X, // Normalise positions
                 y - actualTopLeft.Y,
                 glyph,
@@ -333,31 +333,24 @@ Canvas::TextureSample Canvas::GrabTextureSample(COORD topLeft, COORD bottomRight
         }
     }
 
-    return sample;
+    // Replace the old clipboard texture with the new one
+    delete clipboardTexture; // Safely delete the old texture
+    clipboardTexture = sample; // Point to the new texture
 }
 
-    // Method to get the current texture sample from the active tool state
-Canvas::TextureSample Canvas::GetTextureSample() {
-    auto copyBrushState = dynamic_cast<CopyBrushState*>(currentToolState);
-    if (copyBrushState) {
-        return copyBrushState->GetTextureSample();
-    }
-    else {
-        throw std::runtime_error("Current tool state is not a CopyBrushState.");
-    }
+// Method to get the current texture sample from the active tool state
+Canvas::TextureSample* Canvas::GetClipboardTextureSample() const {
+    return clipboardTexture;
 }
 
- // Method to set a texture sample into the active tool state
-void Canvas::SetTextureSample(const TextureSample& textureSample) {
-    auto copyBrushState = dynamic_cast<CopyBrushState*>(currentToolState);
-    if (copyBrushState) {
-        copyBrushState->SetTextureSample(textureSample);
-    }
-    else {
-        throw std::runtime_error("Current tool state is not a CopyBrushState.");
+// Method to set a new texture sample into the clipboard
+void Canvas::SetClipboardTextureSample(TextureSample* newTextureSample) {
+    if (newTextureSample != clipboardTexture) {
+        delete clipboardTexture; // Safely delete the old texture
+        // Deep copy the new texture with default copy construtor (don't want to point to same data)
+        clipboardTexture = new TextureSample(*newTextureSample);
     }
 }
-
 
 void Canvas::ClearCurrentBrushstrokeTexture() {
     currentBrushStrokeTexture.Clear();
@@ -513,9 +506,9 @@ void Canvas::PaintRectangleGlyphs(int x0, int y0, int x1, int y1, bool filled, i
     }
 }
 
-void Canvas::PaintTextureSample(const TextureSample& sample, COORD topLeft, bool partialSample)
+void Canvas::PaintClipboardTextureSample(COORD topLeft, bool partialSample)
 {
-    for (const auto& pixel : sample.pixels) {
+    for (const auto& pixel : clipboardTexture->pixels) {
         // Calculate the new position by adding the top-left offset
         int newX = pixel.x + topLeft.X;
         int newY = pixel.y + topLeft.Y;

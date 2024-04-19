@@ -185,21 +185,10 @@ class CopyBrushState : public IToolState {
 
     bool textureBeenSampled{ false };
     bool drawPartialSample{ true };
-    Canvas::TextureSample textureSample{};
 
 public:
     CopyBrushState(Canvas& canvas)
         : IToolState{ canvas } {}
-
-    Canvas::TextureSample GetTextureSample()
-    {
-        return textureSample;
-    }
-
-    void SetTextureSample(Canvas::TextureSample newSample)
-    {
-        textureSample = newSample;
-    }
 
     void HandleBrushStroke(COORD mouseCoords) override {
         
@@ -212,15 +201,14 @@ public:
             }
             else
             {
-                int size = canvas.GetBrushSize();
                 canvas.ClearCurrentBrushstrokeTexture();
                 canvas.PaintRectangleGlyphs(initialClickCoords.X, initialClickCoords.Y, mouseCoords.X, mouseCoords.Y, false, 1);
             }
         }
         else
         {
-            COORD placement{ mouseCoords.X - (short)textureSample.width + 1, mouseCoords.Y - (short)textureSample.height + 1};
-            canvas.PaintTextureSample(textureSample, placement, drawPartialSample);
+            COORD placement{ mouseCoords.X - (short)canvas.GetClipboardTextureSample()->width + 1, mouseCoords.Y - (short)canvas.GetClipboardTextureSample()->height + 1};
+            canvas.PaintClipboardTextureSample(placement, drawPartialSample);
         }
 
     }
@@ -229,7 +217,7 @@ public:
         if (!textureBeenSampled)
         {
             canvas.ClearCurrentBrushstrokeTexture();
-            textureSample = canvas.GrabTextureSample(initialClickCoords, mouseCoords);
+            canvas.AddTextureSampleToClipboard(initialClickCoords, mouseCoords);
             textureBeenSampled = true;
         }
         else
@@ -239,8 +227,8 @@ public:
     }
 
     void DisplayPointer(COORD mouseCoords) {
-        int width = textureSample.width;
-        int height = textureSample.height;
+        int width = canvas.GetClipboardTextureSample()->width;
+        int height = canvas.GetClipboardTextureSample()->height;
         int zoom = canvas.GetZoomLevel();
 
         // Calculate base coordinates for drawing
@@ -249,7 +237,7 @@ public:
         int baseY = pixelCoord.Y - (height - 1) * zoom;
 
         // Iterate through sample pixels
-        for (const Canvas::PixelSample& pixel : textureSample.pixels) {
+        for (const Canvas::PixelSample& pixel : canvas.GetClipboardTextureSample()->pixels) {
             int x = baseX + pixel.x * zoom;
             int y = baseY + pixel.y * zoom;
 
@@ -284,7 +272,7 @@ public:
     {
         initialClick = false;
         textureBeenSampled = false;
-        textureSample.Reset();
+        canvas.GetClipboardTextureSample()->Reset();
     }
 };
 

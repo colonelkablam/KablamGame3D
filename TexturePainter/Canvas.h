@@ -79,7 +79,7 @@ private:
     };
     // container of TextureChanges
     struct TextureSample {
-        int width, height;
+        int width{ 0 }, height{ 0 };
         std::vector<PixelSample> pixels;
         void Reset()
         {
@@ -147,9 +147,10 @@ public:
     void ApplyUndoBrushstroke(const Brushstroke& stroke);
     
     Brushstroke CaptureDifferential();
-    TextureSample GrabTextureSample(COORD topLeft, COORD bottomRight);
-    TextureSample GetTextureSample();
-    void SetTextureSample(const TextureSample& sample);
+
+    void AddTextureSampleToClipboard(COORD topLeft, COORD bottomRight);
+    TextureSample* GetClipboardTextureSample() const;
+    void SetClipboardTextureSample(TextureSample* newTextureSample);
 
     void SetBrushToDelete();
     void ChangeBrushSize(int sizeChange);
@@ -159,7 +160,7 @@ public:
     void PaintBlock(int x, int y, int sideLength);
     void PaintRectangleCoords(int x0, int y0, int x1, int y1, bool filled = true, int lineWidth = 1);
     void PaintRectangleGlyphs(int x0, int y0, int x1, int y1, bool filled = true, int lineWidth = 1);
-    void PaintTextureSample(const TextureSample& sample, COORD topLeft, bool partialSample = false);
+    void PaintClipboardTextureSample(COORD topLeft, bool partialSample = false);
     
     void DrawCanvas();
     void DisplayBrushPointer(COORD);
