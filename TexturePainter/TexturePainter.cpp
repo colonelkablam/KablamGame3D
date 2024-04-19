@@ -66,7 +66,7 @@ bool TexturePainter::OnGameCreate()
     colourButtonsContainer->AddButton(true, deleteToolIcon, [this]() { currentCanvas->SetBrushToDelete(); });
 
     // container for tool bottons
-    brushButtonsContainer = new ButtonContainer(*this, BRUSH_BUTTON_XPOS, BRUSH_BUTTON_YPOS, 8, 1);
+    brushButtonsContainer = new ButtonContainer(*this, BRUSH_BUTTON_XPOS, BRUSH_BUTTON_YPOS, 9, 1);
 
     // load textures
     blockToolIcon = new Texture(L"./ToolIcons/block_tool_icon.txr");
@@ -77,6 +77,8 @@ bool TexturePainter::OnGameCreate()
     lineToolIcon = new Texture(L"./ToolIcons/line_tool_icon.txr");
     copyToolIcon = new Texture(L"./ToolIcons/copy_tool_icon.txr");
     copyToolToggleIcon = new Texture(L"./ToolIcons/copy_tool_toggle_icon.txr");
+    copyToolSaveIcon = new Texture(L"./ToolIcons/copy_tool_save_icon.txr");
+
 
     
     // populate it
@@ -88,6 +90,8 @@ bool TexturePainter::OnGameCreate()
     brushButtonsContainer->AddButton(true, rectFillToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_RECT_FILLED); });
     brushButtonsContainer->AddButton(true, copyToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_COPY); });
     brushButtonsContainer->AddButton(false, copyToolToggleIcon, [this]() { currentCanvas->ToggleCurrentToolOption(); });
+    brushButtonsContainer->AddButton(false, copyToolSaveIcon, [this]() {  });
+
 
 
 
@@ -278,7 +282,14 @@ bool TexturePainter::ChangeCanvas(size_t index)
 {
     if (index < canvases.size())
     {
+        // grab the sample from the old canvas as add to the new
+        canvases.at(index)->SetTextureSample(currentCanvas->GetTextureSample());
+        // swap to new canvas
         currentCanvas = canvases.at(index);
+        // update button containers
+        colourButtonsContainer->ActivateLastClicked();
+        brushButtonsContainer->ActivateLastClicked();
+
         return true;
     }
     else

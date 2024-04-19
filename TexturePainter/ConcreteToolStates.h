@@ -191,6 +191,16 @@ public:
     CopyBrushState(Canvas& canvas)
         : IToolState{ canvas } {}
 
+    Canvas::TextureSample GetTextureSample()
+    {
+        return textureSample;
+    }
+
+    void SetTextureSample(Canvas::TextureSample newSample)
+    {
+        textureSample = newSample;
+    }
+
     void HandleBrushStroke(COORD mouseCoords) override {
         
         if (!textureBeenSampled)

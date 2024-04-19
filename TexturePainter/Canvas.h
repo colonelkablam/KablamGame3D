@@ -87,6 +87,9 @@ private:
         }
     };
 
+    // stores cut texture sample
+    TextureSample* clipboardTexture;
+
     // container for the concrete classes
     std::unordered_map<ToolType, IToolState*> toolStates;
     // current toolState pointer
@@ -116,89 +119,53 @@ public:
     
 // instance methods
     bool SaveTexture(const std::wstring& filePath);
-
     bool LoadTexture(const std::wstring& filePath);
-
     const std::wstring& GetFileName();
-
     const std::wstring& GetFilePath();
-
     bool GetSavedState();
 
     int GetIllumination();
-
     int GetZoomLevel();
-
     void SetZoomLevel(int newZoomLevel);
-
     void IncreaseZoomLevel();
-
     void DecreaseZoomLevel();
-
     int GetTextureWidth();
-
     int GetTextureHeight();
-
     int GetBrushSize();
-
     short GetBrushColour();
-
     void SetBrushColour(short colour);
-
     void SetBrushColourAndGlyph(short colour, short glyph);
-
     void SwitchTool(ToolType type);
-
     void ToggleCurrentToolOption();
-
     int ChangeCanvasOffset(COORD change);
-
     bool AreCoordsWithinCanvas(COORD coords);
-
     void SetBrushTextureToBackground();
-
     void ClearCurrentBrushstrokeTexture();
-
     void HandleLeftMouseClick(COORD mouseCoords);
-
     void HandleLeftMouseRelease(COORD mouseCoords);
-
     void ApplyBrushstrokeTextureToBackground(const Brushstroke& stroke);
-    
     void ApplyUndoBrushstroke(const Brushstroke& stroke);
-
+    
     Brushstroke CaptureDifferential();
-
     TextureSample GrabTextureSample(COORD topLeft, COORD bottomRight);
+    TextureSample GetTextureSample();
+    void SetTextureSample(const TextureSample& sample);
 
     void SetBrushToDelete();
-    
     void ChangeBrushSize(int sizeChange);
-
     void PaintPoint(int x, int y);
-
     void PaintGlyph(int x, int y);
-
     void PaintLine(int x0, int y0, int x1, int y1, int lineThickness = 1);
-
     void PaintBlock(int x, int y, int sideLength);
-
     void PaintRectangleCoords(int x0, int y0, int x1, int y1, bool filled = true, int lineWidth = 1);
-
     void PaintRectangleGlyphs(int x0, int y0, int x1, int y1, bool filled = true, int lineWidth = 1);
-
     void PaintTextureSample(const TextureSample& sample, COORD topLeft, bool partialSample = false);
-
+    
     void DrawCanvas();
-
     void DisplayBrushPointer(COORD);
-
     void UndoLastCommand();
-
     void RedoLastCommand();
-
     int GetSizeUndoStack();
-
     int GetSizeRedoStack();
 };
 

@@ -141,4 +141,5 @@ void ButtonContainer::DrawButtons()
     // highlight last clicked
     drawingClass.DrawRectangleEdgeLength(buttons.at(lastClicked)->xPos - 1, buttons.at(lastClicked)->yPos - 1, buttons.at(lastClicked)->width + 2, buttons.at(lastClicked)->height + 2, TexturePainter::HIGHLIGHT_COLOUR, false, PIXEL_QUARTER);
 
+
 }

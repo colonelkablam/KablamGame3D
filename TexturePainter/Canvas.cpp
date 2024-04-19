@@ -22,6 +22,7 @@ Canvas::Canvas(TexturePainter& drawer, int width, int height, int illumination, 
     canvasViewOffset{ 0, 0 },
     zoomLevel{ START_ZOOM_LEVEL },
     currentToolState{ nullptr },
+    clipboardTexture{ nullptr },
     coordinateStrategy{std::move(std::make_unique<CanvasCoordinateStrategy>(topLeft, canvasViewOffset, zoomLevel))}
 {
     Initialise(saveFolder, fileName);
@@ -76,6 +77,8 @@ Canvas::~Canvas() {
     for (auto& toolState : toolStates) {
         delete toolState.second;
     }
+
+    delete clipboardTexture;
 }
 
 bool Canvas::SaveTexture(const std::wstring& filePath)
@@ -331,6 +334,28 @@ Canvas::TextureSample Canvas::GrabTextureSample(COORD topLeft, COORD bottomRight
     }
 
     return sample;
+}
+
+    // Method to get the current texture sample from the active tool state
+Canvas::TextureSample Canvas::GetTextureSample() {
+    auto copyBrushState = dynamic_cast<CopyBrushState*>(currentToolState);
+    if (copyBrushState) {
+        return copyBrushState->GetTextureSample();
+    }
+    else {
+        throw std::runtime_error("Current tool state is not a CopyBrushState.");
+    }
+}
+
+ // Method to set a texture sample into the active tool state
+void Canvas::SetTextureSample(const TextureSample& textureSample) {
+    auto copyBrushState = dynamic_cast<CopyBrushState*>(currentToolState);
+    if (copyBrushState) {
+        copyBrushState->SetTextureSample(textureSample);
+    }
+    else {
+        throw std::runtime_error("Current tool state is not a CopyBrushState.");
+    }
 }
 
 

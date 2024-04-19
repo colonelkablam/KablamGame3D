@@ -62,6 +62,7 @@ private:
     Texture* lineToolIcon;
     Texture* copyToolIcon;
     Texture* copyToolToggleIcon;
+    Texture* copyToolSaveIcon;
 
 public:
     // constructor
@@ -101,6 +102,7 @@ private:
     bool GatherNewTextureValues(std::wstring& textureName, int& textureWidth, int& textureHeight, int& illumination);
     bool GetInputWithValidation(const std::wstring& prompt, int& value, std::function<bool(int)> validator, const std::wstring& errorMessage);
     bool CheckIfSaveFolderExists();
+    bool SaveTextureSampleToClipboard();
 
 }; // end of TexturePainter class definition
 
