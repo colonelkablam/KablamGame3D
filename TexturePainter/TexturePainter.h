@@ -42,7 +42,7 @@ private:
     std::vector<std::wstring> availableFileList;
     std::vector <std::wstring> selectedList;
 
-    // vector for storing canvases and textures together for editing
+    // vector for storing canvases (currently only texture editing canvas)
     std::vector<Canvas*> canvases;
     int nCurrentCanvas = -1;
     // ptrs to manage current selected canvas and texture
@@ -91,8 +91,8 @@ private:
     void PrintFiles();
     void PrintEnteredTextures();
 
-    bool InitCanvasExistingTexture(const std::wstring& fileName);
-    bool InitCanvasNewTexture(int width, int height, int illuminated, const std::wstring& fileName);
+    bool AddExistingTextureToCanvas(const std::wstring& fileName);
+    bool AddNewTextureToCanvas(int width, int height, int illuminated, const std::wstring& fileName);
     bool IsFileAlreadySelected(const std::wstring& fileName);
     bool ChangeCanvas(size_t index);
     void DrawHeadingInfo(int x, int y);

@@ -57,6 +57,13 @@ private:
 
     // main canvas texture
     Texture backgroundTexture;
+
+    // texture holder for filePath and texture
+    std::vector<std::pair<std::wstring, Texture*>> textures;
+
+    // current texture
+    Texture* currentTexture;
+
     // texture of brushStroke
     Texture currentBrushStrokeTexture;
 
