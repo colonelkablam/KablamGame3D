@@ -15,62 +15,34 @@
 
 
 // Primary constructor that does all the work
-Canvas::Canvas(TexturePainter& drawer, int width, int height, int illumination, const std::wstring& saveFolder, const std::wstring& fileName, short xPos, short yPos)
+Canvas::Canvas(TexturePainter& drawer, const std::wstring& saveFolder, short xPos, short yPos)
     : drawingClass{ drawer },
-    backgroundTexture{ width, height, illumination },
+    currentTextureIndex{ -1 },
+    currentTexture{ nullptr },
+    currentBrushStrokeTexture{ nullptr },
     topLeft{ xPos, yPos },
     canvasViewOffset{ 0, 0 },
     zoomLevel{ START_ZOOM_LEVEL },
     currentToolState{ nullptr },
-    clipboardTexture{ new TextureSample },
-    coordinateStrategy{std::move(std::make_unique<CanvasCoordinateStrategy>(topLeft, canvasViewOffset, zoomLevel))}
-{
-    Initialise(saveFolder, fileName);
-    PostInitialise();
-}
-
-// Delegating constructor for texture loading from file
-Canvas::Canvas(TexturePainter& drawer, const std::wstring& saveFolder, const std::wstring& fileName, short xPos, short yPos)
-    : Canvas(drawer, 0, 0, 0, saveFolder, fileName, xPos, yPos) // Delegate to the primary constructor
-{
-    std::wstring fullPath = saveFolder + fileName;
-    // Attempt to load the texture;
-    if (!backgroundTexture.LoadFrom(fullPath)) {
-        // Fallback initialization if loading fails
-        backgroundTexture = Texture{};
+    clipboardTexture{ nullptr },
+    coordinateStrategy{ std::move(std::make_unique<CanvasCoordinateStrategy>(topLeft, canvasViewOffset, zoomLevel)) },
+    saveFolder{ saveFolder },
+    currentBrushType{ STARTING_TOOL },
+    brushSize{ START_BRUSH_SIZE },
+    currentPixel{ STARTING_GLYPH, STARTING_COLOUR },
+    deletePixel{ L'X', FG_WHITE },
+    cutPixel{ L'.', FG_DARK_YELLOW },
+    bottomRight{ static_cast<short>(topLeft.X + TexturePainter::CANVAS_DISPLAY_WIDTH),
+                 static_cast<short>(topLeft.Y + TexturePainter::CANVAS_DISPLAY_HEIGHT) },
+    toolStates{
+         {ToolType::BRUSH_BLOCK, new BlockBrushState(*this)},
+         {ToolType::BRUSH_LINE, new LineBrushState(*this)},
+         {ToolType::BRUSH_RECT, new RectBrushState(*this)},
+         {ToolType::BRUSH_RECT_FILLED, new FilledRectBrushState(*this)},
+         {ToolType::BRUSH_COPY, new CopyBrushState(*this)}                  }
+    {
+        SwitchTool(STARTING_TOOL);
     }
-    PostInitialise();
-}
-
-// common initialisation handled here
-void Canvas::Initialise(const std::wstring& saveFolder, const std::wstring& fileName) {
-    this->fileName = fileName;
-    filePath = saveFolder + this->fileName;
-    textureSaved = true;
-    currentBrushType = STARTING_TOOL;
-    brushSize = START_BRUSH_SIZE;
-    currentPixel = { STARTING_GLYPH, STARTING_COLOUR };
-    deletePixel = { L'X', FG_WHITE };
-    cutPixel = { L'.', FG_DARK_YELLOW };
-    bottomRight = { static_cast<short>(topLeft.X + TexturePainter::CANVAS_DISPLAY_WIDTH),
-                    static_cast<short>(topLeft.Y + TexturePainter::CANVAS_DISPLAY_HEIGHT) };
-
-    toolStates[ToolType::BRUSH_BLOCK] = new BlockBrushState(*this);
-    toolStates[ToolType::BRUSH_LINE] = new LineBrushState(*this);
-    toolStates[ToolType::BRUSH_RECT] = new RectBrushState(*this);
-    toolStates[ToolType::BRUSH_RECT_FILLED] = new FilledRectBrushState(*this);
-    toolStates[ToolType::BRUSH_COPY] = new CopyBrushState(*this);
-
-}
-
-// post initialisation settings
-void Canvas::PostInitialise()
-{   
-    // create stroke texture after background created or loaded
-    currentBrushStrokeTexture = Texture{ backgroundTexture.GetWidth(), backgroundTexture.GetHeight() };
-    // starting tool
-    SwitchTool(STARTING_TOOL);
-}
 
 // destructor
 Canvas::~Canvas() {
@@ -78,49 +50,120 @@ Canvas::~Canvas() {
         delete toolState.second;
     }
 
+    for (auto& texture : textures) {
+        delete texture.second;
+    }
+
     delete clipboardTexture;
+    delete currentTexture;
+    delete currentBrushStrokeTexture;
 }
 
-bool Canvas::SaveTexture(const std::wstring& filePath)
+bool Canvas::SaveTexture(const std::wstring& fileName)
 {
-    if (backgroundTexture.SaveAs(filePath))
+    std::wstring filePath { saveFolder + fileName };
+    if (currentTexture->SaveAs(filePath))
     {
-        textureSaved = true;
         return true;
     }
     else
         return false;
 }
 
-bool Canvas::LoadTexture(const std::wstring& filePath)
+bool Canvas::LoadTexture(const std::wstring& fileName)
 {
-    if (backgroundTexture.LoadFrom(filePath))
+    std::wstring filePath{ saveFolder + fileName };
+    if (currentTexture->LoadFrom(filePath))
     {
-        textureSaved = true;
         return true;
     }
     else
         return false;
 }
 
-const std::wstring& Canvas::GetFileName()
+const std::wstring& Canvas::GetCurrentTextureName()
 {
-    return fileName;
+    if (currentTextureIndex < 0)
+        return L"No texture loaded.";
+    else
+        return textures.at(currentTextureIndex).first;
 }
 
-const std::wstring& Canvas::GetFilePath()
+const std::wstring& Canvas::GetSaveFolder()
 {
-    return filePath;
+    return saveFolder;
 }
 
-bool Canvas::GetSavedState()
+void Canvas::AddNewTexture(int width, int height, int illumination, std::wstring fileName)
 {
-    return textureSaved;
+    // add a pair<fileName, Texture*> to textures vector
+    Texture* newTexture = new Texture(width, height, illumination);
+    textures.push_back({ fileName, newTexture });
+
+    // save new texture to file
+    newTexture->SaveAs(saveFolder + fileName);
+}
+
+void Canvas::AddExistingTexture(const std::wstring& fileName)
+{
+    // add a pair<fileName, Texture*> to textures vector
+    Texture* newTexture = new Texture(saveFolder + fileName);
+    textures.push_back({ fileName, newTexture });
+}
+
+bool Canvas::IsFileAlreadySelected(const std::wstring& fileName)
+{
+    // Iterate over the vector of canvases
+    for (const auto& texture : textures)
+    {
+        if (texture.first == fileName)
+        {
+            std::wcout << L"\nThe file '" << fileName << L"' is already selected. Please choose a different file.\n\n";
+            return true;
+        }
+    }
+    return false; // Return false if no matching file name is found
+}
+
+void Canvas::PrintTextureDetails()
+{
+    for (const auto& texture : textures)
+    {
+        std::wcout << L"\nFile Name: " << texture.first
+                << L"\nSize (w * h): " << texture.second->GetWidth() << L" x " << texture.second->GetHeight()
+                << L"\nIllumination: " << texture.second->GetIllumination() << std::endl << std::endl;
+    }
+}
+
+size_t Canvas::GetNumberOfTextures()
+{
+    return textures.size();
+}
+
+const std::vector<std::pair<std::wstring, Texture*>>& Canvas::GetTexturesVector()
+{
+    return textures;
+}
+
+bool Canvas::ChangeTexture(size_t index)
+{
+    if (index < textures.size())
+    {
+        currentTextureIndex = index;
+        currentTexture = textures.at(index).second;
+
+        delete currentBrushStrokeTexture;
+        currentBrushStrokeTexture = new Texture(currentTexture->GetWidth(), currentTexture->GetHeight(), 0);
+    }
+    else
+    {
+        return false;
+    }
 }
 
 int Canvas::GetIllumination()
 {
-    return backgroundTexture.GetIllumination();
+    return currentTexture->GetIllumination();
 }
 
 int Canvas::GetZoomLevel()
@@ -149,12 +192,12 @@ void Canvas::DecreaseZoomLevel() {
 
 int Canvas::GetTextureWidth()
 {
-    return backgroundTexture.GetWidth();
+    return currentTexture->GetWidth();
 }
 
 int Canvas::GetTextureHeight()
 {
-    return backgroundTexture.GetHeight();
+    return currentTexture->GetHeight();
 }
 
 int Canvas::GetBrushSize()
@@ -212,8 +255,8 @@ int Canvas::ChangeCanvasOffset(COORD change)
     canvasViewOffset.X += change.X;
     canvasViewOffset.Y += change.Y;
 
-    int canvasWidth = backgroundTexture.GetWidth();
-    int canvasHeight = backgroundTexture.GetHeight();
+    int canvasWidth = currentTexture->GetWidth();
+    int canvasHeight = currentTexture->GetHeight();
 
     // Clamp canvasOffset.X to be within 0 and canvasWidth
     if (canvasViewOffset.X < 0)
@@ -268,16 +311,16 @@ void Canvas::SetBrushTextureToBackground()
 Canvas::Brushstroke Canvas::CaptureDifferential() {
     Canvas::Brushstroke stroke;
 
-    int width = backgroundTexture.GetWidth();
-    int height = backgroundTexture.GetHeight();
+    int width = currentTexture->GetWidth();
+    int height = currentTexture->GetHeight();
 
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
             // Capture the glyphs and colours from both textures
-            short bgGlyph = backgroundTexture.GetGlyph(x, y);
-            short cbstGlyph = currentBrushStrokeTexture.GetGlyph(x, y);
-            short bgColour = backgroundTexture.GetColour(x, y);
-            short cbstColour = currentBrushStrokeTexture.GetColour(x, y);
+            short bgGlyph = currentTexture->GetGlyph(x, y);
+            short cbstGlyph = currentBrushStrokeTexture->GetGlyph(x, y);
+            short bgColour = currentTexture->GetColour(x, y);
+            short cbstColour = currentBrushStrokeTexture->GetColour(x, y);
 
             // Check if there is a difference and the glyph in the brush stroke is not a space (otherwise whole texture is captured)
             if ((bgGlyph != cbstGlyph || bgColour != cbstColour) && cbstGlyph != L' ') {
@@ -303,8 +346,8 @@ void Canvas::AddTextureSampleToClipboard(COORD topLeft, COORD bottomRight) {
     COORD actualBottomRight = { std::max(topLeft.X, bottomRight.X), std::max(topLeft.Y, bottomRight.Y) };
 
     // Clamp the coordinates within the texture's dimensions
-    actualBottomRight.X = std::min(actualBottomRight.X, static_cast<short>(backgroundTexture.GetWidth() - 1));
-    actualBottomRight.Y = std::min(actualBottomRight.Y, static_cast<short>(backgroundTexture.GetHeight() - 1));
+    actualBottomRight.X = std::min(actualBottomRight.X, static_cast<short>(currentTexture->GetWidth() - 1));
+    actualBottomRight.Y = std::min(actualBottomRight.Y, static_cast<short>(currentTexture->GetHeight() - 1));
 
     // Set sample width and height
     sample->width = actualBottomRight.X - actualTopLeft.X + 1;
@@ -313,8 +356,8 @@ void Canvas::AddTextureSampleToClipboard(COORD topLeft, COORD bottomRight) {
     for (int y = actualTopLeft.Y; y <= actualBottomRight.Y; ++y) {
         for (int x = actualTopLeft.X; x <= actualBottomRight.X; ++x) {
             // Get the glyph and colour from the background texture
-            short glyph = backgroundTexture.GetGlyph(x, y);
-            short colour = backgroundTexture.GetColour(x, y);
+            short glyph = currentTexture->GetGlyph(x, y);
+            short colour = currentTexture->GetColour(x, y);
             
             // if an empty pixel then make it a 'delete' pixel
             if (glyph == L' ')
@@ -353,14 +396,12 @@ void Canvas::SetClipboardTextureSample(TextureSample* newTextureSample) {
 }
 
 void Canvas::ClearCurrentBrushstrokeTexture() {
-    currentBrushStrokeTexture.Clear();
+    currentBrushStrokeTexture->Clear();
 }
 
 // used by UndoRedoManager to apply the brushTexture to the background
 void Canvas::ApplyBrushstrokeTextureToBackground(const Brushstroke& stroke) 
 {
-    textureSaved = false; // changed background texture
-
     for (const auto& change : stroke.changes) {
 
         short glyph = change.newGlyph;
@@ -373,20 +414,18 @@ void Canvas::ApplyBrushstrokeTextureToBackground(const Brushstroke& stroke)
             colour = FG_BLACK;
         }
             // Set the glyph and color at the specified position to their new values
-        backgroundTexture.SetGlyph(change.x, change.y, glyph);
-        backgroundTexture.SetColour(change.x, change.y, colour);
+        currentTexture->SetGlyph(change.x, change.y, glyph);
+        currentTexture->SetColour(change.x, change.y, colour);
     }
 }
 
 // used by UndoRedoManager to apply the undo of the brushTexture to the background
 void Canvas::ApplyUndoBrushstroke(const Brushstroke& stroke)
 {
-    textureSaved = false; // changed background texture
-
     for (const auto& change : stroke.changes) {
         // Set the glyph and color at the specified position to their new values
-        backgroundTexture.SetGlyph(change.x, change.y, change.oldGlyph);
-        backgroundTexture.SetColour(change.x, change.y, change.oldColour);
+        currentTexture->SetGlyph(change.x, change.y, change.oldGlyph);
+        currentTexture->SetColour(change.x, change.y, change.oldColour);
     }
 }
 
@@ -398,17 +437,17 @@ void Canvas::ChangeBrushSize(int sizeChange)
 
 void Canvas::PaintPoint(int x, int y)
 {
-    currentBrushStrokeTexture.SetPixel(x, y, currentPixel);
+    currentBrushStrokeTexture->SetPixel(x, y, currentPixel);
 }
 
 // paint a glyph over existing background colour
 void Canvas::PaintGlyph(int x, int y)
 {
     // turn background texture colour (will be a fg_colour) into a background colour by bitshifting)
-    short bgColour = backgroundTexture.GetColour(x, y) << 4;
+    short bgColour = currentTexture->GetColour(x, y) << 4;
 
-    currentBrushStrokeTexture.SetGlyph(x, y, cutPixel.Char.UnicodeChar);
-    currentBrushStrokeTexture.SetColour(x, y, cutPixel.Attributes | bgColour);
+    currentBrushStrokeTexture->SetGlyph(x, y, cutPixel.Char.UnicodeChar);
+    currentBrushStrokeTexture->SetColour(x, y, cutPixel.Attributes | bgColour);
 }
 
 void Canvas::PaintLine(int x0, int y0, int x1, int y1, int lineThickness)
@@ -517,16 +556,16 @@ void Canvas::PaintClipboardTextureSample(COORD topLeft, bool partialSample)
         short colour = pixel.colour;
 
         // Ensure the new positions are within the texture's dimensions before applying the change
-        if (newX < currentBrushStrokeTexture.GetWidth() && newY < currentBrushStrokeTexture.GetHeight()) {
+        if (newX < currentBrushStrokeTexture->GetWidth() && newY < currentBrushStrokeTexture->GetHeight()) {
             // If partialSample is false, draw all pixels
             if (!partialSample) {
-                currentBrushStrokeTexture.SetGlyph(newX, newY, glyph);
-                currentBrushStrokeTexture.SetColour(newX, newY, colour);
+                currentBrushStrokeTexture->SetGlyph(newX, newY, glyph);
+                currentBrushStrokeTexture->SetColour(newX, newY, colour);
             }
             // If partialSample is true, only draw pixels that are not the deletePixel
             else if (glyph != deletePixel.Char.UnicodeChar) {
-                currentBrushStrokeTexture.SetGlyph(newX, newY, glyph);
-                currentBrushStrokeTexture.SetColour(newX, newY, colour);
+                currentBrushStrokeTexture->SetGlyph(newX, newY, glyph);
+                currentBrushStrokeTexture->SetColour(newX, newY, colour);
             }
         }
     }
@@ -554,7 +593,7 @@ void Canvas::DrawCanvas()
     drawingClass.DrawRectangleEdgeLength(topLeft.X, topLeft.Y, TexturePainter::CANVAS_DISPLAY_WIDTH, TexturePainter::CANVAS_DISPLAY_HEIGHT, FG_BLUE, true, L'.');
 
     // add texture to screen buffer
-    drawingClass.DrawSectionOfTextureToScreen(backgroundTexture, 
+    drawingClass.DrawSectionOfTextureToScreen(  *currentTexture,
                                                 topLeft,            // where to draw on screen
                                                 canvasViewOffset,   // top left of texture to start
                                                 coordinateStrategy->ConvertScreenToTexture(bottomRight), // bottom right of texture to stop
@@ -562,7 +601,7 @@ void Canvas::DrawCanvas()
                                                 true);
 
     // draw brush stroke as it is made
-    drawingClass.DrawPartialTextureToScreen(currentBrushStrokeTexture, 
+    drawingClass.DrawPartialTextureToScreen(    *currentBrushStrokeTexture, 
                                                 coordinateStrategy->AdjustForOffset(topLeft),
                                                 zoomLevel);
 

@@ -2,6 +2,7 @@
 
 #include <stack>
 #include <unordered_map>
+#include <iostream>
 #include "Texture.h"
 #include "UndoRedoManager.h"
 #include "ICoordinateStrategy.h"
@@ -42,10 +43,7 @@ private:
     CHAR_INFO deletePixel;
     CHAR_INFO cutPixel;
 
-    bool textureSaved;
-
-    std::wstring fileName;
-    std::wstring filePath;
+    std::wstring saveFolder;
 
     // position in screen window
     COORD topLeft;
@@ -55,17 +53,17 @@ private:
     int zoomLevel;
     COORD canvasViewOffset;
 
-    // main canvas texture
-    Texture backgroundTexture;
-
     // texture holder for filePath and texture
     std::vector<std::pair<std::wstring, Texture*>> textures;
+
+    // currentTextureIndex
+    int currentTextureIndex;
 
     // current texture
     Texture* currentTexture;
 
-    // texture of brushStroke
-    Texture currentBrushStrokeTexture;
+    // texture of brushStroke to be applied
+    Texture* currentBrushStrokeTexture;
 
     // data structures for holding brushstroke changes to canvas
     struct TextureChangePixel {
@@ -113,25 +111,26 @@ private:
     // Dependancy Injection from parent - able to draw to screen using the KABLAM engine
     TexturePainter& drawingClass;
 
-    // private initialiser methods
-    void Initialise(const std::wstring& saveFolder, const std::wstring& fileName);
-    void PostInitialise();
-
 public:
 // constructors.destructors etc
-    Canvas(TexturePainter& drawer, int width, int height, int illumination, const std::wstring& fileName, const std::wstring& filePath, short xPos, short yPos);
-
-    Canvas(TexturePainter& drawer, const std::wstring& saveFolder, const std::wstring& fileName, short xPos, short yPos);
+    Canvas(TexturePainter& drawer, const std::wstring& saveFile, short xPos, short yPos);
 
     ~Canvas();
     
 // instance methods
-    bool SaveTexture(const std::wstring& filePath);
-    bool LoadTexture(const std::wstring& filePath);
-    const std::wstring& GetFileName();
-    const std::wstring& GetFilePath();
-    bool GetSavedState();
+    bool SaveTexture(const std::wstring& fileName);
+    bool LoadTexture(const std::wstring& fileName);
+    const std::wstring& GetCurrentTextureName();
+    const std::wstring& GetSaveFolder();
 
+    void AddNewTexture(int width, int height, int illumination, std::wstring fileName);
+    void AddExistingTexture(const std::wstring& fileName);
+    bool IsFileAlreadySelected(const std::wstring& fileName);
+    void PrintTextureDetails();
+
+    size_t GetNumberOfTextures();
+    const std::vector<std::pair<std::wstring, Texture*>>& GetTexturesVector();
+    bool ChangeTexture(size_t index);
     int GetIllumination();
     int GetZoomLevel();
     void SetZoomLevel(int newZoomLevel);

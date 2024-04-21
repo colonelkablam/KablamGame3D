@@ -42,11 +42,8 @@ private:
     std::vector<std::wstring> availableFileList;
     std::vector <std::wstring> selectedList;
 
-    // vector for storing canvases (currently only texture editing canvas)
-    std::vector<Canvas*> canvases;
-    int nCurrentCanvas = -1;
-    // ptrs to manage current selected canvas and texture
-    Canvas* currentCanvas;
+    // canvas for editing textures
+    Canvas textureCanvas;
 
     // button containers
     ButtonContainer* colourButtonsContainer;
@@ -86,15 +83,14 @@ protected:
 private:
 
     bool HandleFileSelection(int selection, const std::wstring& fileName, const std::vector<std::wstring>& fileList);
-    void LoadTexture(const std::wstring& fileName);
     void CreateNewTexture(const std::wstring& fileName);
     void PrintFiles();
     void PrintEnteredTextures();
 
-    bool AddExistingTextureToCanvas(const std::wstring& fileName);
-    bool AddNewTextureToCanvas(int width, int height, int illuminated, const std::wstring& fileName);
+    void LoadExistingTextureToCanvas(const std::wstring& fileName);
+    void LoadNewTextureToCanvas(int width, int height, int illuminated, const std::wstring& fileName);
     bool IsFileAlreadySelected(const std::wstring& fileName);
-    bool ChangeCanvas(size_t index);
+    bool ChangeTexture(size_t index);
     void DrawHeadingInfo(int x, int y);
     void DrawToolInfo(int x, int y);
     void DrawButtons();

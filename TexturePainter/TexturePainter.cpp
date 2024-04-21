@@ -5,11 +5,10 @@
 
 // constructor stuff...
 TexturePainter::TexturePainter(std::wstring newTitle)
+    : textureCanvas(*this, SAVE_FOLDER, CANVAS_XPOS, CANVAS_YPOS)
 {
     sConsoleTitle = newTitle;
     eventLog.push_back(GetFormattedDateTime() + L" - Output of Error Log of last " + sConsoleTitle + L" session" + L":\n");
-
-    canvases.push_back(new Canvas(*this, CANVAS_XPOS, CANVAS_YPOS));
 
     deleteToolIcon = nullptr;
     blockToolIcon = nullptr;
@@ -24,12 +23,6 @@ TexturePainter::TexturePainter(std::wstring newTitle)
 
 TexturePainter::~TexturePainter()
 {
-    for (Canvas* canvas: canvases)
-    {
-        delete canvas;
-        canvas = nullptr;
-    }
-
      delete deleteToolIcon;
      delete blockToolIcon;
      delete increaseToolIcon;
@@ -43,14 +36,6 @@ TexturePainter::~TexturePainter()
 
 bool TexturePainter::OnGameCreate() 
 {
-    if (canvases.empty())
-    {
-        return Error(L"No textures loaded; unable to continue.");
-    }
-
-    nCurrentCanvas = 0;
-    currentCanvas = canvases.at(nCurrentCanvas);
-
     SetResizeWindowLock(true);
     SetConsoleFocusPause(true);
     SetWindowPosition(0, 0);
@@ -61,11 +46,11 @@ bool TexturePainter::OnGameCreate()
     // populate it 
     for (short colour = 0; colour < 8; ++colour) // For simplicity directly using the index as the color here and OR with FG_INTENSITY.
     {
-        colourButtonsContainer->AddButton(true, 5, 5, colour, [this, colour]() { currentCanvas->SetBrushColour(colour); });
-        colourButtonsContainer->AddButton(true, 5, 5, colour | FG_INTENSITY, [this, colour]() { currentCanvas->SetBrushColour(colour | FG_INTENSITY); });
+        colourButtonsContainer->AddButton(true, 5, 5, colour, [this, colour]() { textureCanvas.SetBrushColour(colour); });
+        colourButtonsContainer->AddButton(true, 5, 5, colour | FG_INTENSITY, [this, colour]() { textureCanvas.SetBrushColour(colour | FG_INTENSITY); });
     }
     deleteToolIcon = new Texture(L"./ToolIcons/delete_tool_icon.txr");
-    colourButtonsContainer->AddButton(true, deleteToolIcon, [this]() { currentCanvas->SetBrushToDelete(); });
+    colourButtonsContainer->AddButton(true, deleteToolIcon, [this]() { textureCanvas.SetBrushToDelete(); });
 
     // container for tool bottons
     brushButtonsContainer = new ButtonContainer(*this, BRUSH_BUTTON_XPOS, BRUSH_BUTTON_YPOS, 9, 1);
@@ -82,15 +67,17 @@ bool TexturePainter::OnGameCreate()
     copyToolSaveIcon = new Texture(L"./ToolIcons/copy_tool_save_icon.txr");
 
     // populate tool button container
-    brushButtonsContainer->AddButton(true, blockToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_BLOCK); });
-    brushButtonsContainer->AddButton(false, increaseToolIcon, [this]() { currentCanvas->ChangeBrushSize(1); });
-    brushButtonsContainer->AddButton(false, decreaseToolIcon, [this]() { currentCanvas->ChangeBrushSize(-1); });
-    brushButtonsContainer->AddButton(true, lineToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_LINE); });
-    brushButtonsContainer->AddButton(true, rectToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_RECT); });
-    brushButtonsContainer->AddButton(true, rectFillToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_RECT_FILLED); });
-    brushButtonsContainer->AddButton(true, copyToolIcon, [this]() { currentCanvas->SwitchTool(ToolType::BRUSH_COPY); });
-    brushButtonsContainer->AddButton(false, copyToolToggleIcon, [this]() { currentCanvas->ToggleCurrentToolOption(); });
+    brushButtonsContainer->AddButton(true, blockToolIcon, [this]() { textureCanvas.SwitchTool(ToolType::BRUSH_BLOCK); });
+    brushButtonsContainer->AddButton(false, increaseToolIcon, [this]() { textureCanvas.ChangeBrushSize(1); });
+    brushButtonsContainer->AddButton(false, decreaseToolIcon, [this]() { textureCanvas.ChangeBrushSize(-1); });
+    brushButtonsContainer->AddButton(true, lineToolIcon, [this]() { textureCanvas.SwitchTool(ToolType::BRUSH_LINE); });
+    brushButtonsContainer->AddButton(true, rectToolIcon, [this]() { textureCanvas.SwitchTool(ToolType::BRUSH_RECT); });
+    brushButtonsContainer->AddButton(true, rectFillToolIcon, [this]() { textureCanvas.SwitchTool(ToolType::BRUSH_RECT_FILLED); });
+    brushButtonsContainer->AddButton(true, copyToolIcon, [this]() { textureCanvas.SwitchTool(ToolType::BRUSH_COPY); });
+    brushButtonsContainer->AddButton(false, copyToolToggleIcon, [this]() { textureCanvas.ToggleCurrentToolOption(); });
     brushButtonsContainer->AddButton(false, copyToolSaveIcon, [this]() {  });
+
+    textureCanvas.ChangeTexture(0);
 
     return true;
 }
@@ -99,7 +86,7 @@ bool TexturePainter::OnGameUpdate(float fElapsedTime) {
     FillScreenBuffer(); // clear screen before next frame
     HandleKeyPress();
 
-    currentCanvas->DrawCanvas();
+    textureCanvas.DrawCanvas();
 
     DrawHeadingInfo(1, 1);
     DrawToolInfo(1, 11);
@@ -185,7 +172,7 @@ bool TexturePainter::HandleFileSelection(int selection, const std::wstring& file
         if (IsFileAlreadySelected(selectedFile) == true) 
             return false;
 
-        LoadTexture(selectedFile);
+        LoadExistingTextureToCanvas(selectedFile);
     }
     // User entered a file name
     else { 
@@ -195,7 +182,7 @@ bool TexturePainter::HandleFileSelection(int selection, const std::wstring& file
 
         if (FileExistInDir(fileList, fullFileName) == true) 
         {
-            LoadTexture(fullFileName);
+            LoadExistingTextureToCanvas(fullFileName);
         }
         else
         {
@@ -205,12 +192,6 @@ bool TexturePainter::HandleFileSelection(int selection, const std::wstring& file
     return true;
 }
 
-void TexturePainter::LoadTexture(const std::wstring& fileName)
-{
-    AddExistingTextureToCanvas(fileName);
-    selectedList.push_back(fileName);
-}
-
 void TexturePainter::CreateNewTexture(const std::wstring& fileName)
 {
     int width{ 0 }, height{ 0 }, illumination{ 0 };
@@ -218,8 +199,7 @@ void TexturePainter::CreateNewTexture(const std::wstring& fileName)
     GetDimensionInput(L"\nPlease enter an integer value for the new texture width: ", width, MIN_TEXTURE_WIDTH, MAX_TEXTURE_WIDTH);
     GetDimensionInput(L"\nPlease enter an integer value for the new texture height: ", height, MIN_TEXTURE_HEIGHT, MAX_TEXTURE_HEIGHT);
     GetDimensionInput(L"\nPlease enter illumination value 0 to 255 for the new texture: ", illumination, 0, MAX_ILLUMINATION_VALUE);
-    AddNewTextureToCanvas(width, height, illumination, fileName);
-    selectedList.push_back(fileName);
+    LoadNewTextureToCanvas(width, height, illumination, fileName);
 }
 
 void TexturePainter::PrintFiles()
@@ -232,51 +212,32 @@ void TexturePainter::PrintFiles()
 void TexturePainter::PrintEnteredTextures()
 {
     system("cls");
-    for (Canvas* canvas : canvases)
-    {
-        std::wcout << L"\nFile Name: " << canvas->GetFileName()
-                   << L"\nSize (w * h): " << canvas->GetTextureWidth() << L" x " << canvas->GetTextureHeight()
-                   << L"\nIllumination: " << canvas->GetIllumination() << std::endl << std::endl;
-    }
+    textureCanvas.PrintTextureDetails();
 }
 
-bool TexturePainter::AddNewTextureToCanvas(int width, int height, int illumination, const std::wstring& fileName)
+void TexturePainter::LoadNewTextureToCanvas(int width, int height, int illumination, const std::wstring& fileName)
 {
-    return currentCanvas->AddNewTexture(width, height, illumination, fileName);
+    textureCanvas.AddNewTexture(width, height, illumination, fileName);
+    selectedList.push_back(fileName);
 }
 
-bool TexturePainter::AddExistingTextureToCanvas(const std::wstring& fileName)
+void TexturePainter::LoadExistingTextureToCanvas(const std::wstring& fileName)
 {
-    return currentCanvas->AddExistingTexture(fileName);
-
+    textureCanvas.AddExistingTexture(fileName);
+    selectedList.push_back(fileName);
 }
+
+// needs sorting TBC
 
 bool TexturePainter::IsFileAlreadySelected(const std::wstring& fileName)
 {
-    // Iterate over the vector of canvases
-    for (const auto& canvas : canvases)
-    {
-        if (canvas->GetFileName() == fileName)
-        {
-            std::wcout << L"\nThe file '" << fileName << L"' is already selected. Please choose a different file.\n\n";
-            return true;
-        }
-    }
-    return false; // Return false if no matching file name is found
+    return false;
 }
 
-bool TexturePainter::ChangeCanvas(size_t index)
+bool TexturePainter::ChangeTexture(size_t index)
 {
-    if (index < canvases.size())
+    if (textureCanvas.ChangeTexture(index))
     {
-        // grab the sample from the old canvas as add to the new
-        canvases.at(index)->SetClipboardTextureSample(currentCanvas->GetClipboardTextureSample());
-        // swap to new canvas
-        currentCanvas = canvases.at(index);
-        // update button containers
-        colourButtonsContainer->ActivateLastClicked();
-        brushButtonsContainer->ActivateLastClicked();
-
         return true;
     }
     else
@@ -294,20 +255,18 @@ void TexturePainter::DrawHeadingInfo(int x, int y)
     int row3{ x + 116 };
 
     // texture info
-    WriteStringToBuffer(row1, y,     L"Current File Name:  " + currentCanvas->GetFileName(), FG_CYAN);
-    WriteStringToBuffer(row1, y + 1, L"File Path:          " + currentCanvas->GetFilePath(), FG_CYAN);
-    WriteStringToBuffer(row1, y + 3, L"Dimentions:         " + std::to_wstring(currentCanvas->GetTextureWidth()) + L" x " + std::to_wstring(currentCanvas->GetTextureHeight()));
-    WriteStringToBuffer(row1, y + 4, L"Illuminatation:     " + std::to_wstring(currentCanvas->GetIllumination()));
+    WriteStringToBuffer(row1, y,     L"Current File Name:  " + textureCanvas.GetCurrentTextureName(), FG_CYAN);
+    WriteStringToBuffer(row1, y + 1, L"Save Folder:        " + SAVE_FOLDER, FG_CYAN);
+    WriteStringToBuffer(row1, y + 3, L"Dimentions:         " + std::to_wstring(textureCanvas.GetTextureWidth()) + L" x " + std::to_wstring(textureCanvas.GetTextureHeight()));
+    WriteStringToBuffer(row1, y + 4, L"Illuminatation:     " + std::to_wstring(textureCanvas.GetIllumination()));
 
 
     // current textures
     WriteStringToBuffer(row2, y,     L"Texture List (number key to switch):", FG_BLUE);
     int count{ 1 };
-    for (const auto& canvas : canvases)
+    for (const auto& texture : textureCanvas.GetTexturesVector())
     {
-        std::wstring fileName{ canvas->GetFileName() };
-        std::wstring savedState = canvas->GetSavedState() ? L"  " : L" *"; // add '*' after name if not saved
-        WriteStringToBuffer(row2, y + count + 1, std::to_wstring(count) + L". " + fileName + savedState, FG_BLUE);
+        WriteStringToBuffer(row2, y + count + 1, std::to_wstring(count) + L". " + texture.first, FG_BLUE);
         count++;
     }
 
@@ -321,14 +280,14 @@ void TexturePainter::DrawHeadingInfo(int x, int y)
 
     WriteStringToBuffer(row3, y + 7, L"UNDO action            Ctrl Z", FG_GREEN);
     WriteStringToBuffer(row3, y + 8, L"REDO action            Ctrl Y", FG_GREEN);
-    WriteStringToBuffer(row3, y + 7, L"(" + std::to_wstring(currentCanvas->GetSizeUndoStack()) + L")", FG_GREEN);
-    WriteStringToBuffer(row3, y + 8, L"(" + std::to_wstring(currentCanvas->GetSizeRedoStack()) + L")", FG_GREEN);
+    WriteStringToBuffer(row3, y + 7, L"(" + std::to_wstring(textureCanvas.GetSizeUndoStack()) + L")", FG_GREEN);
+    WriteStringToBuffer(row3, y + 8, L"(" + std::to_wstring(textureCanvas.GetSizeRedoStack()) + L")", FG_GREEN);
 }
 
 void TexturePainter::DrawToolInfo(int x, int y)
 {
     WriteStringToBuffer(x + 4, y, L"Brush");
-    DrawBlock(x + 4, y + 2, currentCanvas->GetBrushSize(), currentCanvas->GetBrushColour() | BG_MAGENTA, PIXEL_THREEQUARTERS);
+    DrawBlock(x + 4, y + 2, textureCanvas.GetBrushSize(), textureCanvas.GetBrushColour() | BG_MAGENTA, PIXEL_THREEQUARTERS);
 }
 
 void TexturePainter::DrawButtons()
@@ -345,8 +304,8 @@ bool TexturePainter::HandleKeyPress()
     // when left mouse button pressed
     if (keyArray[VK_LBUTTON].bPressed)
     {
-        if (currentCanvas->AreCoordsWithinCanvas(mouseCoords))
-            currentCanvas->HandleLeftMouseClick(mouseCoords);
+        if (textureCanvas.AreCoordsWithinCanvas(mouseCoords))
+            textureCanvas.HandleLeftMouseClick(mouseCoords);
         else
         {
             // check if over any of the buttons when clicked
@@ -357,43 +316,43 @@ bool TexturePainter::HandleKeyPress()
     } // if continues to be held
     else if (keyArray[VK_LBUTTON].bHeld)
     {
-        if (currentCanvas->AreCoordsWithinCanvas(mouseCoords))
-            currentCanvas->HandleLeftMouseClick(mouseCoords);
+        if (textureCanvas.AreCoordsWithinCanvas(mouseCoords))
+            textureCanvas.HandleLeftMouseClick(mouseCoords);
     }
 
 
     // when left mouse lifted
     if (keyArray[VK_LBUTTON].bReleased)
     {
-        if (currentCanvas->AreCoordsWithinCanvas(mouseCoords))
-            currentCanvas->HandleLeftMouseRelease(mouseCoords);
+        if (textureCanvas.AreCoordsWithinCanvas(mouseCoords))
+            textureCanvas.HandleLeftMouseRelease(mouseCoords);
     }
 
     // makes right click a delete action
     if (keyArray[VK_RBUTTON].bHeld)
     {
-        if (currentCanvas->AreCoordsWithinCanvas(mouseCoords))
+        if (textureCanvas.AreCoordsWithinCanvas(mouseCoords))
         {
-            currentCanvas->SetBrushToDelete();
-            currentCanvas->HandleLeftMouseClick(mouseCoords);
+            textureCanvas.SetBrushToDelete();
+            textureCanvas.HandleLeftMouseClick(mouseCoords);
         }
     }
 
     // when right mouse lifted
     if (keyArray[VK_RBUTTON].bReleased)
     {
-        if (currentCanvas->AreCoordsWithinCanvas(mouseCoords))
-            currentCanvas->HandleLeftMouseRelease(mouseCoords);
+        if (textureCanvas.AreCoordsWithinCanvas(mouseCoords))
+            textureCanvas.HandleLeftMouseRelease(mouseCoords);
     }
 
     if (keyArray[VK_OEM_PLUS].bPressed)
     {
-        currentCanvas->IncreaseZoomLevel();
+        textureCanvas.IncreaseZoomLevel();
     }
 
     if (keyArray[VK_OEM_MINUS].bPressed)
     {
-        currentCanvas->DecreaseZoomLevel();
+        textureCanvas.DecreaseZoomLevel();
     }
 
     // loop through keys 1-9 to swap between preloaded textures
@@ -403,13 +362,13 @@ bool TexturePainter::HandleKeyPress()
 
         if (keyArray[numKey].bPressed)
         {
-            if (i < canvases.size())
+            if (i < textureCanvas.GetNumberOfTextures())
             {
                 // i is position in the canvas vector
-                std::wstring fileName = canvases.at(i)->GetFileName();
+                std::wstring fileName = textureCanvas.GetTexturesVector().at(i).first;
                 std::wstring message = L"Loading Canvas " + std::to_wstring(i + 1) + L". " + fileName;
                 DisplayAlertMessage(message);
-                ChangeCanvas(i);
+                ChangeTexture(i);
             }
             else
             {
@@ -419,7 +378,7 @@ bool TexturePainter::HandleKeyPress()
     }
 
     if (keyArray[L'0'].bPressed) {
-        if (canvases.size() >= 9) {
+        if (textureCanvas.GetTexturesVector().size() >= 9) {
             DisplayAlertMessage(L"Maximum number of textures loaded, new texture creation aborted.");
         }
         else {
@@ -430,9 +389,8 @@ bool TexturePainter::HandleKeyPress()
             if (GatherNewTextureValues(textureName, textureWidth, textureHeight, illumination))
             {
                 // Create the texture
-                AddNewTextureToCanvas(textureWidth, textureHeight, illumination, textureName);
-                selectedList.push_back(textureName);
-                ChangeCanvas(canvases.size() - 1);
+                LoadNewTextureToCanvas(textureWidth, textureHeight, illumination, textureName);
+                ChangeTexture(textureCanvas.GetNumberOfTextures() - 1);
                 DisplayAlertMessage(L"Texture created successfully.");
             }
             else
@@ -445,8 +403,8 @@ bool TexturePainter::HandleKeyPress()
 
     if (keyArray[VK_F5].bPressed)
     {
-        std::wstring filePath{ currentCanvas->GetFilePath() };
-        if (currentCanvas->SaveTexture(filePath))
+        std::wstring filePath{ textureCanvas.GetCurrentTextureName() };
+        if (textureCanvas.SaveTexture(filePath))
             DisplayAlertMessage(filePath + L" saved");
         else
             DisplayAlertMessage(L"Unable to save " + filePath);
@@ -454,8 +412,8 @@ bool TexturePainter::HandleKeyPress()
 
     if (keyArray[VK_F9].bPressed)
     {
-        std::wstring filePath{ currentCanvas->GetFilePath() };
-        if (currentCanvas->LoadTexture(filePath))
+        std::wstring filePath{ textureCanvas.GetCurrentTextureName() };
+        if (textureCanvas.LoadTexture(filePath))
             DisplayAlertMessage(filePath + L" re-loaded");
         else
             DisplayAlertMessage(L"Unable to load " + filePath);
@@ -464,24 +422,24 @@ bool TexturePainter::HandleKeyPress()
     // arrow keys to scroll canvas view
     if (keyArray[VK_RIGHT].bHeld)
     {
-        currentCanvas->ChangeCanvasOffset({1, 0});
+        textureCanvas.ChangeCanvasOffset({1, 0});
         Sleep(20);
     }
     if (keyArray[VK_LEFT].bHeld)
     {
-        currentCanvas->ChangeCanvasOffset({ -1, 0 });
+        textureCanvas.ChangeCanvasOffset({ -1, 0 });
         Sleep(20);
 
     }
     if (keyArray[VK_UP].bHeld)
     {
-        currentCanvas->ChangeCanvasOffset({ 0, -1 });
+        textureCanvas.ChangeCanvasOffset({ 0, -1 });
         Sleep(20);
 
     }
     if (keyArray[VK_DOWN].bHeld)
     {
-        currentCanvas->ChangeCanvasOffset({ 0, 1 });
+        textureCanvas.ChangeCanvasOffset({ 0, 1 });
         Sleep(20);
 
     }
@@ -489,12 +447,12 @@ bool TexturePainter::HandleKeyPress()
     // UNDO functionality
     if (keyArray[VK_CONTROL].bHeld && keyArray[L'Z'].bPressed)
     {
-        currentCanvas->UndoLastCommand();
+        textureCanvas.UndoLastCommand();
     }
     // REDO functionality
     if (keyArray[VK_CONTROL].bHeld && keyArray[L'Y'].bPressed)
     {
-        currentCanvas->RedoLastCommand();
+        textureCanvas.RedoLastCommand();
     }
 
     return true;
