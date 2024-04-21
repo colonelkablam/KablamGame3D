@@ -29,15 +29,6 @@ private:
     const int CANVAS_XPOS = 17;
     const int CANVAS_YPOS = 23;
 
-    // button containers
-    const int COLOUR_BUTTON_XPOS = 1;
-    const int COLOUR_BUTTON_YPOS = 22;
-    const int COLOUR_BUTTON_SIZE = 5;
-
-    const int BRUSH_BUTTON_XPOS = 16;
-    const int BRUSH_BUTTON_YPOS = 12;
-    const int BRUSH_BUTTON_SIZE = 5;
-
     // vectors for selecteding textures to work on
     std::vector<std::wstring> availableFileList;
     std::vector <std::wstring> selectedList;
@@ -47,22 +38,6 @@ private:
     int nCurrentCanvas = -1;
     // ptrs to manage current selected canvas and texture
     Canvas* currentCanvas;
-
-    // button containers
-    ButtonContainer* colourButtonsContainer;
-    ButtonContainer* brushButtonsContainer;
-
-    // containers for icons
-    Texture* deleteToolIcon;
-    Texture* blockToolIcon;
-    Texture* increaseToolIcon;
-    Texture* decreaseToolIcon;
-    Texture* rectToolIcon;
-    Texture* rectFillToolIcon;
-    Texture* lineToolIcon;
-    Texture* copyToolIcon;
-    Texture* copyToolToggleIcon;
-    Texture* copyToolSaveIcon;
 
 public:
     // constructor
@@ -91,13 +66,12 @@ private:
     void PrintFiles();
     void PrintEnteredTextures();
 
-    bool AddExistingTextureToCanvas(const std::wstring& fileName);
-    bool AddNewTextureToCanvas(int width, int height, int illuminated, const std::wstring& fileName);
+    void CreateCanvasWithExistingTexture(const std::wstring& fileName);
+    void CreateCanvasWithNewTexture(int width, int height, int illuminated, const std::wstring& fileName);
     bool IsFileAlreadySelected(const std::wstring& fileName);
     bool ChangeCanvas(size_t index);
     void DrawHeadingInfo(int x, int y);
     void DrawToolInfo(int x, int y);
-    void DrawButtons();
     bool HandleKeyPress();
     bool GatherNewTextureValues(std::wstring& textureName, int& textureWidth, int& textureHeight, int& illumination);
     bool GetInputWithValidation(const std::wstring& prompt, int& value, std::function<bool(int)> validator, const std::wstring& errorMessage);

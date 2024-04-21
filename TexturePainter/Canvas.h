@@ -5,6 +5,7 @@
 #include "Texture.h"
 #include "UndoRedoManager.h"
 #include "ICoordinateStrategy.h"
+#include "ButtonContainer.h"
 
 
 // Forward declarations to resolve circular dependencies
@@ -33,6 +34,15 @@ private:
     static const int START_BRUSH_SIZE = 1;
     static const ToolType STARTING_TOOL = ToolType::BRUSH_BLOCK;
 
+    // button container positions
+    const int COLOUR_BUTTON_XPOS = 1;
+    const int COLOUR_BUTTON_YPOS = 22;
+    const int COLOUR_BUTTON_SIZE = 5;
+
+    const int BRUSH_BUTTON_XPOS = 16;
+    const int BRUSH_BUTTON_YPOS = 12;
+    const int BRUSH_BUTTON_SIZE = 5;
+
     ToolType currentBrushType;
     int brushSize;
     bool initialClick;
@@ -55,14 +65,8 @@ private:
     int zoomLevel;
     COORD canvasViewOffset;
 
-    // main canvas texture
+    // main texture
     Texture backgroundTexture;
-
-    // texture holder for filePath and texture
-    std::vector<std::pair<std::wstring, Texture*>> textures;
-
-    // current texture
-    Texture* currentTexture;
 
     // texture of brushStroke
     Texture currentBrushStrokeTexture;
@@ -98,6 +102,22 @@ private:
     // stores cut texture sample
     TextureSample* clipboardTexture;
 
+    // canvas button containers
+    ButtonContainer* colourButtonsContainer;
+    ButtonContainer* brushButtonsContainer;
+
+    // containers for icons
+    Texture* deleteToolIcon;
+    Texture* blockToolIcon;
+    Texture* increaseToolIcon;
+    Texture* decreaseToolIcon;
+    Texture* rectToolIcon;
+    Texture* rectFillToolIcon;
+    Texture* lineToolIcon;
+    Texture* copyToolIcon;
+    Texture* copyToolToggleIcon;
+    Texture* copyToolSaveIcon;
+
     // container for the concrete classes
     std::unordered_map<ToolType, IToolState*> toolStates;
     // current toolState pointer
@@ -131,6 +151,10 @@ public:
     const std::wstring& GetFileName();
     const std::wstring& GetFilePath();
     bool GetSavedState();
+
+    void PopulateColourButtonsContainer();
+    void PopulateToolButtonsContainer();
+    void HandleAnyButtonsClicked(COORD mouseCoords);
 
     int GetIllumination();
     int GetZoomLevel();
@@ -171,6 +195,7 @@ public:
     void PaintClipboardTextureSample(COORD topLeft, bool partialSample = false);
     
     void DrawCanvas();
+    void DrawButtons();
     void DisplayBrushPointer(COORD);
     void UndoLastCommand();
     void RedoLastCommand();

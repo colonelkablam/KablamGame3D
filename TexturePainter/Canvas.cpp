@@ -37,7 +37,7 @@ Canvas::Canvas(TexturePainter& drawer, const std::wstring& saveFolder, const std
     // Attempt to load the texture;
     if (!backgroundTexture.LoadFrom(fullPath)) {
         // Fallback initialization if loading fails
-        backgroundTexture = Texture{};
+        backgroundTexture = Texture{12,12};
     }
     PostInitialise();
 }
@@ -55,6 +55,18 @@ void Canvas::Initialise(const std::wstring& saveFolder, const std::wstring& file
     bottomRight = { static_cast<short>(topLeft.X + TexturePainter::CANVAS_DISPLAY_WIDTH),
                     static_cast<short>(topLeft.Y + TexturePainter::CANVAS_DISPLAY_HEIGHT) };
 
+    // all tool button textures
+    deleteToolIcon = nullptr;
+    blockToolIcon = nullptr;
+    increaseToolIcon = nullptr;
+    decreaseToolIcon = nullptr;
+    rectToolIcon = nullptr;
+    rectFillToolIcon = nullptr;
+    lineToolIcon = nullptr;
+    copyToolIcon = nullptr;
+    copyToolToggleIcon = nullptr;
+
+    // all tool states
     toolStates[ToolType::BRUSH_BLOCK] = new BlockBrushState(*this);
     toolStates[ToolType::BRUSH_LINE] = new LineBrushState(*this);
     toolStates[ToolType::BRUSH_RECT] = new RectBrushState(*this);
@@ -70,6 +82,9 @@ void Canvas::PostInitialise()
     currentBrushStrokeTexture = Texture{ backgroundTexture.GetWidth(), backgroundTexture.GetHeight() };
     // starting tool
     SwitchTool(STARTING_TOOL);
+
+    PopulateColourButtonsContainer();
+    PopulateToolButtonsContainer();
 }
 
 // destructor
@@ -79,6 +94,16 @@ Canvas::~Canvas() {
     }
 
     delete clipboardTexture;
+
+    delete deleteToolIcon;
+    delete blockToolIcon;
+    delete increaseToolIcon;
+    delete decreaseToolIcon;
+    delete rectToolIcon;
+    delete rectFillToolIcon;
+    delete lineToolIcon;
+    delete copyToolIcon;
+    delete copyToolToggleIcon;
 }
 
 bool Canvas::SaveTexture(const std::wstring& filePath)
@@ -116,6 +141,56 @@ const std::wstring& Canvas::GetFilePath()
 bool Canvas::GetSavedState()
 {
     return textureSaved;
+}
+
+void Canvas::PopulateColourButtonsContainer()
+{
+    // container for colour buttons
+    colourButtonsContainer = new ButtonContainer(drawingClass, COLOUR_BUTTON_XPOS, COLOUR_BUTTON_YPOS, 2, 9);
+
+    // populate it 
+    for (short colour = 0; colour < 8; ++colour) // For simplicity directly using the index as the color here and OR with FG_INTENSITY.
+    {
+        colourButtonsContainer->AddButton(true, 5, 5, colour, [this, colour]() { SetBrushColour(colour); });
+        colourButtonsContainer->AddButton(true, 5, 5, colour | FG_INTENSITY, [this, colour]() { SetBrushColour(colour | FG_INTENSITY); });
+    }
+    deleteToolIcon = new Texture(L"./ToolIcons/delete_tool_icon.txr");
+    colourButtonsContainer->AddButton(true, deleteToolIcon, [this]() { SetBrushToDelete(); });
+}
+
+void Canvas::PopulateToolButtonsContainer()
+{
+    // container for tool bottons
+    brushButtonsContainer = new ButtonContainer(drawingClass, BRUSH_BUTTON_XPOS, BRUSH_BUTTON_YPOS, 9, 1);
+
+    // load textures
+    blockToolIcon = new Texture(L"./ToolIcons/block_tool_icon.txr");
+    increaseToolIcon = new Texture(L"./ToolIcons/increase_tool_icon.txr");
+    decreaseToolIcon = new Texture(L"./ToolIcons/decrease_tool_icon.txr");
+    rectToolIcon = new Texture(L"./ToolIcons/rect_tool_icon.txr");
+    rectFillToolIcon = new Texture(L"./ToolIcons/rect_fill_tool_icon.txr");
+    lineToolIcon = new Texture(L"./ToolIcons/line_tool_icon.txr");
+    copyToolIcon = new Texture(L"./ToolIcons/copy_tool_icon.txr");
+    copyToolToggleIcon = new Texture(L"./ToolIcons/copy_tool_toggle_icon.txr");
+    copyToolSaveIcon = new Texture(L"./ToolIcons/copy_tool_save_icon.txr");
+
+    // populate tool button container
+    brushButtonsContainer->AddButton(true, blockToolIcon, [this]() { SwitchTool(ToolType::BRUSH_BLOCK); });
+    brushButtonsContainer->AddButton(false, increaseToolIcon, [this]() { ChangeBrushSize(1); });
+    brushButtonsContainer->AddButton(false, decreaseToolIcon, [this]() { ChangeBrushSize(-1); });
+    brushButtonsContainer->AddButton(true, lineToolIcon, [this]() { SwitchTool(ToolType::BRUSH_LINE); });
+    brushButtonsContainer->AddButton(true, rectToolIcon, [this]() { SwitchTool(ToolType::BRUSH_RECT); });
+    brushButtonsContainer->AddButton(true, rectFillToolIcon, [this]() { SwitchTool(ToolType::BRUSH_RECT_FILLED); });
+    brushButtonsContainer->AddButton(true, copyToolIcon, [this]() { SwitchTool(ToolType::BRUSH_COPY); });
+    brushButtonsContainer->AddButton(false, copyToolToggleIcon, [this]() { ToggleCurrentToolOption(); });
+    brushButtonsContainer->AddButton(false, copyToolSaveIcon, [this]() {});
+
+}
+
+void Canvas::HandleAnyButtonsClicked(COORD mouseCoords)
+{
+    colourButtonsContainer->HandleMouseClick(mouseCoords);
+    brushButtonsContainer->HandleMouseClick(mouseCoords);
 }
 
 int Canvas::GetIllumination()
@@ -569,10 +644,18 @@ void Canvas::DrawCanvas()
     // draw border around canvas display panel
     drawingClass.DrawRectangleEdgeLength(topLeft.X - 1, topLeft.Y - 1, TexturePainter::CANVAS_DISPLAY_WIDTH + 2, TexturePainter::CANVAS_DISPLAY_HEIGHT + 2, FG_RED, false, PIXEL_HALF);
     
+    DrawButtons();
+
     // draw mouse pointer
     if (AreCoordsWithinCanvas(mouseCoords))
         currentToolState->DisplayPointer(mouseCoords);
 
+}
+
+void Canvas::DrawButtons()
+{
+    colourButtonsContainer->DrawButtons();
+    brushButtonsContainer->DrawButtons();
 }
 
 void Canvas::DisplayBrushPointer(COORD mouseCoords)
