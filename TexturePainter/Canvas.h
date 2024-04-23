@@ -102,21 +102,22 @@ private:
     // stores cut texture sample
     TextureSample* clipboardTexture;
 
+    // containers for icons
+    static Texture* deleteToolIcon;
+
+    static Texture* blockToolIcon;
+    static Texture* increaseToolIcon;
+    static Texture* decreaseToolIcon;
+    static Texture* rectToolIcon;
+    static Texture* rectFillToolIcon;
+    static Texture* lineToolIcon;
+    static Texture* copyToolIcon;
+    static Texture* copyToolToggleIcon;
+    static Texture* copyToolSaveIcon;
+
     // canvas button containers
     ButtonContainer* colourButtonsContainer;
     ButtonContainer* brushButtonsContainer;
-
-    // containers for icons
-    Texture* deleteToolIcon;
-    Texture* blockToolIcon;
-    Texture* increaseToolIcon;
-    Texture* decreaseToolIcon;
-    Texture* rectToolIcon;
-    Texture* rectFillToolIcon;
-    Texture* lineToolIcon;
-    Texture* copyToolIcon;
-    Texture* copyToolToggleIcon;
-    Texture* copyToolSaveIcon;
 
     // container for the concrete classes
     std::unordered_map<ToolType, IToolState*> toolStates;
@@ -152,6 +153,7 @@ public:
     const std::wstring& GetFilePath();
     bool GetSavedState();
 
+    static void InitialiseTextures();
     void PopulateColourButtonsContainer();
     void PopulateToolButtonsContainer();
     void HandleAnyButtonsClicked(COORD mouseCoords);

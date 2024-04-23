@@ -8,6 +8,7 @@ TexturePainter::TexturePainter(std::wstring newTitle)
 {
     sConsoleTitle = newTitle;
     eventLog.push_back(GetFormattedDateTime() + L" - Output of Error Log of last " + sConsoleTitle + L" session" + L":\n");
+    Canvas::InitialiseTextures();
 }
 
 TexturePainter::~TexturePainter()

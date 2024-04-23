@@ -13,6 +13,18 @@
 #include "CanvasCoordinateStrategy.h"
 
 
+// all tool button textures static initialisation
+Texture* Canvas::deleteToolIcon = nullptr;
+Texture* Canvas::blockToolIcon = nullptr;
+Texture* Canvas::increaseToolIcon = nullptr;
+Texture* Canvas::decreaseToolIcon = nullptr;
+Texture* Canvas::rectToolIcon = nullptr;
+Texture* Canvas::rectFillToolIcon = nullptr;
+Texture* Canvas::lineToolIcon = nullptr;
+Texture* Canvas::copyToolIcon = nullptr;
+Texture* Canvas::copyToolToggleIcon = nullptr;
+Texture* Canvas::copyToolSaveIcon = nullptr;
+
 
 // Primary constructor that does all the work
 Canvas::Canvas(TexturePainter& drawer, int width, int height, int illumination, const std::wstring& saveFolder, const std::wstring& fileName, short xPos, short yPos)
@@ -54,17 +66,6 @@ void Canvas::Initialise(const std::wstring& saveFolder, const std::wstring& file
     cutPixel = { L'.', FG_DARK_YELLOW };
     bottomRight = { static_cast<short>(topLeft.X + TexturePainter::CANVAS_DISPLAY_WIDTH),
                     static_cast<short>(topLeft.Y + TexturePainter::CANVAS_DISPLAY_HEIGHT) };
-
-    // all tool button textures
-    deleteToolIcon = nullptr;
-    blockToolIcon = nullptr;
-    increaseToolIcon = nullptr;
-    decreaseToolIcon = nullptr;
-    rectToolIcon = nullptr;
-    rectFillToolIcon = nullptr;
-    lineToolIcon = nullptr;
-    copyToolIcon = nullptr;
-    copyToolToggleIcon = nullptr;
 
     // all tool states
     toolStates[ToolType::BRUSH_BLOCK] = new BlockBrushState(*this);
@@ -143,6 +144,23 @@ bool Canvas::GetSavedState()
     return textureSaved;
 }
 
+// static function
+void Canvas::InitialiseTextures()
+{
+    // delete texture - L'X's
+    deleteToolIcon = new Texture(L"./ToolIcons/delete_tool_icon.txr");
+    // tool icon textures
+    blockToolIcon = new Texture(L"./ToolIcons/block_tool_icon.txr");
+    increaseToolIcon = new Texture(L"./ToolIcons/increase_tool_icon.txr");
+    decreaseToolIcon = new Texture(L"./ToolIcons/decrease_tool_icon.txr");
+    rectToolIcon = new Texture(L"./ToolIcons/rect_tool_icon.txr");
+    rectFillToolIcon = new Texture(L"./ToolIcons/rect_fill_tool_icon.txr");
+    lineToolIcon = new Texture(L"./ToolIcons/line_tool_icon.txr");
+    copyToolIcon = new Texture(L"./ToolIcons/copy_tool_icon.txr");
+    copyToolToggleIcon = new Texture(L"./ToolIcons/copy_tool_toggle_icon.txr");
+    copyToolSaveIcon = new Texture(L"./ToolIcons/copy_tool_save_icon.txr");
+}
+
 void Canvas::PopulateColourButtonsContainer()
 {
     // container for colour buttons
@@ -154,7 +172,7 @@ void Canvas::PopulateColourButtonsContainer()
         colourButtonsContainer->AddButton(true, 5, 5, colour, [this, colour]() { SetBrushColour(colour); });
         colourButtonsContainer->AddButton(true, 5, 5, colour | FG_INTENSITY, [this, colour]() { SetBrushColour(colour | FG_INTENSITY); });
     }
-    deleteToolIcon = new Texture(L"./ToolIcons/delete_tool_icon.txr");
+
     colourButtonsContainer->AddButton(true, deleteToolIcon, [this]() { SetBrushToDelete(); });
 }
 
@@ -162,17 +180,6 @@ void Canvas::PopulateToolButtonsContainer()
 {
     // container for tool bottons
     brushButtonsContainer = new ButtonContainer(drawingClass, BRUSH_BUTTON_XPOS, BRUSH_BUTTON_YPOS, 9, 1);
-
-    // load textures
-    blockToolIcon = new Texture(L"./ToolIcons/block_tool_icon.txr");
-    increaseToolIcon = new Texture(L"./ToolIcons/increase_tool_icon.txr");
-    decreaseToolIcon = new Texture(L"./ToolIcons/decrease_tool_icon.txr");
-    rectToolIcon = new Texture(L"./ToolIcons/rect_tool_icon.txr");
-    rectFillToolIcon = new Texture(L"./ToolIcons/rect_fill_tool_icon.txr");
-    lineToolIcon = new Texture(L"./ToolIcons/line_tool_icon.txr");
-    copyToolIcon = new Texture(L"./ToolIcons/copy_tool_icon.txr");
-    copyToolToggleIcon = new Texture(L"./ToolIcons/copy_tool_toggle_icon.txr");
-    copyToolSaveIcon = new Texture(L"./ToolIcons/copy_tool_save_icon.txr");
 
     // populate tool button container
     brushButtonsContainer->AddButton(true, blockToolIcon, [this]() { SwitchTool(ToolType::BRUSH_BLOCK); });
@@ -644,6 +651,7 @@ void Canvas::DrawCanvas()
     // draw border around canvas display panel
     drawingClass.DrawRectangleEdgeLength(topLeft.X - 1, topLeft.Y - 1, TexturePainter::CANVAS_DISPLAY_WIDTH + 2, TexturePainter::CANVAS_DISPLAY_HEIGHT + 2, FG_RED, false, PIXEL_HALF);
     
+    // draw all buttons in the containers
     DrawButtons();
 
     // draw mouse pointer
@@ -652,6 +660,7 @@ void Canvas::DrawCanvas()
 
 }
 
+// all button containers in here
 void Canvas::DrawButtons()
 {
     colourButtonsContainer->DrawButtons();
