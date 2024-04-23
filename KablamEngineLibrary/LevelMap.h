@@ -20,7 +20,6 @@ private:
 	int* m_npcArray;
 	int* m_itemArray;
 
-	std::vector levelTextures
 
 public:
 
