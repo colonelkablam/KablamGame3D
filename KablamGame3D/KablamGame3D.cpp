@@ -34,7 +34,7 @@ bool KablamGame3D::OnGameCreate()
 
 	// import texture data
 	wallTextures.push_back(nullptr); // position 0 will return nullptr
-	wallTextures.push_back(new Texture(L"./Textures/wall_main.txr"));
+	wallTextures.push_back(new Texture(L"./Textures/wall_1_main.txr"));
 	wallTextures.push_back(new Texture(L"./Textures/wall_door.txr"));
 
 	floorTextures.push_back(nullptr); // position 0 will return nullptr
