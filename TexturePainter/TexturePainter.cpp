@@ -8,6 +8,9 @@ TexturePainter::TexturePainter(std::wstring newTitle)
 {
     sConsoleTitle = newTitle;
     eventLog.push_back(GetFormattedDateTime() + L" - Output of Error Log of last " + sConsoleTitle + L" session" + L":\n");
+    
+    // load the icon textures into the static member variables
+    Canvas::InitialiseTextures();
 }
 
 TexturePainter::~TexturePainter()
@@ -103,6 +106,23 @@ bool TexturePainter::GetUserStartInput()
     return true;
 }
 
+void TexturePainter::CreateCanvasWithNewTexture(const std::wstring& fileName)
+{
+    int width{ 0 }, height{ 0 }, illumination{ 0 };
+    // get new dimentions
+    GetDimensionInput(L"\nPlease enter an integer value for the new texture width: ", width, MIN_TEXTURE_WIDTH, MAX_TEXTURE_WIDTH);
+    GetDimensionInput(L"\nPlease enter an integer value for the new texture height: ", height, MIN_TEXTURE_HEIGHT, MAX_TEXTURE_HEIGHT);
+    GetDimensionInput(L"\nPlease enter illumination value 0 to 255 for the new texture: ", illumination, 0, MAX_ILLUMINATION_VALUE);
+    canvases.push_back(new Canvas(*this, width, height, illumination, SAVE_FOLDER, fileName, CANVAS_XPOS, CANVAS_YPOS));
+    selectedList.push_back(fileName);
+}
+
+void TexturePainter::CreateCanvasWithExistingTexture(const std::wstring& fileName)
+{
+    canvases.push_back(new Canvas(*this, SAVE_FOLDER, fileName, CANVAS_XPOS, CANVAS_YPOS));
+    selectedList.push_back(fileName);
+}
+
 bool TexturePainter::HandleFileSelection(int selection, const std::wstring& fileName, const std::vector<std::wstring>& fileList)
 {
     size_t size{ fileList.size() };
@@ -140,27 +160,10 @@ bool TexturePainter::HandleFileSelection(int selection, const std::wstring& file
         }
         else
         {
-            CreateNewTexture(fullFileName);
+            CreateCanvasWithNewTexture(fullFileName);
         }
     }
     return true;
-}
-
-void TexturePainter::LoadTexture(const std::wstring& fileName)
-{
-    CreateCanvasWithExistingTexture(fileName);
-    selectedList.push_back(fileName);
-}
-
-void TexturePainter::CreateNewTexture(const std::wstring& fileName)
-{
-    int width{ 0 }, height{ 0 }, illumination{ 0 };
-    // get new dimentions
-    GetDimensionInput(L"\nPlease enter an integer value for the new texture width: ", width, MIN_TEXTURE_WIDTH, MAX_TEXTURE_WIDTH);
-    GetDimensionInput(L"\nPlease enter an integer value for the new texture height: ", height, MIN_TEXTURE_HEIGHT, MAX_TEXTURE_HEIGHT);
-    GetDimensionInput(L"\nPlease enter illumination value 0 to 255 for the new texture: ", illumination, 0, MAX_ILLUMINATION_VALUE);
-    CreateCanvasWithNewTexture(width, height, illumination, fileName);
-    selectedList.push_back(fileName);
 }
 
 void TexturePainter::PrintFiles()
@@ -179,18 +182,6 @@ void TexturePainter::PrintEnteredTextures()
                    << L"\nSize (w * h): " << canvas->GetTextureWidth() << L" x " << canvas->GetTextureHeight()
                    << L"\nIllumination: " << canvas->GetIllumination() << std::endl << std::endl;
     }
-}
-
-void TexturePainter::CreateCanvasWithNewTexture(int width, int height, int illumination, const std::wstring& fileName)
-{
-    canvases.push_back(new Canvas(*this, width, height, illumination, SAVE_FOLDER, fileName, CANVAS_XPOS, CANVAS_YPOS));
-    selectedList.push_back(fileName);
-}
-
-void TexturePainter::CreateCanvasWithExistingTexture(const std::wstring& fileName)
-{
-    canvases.push_back(new Canvas(*this, SAVE_FOLDER, fileName, CANVAS_XPOS, CANVAS_YPOS));
-    selectedList.push_back(fileName);
 }
 
 bool TexturePainter::IsFileAlreadySelected(const std::wstring& fileName)
@@ -361,7 +352,7 @@ bool TexturePainter::HandleKeyPress()
             if (GatherNewTextureValues(textureName, textureWidth, textureHeight, illumination))
             {
                 // Create the texture
-                CreateCanvasWithNewTexture(textureWidth, textureHeight, illumination, textureName);
+                canvases.push_back(new Canvas(*this, textureWidth, textureHeight, illumination, SAVE_FOLDER, textureName, CANVAS_XPOS, CANVAS_YPOS));
                 selectedList.push_back(textureName);
                 ChangeCanvas(canvases.size() - 1);
                 DisplayAlertMessage(L"Texture created successfully.");

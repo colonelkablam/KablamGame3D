@@ -35,6 +35,11 @@ public:
         initialClick = false;
     }
 
+    void SetClicks(bool value)
+    {
+        initialClick = value;
+    }
+
     void ResetTool() override
     {
         initialClick = false;
@@ -83,6 +88,11 @@ public:
         initialClick = false;
     }
 
+    void SetClicks(bool value)
+    {
+        initialClick = value;
+    }
+
     void ResetTool() override
     {
         initialClick = false;
@@ -129,6 +139,11 @@ public:
         initialClick = false;
     }
 
+    void SetClicks(bool value)
+    {
+        initialClick = value;
+    }
+
     void ResetTool() override
     {
         initialClick = false;
@@ -172,6 +187,11 @@ public:
     void ResetClicks()
     {
         initialClick = false;
+    }
+
+    void SetClicks(bool value)
+    {
+        initialClick = value;
     }
 
     void ResetTool() override
@@ -263,9 +283,14 @@ public:
     {
         drawPartialSample = !drawPartialSample;
     }
-    void ResetClicks()
+    void ResetClicks() // default false
     {
         initialClick = false;
+    }
+
+    void SetClicks(bool value)
+    {
+        initialClick = value;
     }
 
     void ResetTool() override

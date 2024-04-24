@@ -100,23 +100,26 @@ private:
     };
 
     // stores cut texture sample
-    TextureSample* clipboardTexture;
+    TextureSample* clipboardTextureSample;
+
+    static TextureSample* sharedClipboardTextureSample;
+
 
     // canvas button containers
     ButtonContainer* colourButtonsContainer;
     ButtonContainer* brushButtonsContainer;
 
-    // containers for icons
-    Texture* deleteToolIcon;
-    Texture* blockToolIcon;
-    Texture* increaseToolIcon;
-    Texture* decreaseToolIcon;
-    Texture* rectToolIcon;
-    Texture* rectFillToolIcon;
-    Texture* lineToolIcon;
-    Texture* copyToolIcon;
-    Texture* copyToolToggleIcon;
-    Texture* copyToolSaveIcon;
+    // containers for button icons
+    static Texture* deleteToolIcon;
+    static Texture* blockToolIcon;
+    static Texture* increaseToolIcon;
+    static Texture* decreaseToolIcon;
+    static Texture* rectToolIcon;
+    static Texture* rectFillToolIcon;
+    static Texture* lineToolIcon;
+    static Texture* copyToolIcon;
+    static Texture* copyToolToggleIcon;
+    static Texture* copyToolSaveIcon;
 
     // container for the concrete classes
     std::unordered_map<ToolType, IToolState*> toolStates;
@@ -155,6 +158,7 @@ public:
     void PopulateColourButtonsContainer();
     void PopulateToolButtonsContainer();
     void HandleAnyButtonsClicked(COORD mouseCoords);
+    static void InitialiseTextures();
 
     int GetIllumination();
     int GetZoomLevel();
@@ -183,6 +187,9 @@ public:
     void AddTextureSampleToClipboard(COORD topLeft, COORD bottomRight);
     TextureSample* GetClipboardTextureSample() const;
     void SetClipboardTextureSample(TextureSample* newTextureSample);
+
+    void AddCurrentTextureSampleToSharedClipboard();
+    void moveSharedClipboardToCurrentClipboard();
 
     void SetBrushToDelete();
     void ChangeBrushSize(int sizeChange);

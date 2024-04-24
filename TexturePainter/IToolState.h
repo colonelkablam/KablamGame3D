@@ -19,7 +19,7 @@ public:
     virtual void ToggleOption() = 0;
     virtual void ResetTool() = 0;
     virtual void ResetClicks() = 0;
-
+    virtual void SetClicks(bool value) = 0;
     virtual ~IToolState() {}
 };
 

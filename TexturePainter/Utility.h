@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unordered_map>
+#include <Windows.h>
 #include <vector>
 #include <string>
 
@@ -26,5 +28,8 @@ bool CheckFolderExists(const std::wstring& folderPath);
 bool CreateFolder(const std::wstring& folderPath);
 
 void printChunkyString(const std::string& text);
+
+void printCharacterRow(HANDLE hConsole, const std::unordered_map<char, std::vector<std::string>>& charMap, char ch, int row, WORD originalAttributes);
+
 
 

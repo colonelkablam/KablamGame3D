@@ -12,17 +12,31 @@
 #include "ConcreteToolStates.h" // Contains definitions for BlockBrushState, RectBrushState, etc.
 #include "CanvasCoordinateStrategy.h"
 
+// define static members
+// tool icons
+Texture* Canvas::deleteToolIcon = nullptr;
+Texture* Canvas::blockToolIcon = nullptr;
+Texture* Canvas::increaseToolIcon = nullptr;
+Texture* Canvas::decreaseToolIcon = nullptr;
+Texture* Canvas::rectToolIcon = nullptr;
+Texture* Canvas::rectFillToolIcon = nullptr;
+Texture* Canvas::lineToolIcon = nullptr;
+Texture* Canvas::copyToolIcon = nullptr;
+Texture* Canvas::copyToolToggleIcon = nullptr;
+Texture* Canvas::copyToolSaveIcon = nullptr;
 
+// shared clipboard initialised with default 'empty' sample
+Canvas::TextureSample* Canvas::sharedClipboardTextureSample{ new TextureSample };
 
 // Primary constructor that does all the work
 Canvas::Canvas(TexturePainter& drawer, int width, int height, int illumination, const std::wstring& saveFolder, const std::wstring& fileName, short xPos, short yPos)
     : drawingClass{ drawer },
     backgroundTexture{ width, height, illumination },
+    clipboardTextureSample{ new TextureSample }, // clipboard initialised with default 'empty' sample
     topLeft{ xPos, yPos },
     canvasViewOffset{ 0, 0 },
     zoomLevel{ START_ZOOM_LEVEL },
     currentToolState{ nullptr },
-    clipboardTexture{ new TextureSample },
     coordinateStrategy{std::move(std::make_unique<CanvasCoordinateStrategy>(topLeft, canvasViewOffset, zoomLevel))}
 {
     Initialise(saveFolder, fileName);
@@ -55,24 +69,12 @@ void Canvas::Initialise(const std::wstring& saveFolder, const std::wstring& file
     bottomRight = { static_cast<short>(topLeft.X + TexturePainter::CANVAS_DISPLAY_WIDTH),
                     static_cast<short>(topLeft.Y + TexturePainter::CANVAS_DISPLAY_HEIGHT) };
 
-    // all tool button textures
-    deleteToolIcon = nullptr;
-    blockToolIcon = nullptr;
-    increaseToolIcon = nullptr;
-    decreaseToolIcon = nullptr;
-    rectToolIcon = nullptr;
-    rectFillToolIcon = nullptr;
-    lineToolIcon = nullptr;
-    copyToolIcon = nullptr;
-    copyToolToggleIcon = nullptr;
-
     // all tool states
     toolStates[ToolType::BRUSH_BLOCK] = new BlockBrushState(*this);
     toolStates[ToolType::BRUSH_LINE] = new LineBrushState(*this);
     toolStates[ToolType::BRUSH_RECT] = new RectBrushState(*this);
     toolStates[ToolType::BRUSH_RECT_FILLED] = new FilledRectBrushState(*this);
     toolStates[ToolType::BRUSH_COPY] = new CopyBrushState(*this);
-
 }
 
 // post initialisation settings
@@ -93,7 +95,8 @@ Canvas::~Canvas() {
         delete toolState.second;
     }
 
-    delete clipboardTexture;
+    delete clipboardTextureSample;
+    delete sharedClipboardTextureSample;
 
     delete deleteToolIcon;
     delete blockToolIcon;
@@ -154,25 +157,14 @@ void Canvas::PopulateColourButtonsContainer()
         colourButtonsContainer->AddButton(true, 5, 5, colour, [this, colour]() { SetBrushColour(colour); });
         colourButtonsContainer->AddButton(true, 5, 5, colour | FG_INTENSITY, [this, colour]() { SetBrushColour(colour | FG_INTENSITY); });
     }
-    deleteToolIcon = new Texture(L"./ToolIcons/delete_tool_icon.txr");
+
     colourButtonsContainer->AddButton(true, deleteToolIcon, [this]() { SetBrushToDelete(); });
 }
 
 void Canvas::PopulateToolButtonsContainer()
 {
     // container for tool bottons
-    brushButtonsContainer = new ButtonContainer(drawingClass, BRUSH_BUTTON_XPOS, BRUSH_BUTTON_YPOS, 9, 1);
-
-    // load textures
-    blockToolIcon = new Texture(L"./ToolIcons/block_tool_icon.txr");
-    increaseToolIcon = new Texture(L"./ToolIcons/increase_tool_icon.txr");
-    decreaseToolIcon = new Texture(L"./ToolIcons/decrease_tool_icon.txr");
-    rectToolIcon = new Texture(L"./ToolIcons/rect_tool_icon.txr");
-    rectFillToolIcon = new Texture(L"./ToolIcons/rect_fill_tool_icon.txr");
-    lineToolIcon = new Texture(L"./ToolIcons/line_tool_icon.txr");
-    copyToolIcon = new Texture(L"./ToolIcons/copy_tool_icon.txr");
-    copyToolToggleIcon = new Texture(L"./ToolIcons/copy_tool_toggle_icon.txr");
-    copyToolSaveIcon = new Texture(L"./ToolIcons/copy_tool_save_icon.txr");
+    brushButtonsContainer = new ButtonContainer(drawingClass, BRUSH_BUTTON_XPOS, BRUSH_BUTTON_YPOS, 10, 1);
 
     // populate tool button container
     brushButtonsContainer->AddButton(true, blockToolIcon, [this]() { SwitchTool(ToolType::BRUSH_BLOCK); });
@@ -183,7 +175,10 @@ void Canvas::PopulateToolButtonsContainer()
     brushButtonsContainer->AddButton(true, rectFillToolIcon, [this]() { SwitchTool(ToolType::BRUSH_RECT_FILLED); });
     brushButtonsContainer->AddButton(true, copyToolIcon, [this]() { SwitchTool(ToolType::BRUSH_COPY); });
     brushButtonsContainer->AddButton(false, copyToolToggleIcon, [this]() { ToggleCurrentToolOption(); });
-    brushButtonsContainer->AddButton(false, copyToolSaveIcon, [this]() {});
+    brushButtonsContainer->AddButton(false, copyToolSaveIcon, [this]() {AddCurrentTextureSampleToSharedClipboard(); });
+
+    brushButtonsContainer->AddButton(false, copyToolSaveIcon, [this]() {moveSharedClipboardToCurrentClipboard(); });
+
 
 }
 
@@ -191,6 +186,20 @@ void Canvas::HandleAnyButtonsClicked(COORD mouseCoords)
 {
     colourButtonsContainer->HandleMouseClick(mouseCoords);
     brushButtonsContainer->HandleMouseClick(mouseCoords);
+}
+
+// static method to populate all texture canvases icons 
+void Canvas::InitialiseTextures() {
+    deleteToolIcon = new Texture(L"./ToolIcons/delete_tool_icon.txr");
+    blockToolIcon = new Texture(L"./ToolIcons/block_tool_icon.txr");
+    increaseToolIcon = new Texture(L"./ToolIcons/increase_tool_icon.txr");
+    decreaseToolIcon = new Texture(L"./ToolIcons/decrease_tool_icon.txr");
+    rectToolIcon = new Texture(L"./ToolIcons/rect_tool_icon.txr");
+    rectFillToolIcon = new Texture(L"./ToolIcons/rect_fill_tool_icon.txr");
+    lineToolIcon = new Texture(L"./ToolIcons/line_tool_icon.txr");
+    copyToolIcon = new Texture(L"./ToolIcons/copy_tool_icon.txr");
+    copyToolToggleIcon = new Texture(L"./ToolIcons/copy_tool_toggle_icon.txr");
+    copyToolSaveIcon = new Texture(L"./ToolIcons/copy_tool_save_icon.txr");
 }
 
 int Canvas::GetIllumination()
@@ -409,22 +418,37 @@ void Canvas::AddTextureSampleToClipboard(COORD topLeft, COORD bottomRight) {
     }
 
     // Replace the old clipboard texture with the new one
-    delete clipboardTexture; // Safely delete the old texture
-    clipboardTexture = sample; // Point to the new texture
+    delete clipboardTextureSample; // Safely delete the old texture
+    clipboardTextureSample = sample; // Point to the new texture
 }
 
 // Method to get the current texture sample from the active tool state
 Canvas::TextureSample* Canvas::GetClipboardTextureSample() const {
-    return clipboardTexture;
+    return clipboardTextureSample;
 }
 
 // Method to set a new texture sample into the clipboard
 void Canvas::SetClipboardTextureSample(TextureSample* newTextureSample) {
-    if (newTextureSample != clipboardTexture) {
-        delete clipboardTexture; // Safely delete the old texture
+    if (newTextureSample != clipboardTextureSample) {
+        delete clipboardTextureSample; // Safely delete the old texture
         // Deep copy the new texture with default copy construtor (don't want to point to same data)
-        clipboardTexture = new TextureSample(*newTextureSample);
+        clipboardTextureSample = new TextureSample(*newTextureSample);
     }
+}
+
+void Canvas::AddCurrentTextureSampleToSharedClipboard()
+{
+    delete sharedClipboardTextureSample;
+    sharedClipboardTextureSample = clipboardTextureSample;
+}
+
+void Canvas::moveSharedClipboardToCurrentClipboard()
+{
+    delete clipboardTextureSample;
+    clipboardTextureSample = sharedClipboardTextureSample;
+    toolStates.at(ToolType::BRUSH_COPY)->ResetTool();
+    toolStates.at(ToolType::BRUSH_COPY)->SetClicks(true);
+
 }
 
 void Canvas::ClearCurrentBrushstrokeTexture() {
@@ -583,7 +607,7 @@ void Canvas::PaintRectangleGlyphs(int x0, int y0, int x1, int y1, bool filled, i
 
 void Canvas::PaintClipboardTextureSample(COORD topLeft, bool partialSample)
 {
-    for (const auto& pixel : clipboardTexture->pixels) {
+    for (const auto& pixel : clipboardTextureSample->pixels) {
         // Calculate the new position by adding the top-left offset
         int newX = pixel.x + topLeft.X;
         int newY = pixel.y + topLeft.Y;

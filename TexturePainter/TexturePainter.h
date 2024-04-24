@@ -59,15 +59,13 @@ protected:
     //virtual bool OnGameDestroy() { return true; }
 
 private:
-
+    void CreateCanvasWithNewTexture(const std::wstring& fileName);
+    void CreateCanvasWithExistingTexture(const std::wstring& fileName);
     bool HandleFileSelection(int selection, const std::wstring& fileName, const std::vector<std::wstring>& fileList);
-    void LoadTexture(const std::wstring& fileName);
-    void CreateNewTexture(const std::wstring& fileName);
+    
     void PrintFiles();
     void PrintEnteredTextures();
 
-    void CreateCanvasWithExistingTexture(const std::wstring& fileName);
-    void CreateCanvasWithNewTexture(int width, int height, int illuminated, const std::wstring& fileName);
     bool IsFileAlreadySelected(const std::wstring& fileName);
     bool ChangeCanvas(size_t index);
     void DrawHeadingInfo(int x, int y);
