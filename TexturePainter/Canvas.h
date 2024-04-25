@@ -93,9 +93,29 @@ private:
     struct TextureSample {
         int width{ 0 }, height{ 0 };
         std::vector<PixelSample> pixels;
+
+        TextureSample() {};
+
+        TextureSample(const TextureSample& other)
+            : width {other.width}, height{other.height}
+        {
+            pixels.reserve(other.pixels.size());
+            for (const PixelSample& pixel : other.pixels)
+            {
+                pixels.push_back(pixel);
+            }
+        }
+
         void Reset()
         {
             pixels.clear();
+            width = 0;
+            height = 0;
+        }
+
+        TextureSample* Clone() const 
+        {
+            return new TextureSample(*this); // Utilises the copy constructor
         }
     };
 
@@ -117,9 +137,12 @@ private:
     static Texture* rectToolIcon;
     static Texture* rectFillToolIcon;
     static Texture* lineToolIcon;
-    static Texture* copyToolIcon;
-    static Texture* copyToolToggleIcon;
-    static Texture* copyToolSaveIcon;
+    static Texture* clipboardToolIcon;
+    static Texture* clipboardToolToggleIcon;
+    static Texture* sharedClipboardSaveIcon;
+    static Texture* sharedClipboardLoadIcon;
+
+
 
     // container for the concrete classes
     std::unordered_map<ToolType, IToolState*> toolStates;

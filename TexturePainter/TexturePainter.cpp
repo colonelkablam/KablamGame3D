@@ -202,11 +202,8 @@ bool TexturePainter::ChangeCanvas(size_t index)
 {
     if (index < canvases.size())
     {
-        // grab the sample from the old canvas as add to the new
-        canvases.at(index)->SetClipboardTextureSample(currentCanvas->GetClipboardTextureSample());
         // swap to new canvas
         currentCanvas = canvases.at(index);
-
         return true;
     }
     else

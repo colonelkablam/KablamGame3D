@@ -21,9 +21,10 @@ Texture* Canvas::decreaseToolIcon = nullptr;
 Texture* Canvas::rectToolIcon = nullptr;
 Texture* Canvas::rectFillToolIcon = nullptr;
 Texture* Canvas::lineToolIcon = nullptr;
-Texture* Canvas::copyToolIcon = nullptr;
-Texture* Canvas::copyToolToggleIcon = nullptr;
-Texture* Canvas::copyToolSaveIcon = nullptr;
+Texture* Canvas::clipboardToolIcon = nullptr;
+Texture* Canvas::clipboardToolToggleIcon = nullptr;
+Texture* Canvas::sharedClipboardSaveIcon = nullptr;
+Texture* Canvas::sharedClipboardLoadIcon = nullptr;
 
 // shared clipboard initialised with default 'empty' sample
 Canvas::TextureSample* Canvas::sharedClipboardTextureSample{ new TextureSample };
@@ -105,8 +106,8 @@ Canvas::~Canvas() {
     delete rectToolIcon;
     delete rectFillToolIcon;
     delete lineToolIcon;
-    delete copyToolIcon;
-    delete copyToolToggleIcon;
+    delete clipboardToolIcon;
+    delete clipboardToolToggleIcon;
 }
 
 bool Canvas::SaveTexture(const std::wstring& filePath)
@@ -173,13 +174,10 @@ void Canvas::PopulateToolButtonsContainer()
     brushButtonsContainer->AddButton(true, lineToolIcon, [this]() { SwitchTool(ToolType::BRUSH_LINE); });
     brushButtonsContainer->AddButton(true, rectToolIcon, [this]() { SwitchTool(ToolType::BRUSH_RECT); });
     brushButtonsContainer->AddButton(true, rectFillToolIcon, [this]() { SwitchTool(ToolType::BRUSH_RECT_FILLED); });
-    brushButtonsContainer->AddButton(true, copyToolIcon, [this]() { SwitchTool(ToolType::BRUSH_COPY); });
-    brushButtonsContainer->AddButton(false, copyToolToggleIcon, [this]() { ToggleCurrentToolOption(); });
-    brushButtonsContainer->AddButton(false, copyToolSaveIcon, [this]() {AddCurrentTextureSampleToSharedClipboard(); });
-
-    brushButtonsContainer->AddButton(false, copyToolSaveIcon, [this]() {moveSharedClipboardToCurrentClipboard(); });
-
-
+    brushButtonsContainer->AddButton(true, clipboardToolIcon, [this]() { SwitchTool(ToolType::BRUSH_COPY); });
+    brushButtonsContainer->AddButton(false, clipboardToolToggleIcon, [this]() { ToggleCurrentToolOption(); });
+    brushButtonsContainer->AddButton(false, sharedClipboardSaveIcon, [this]() {AddCurrentTextureSampleToSharedClipboard(); });
+    brushButtonsContainer->AddButton(false, sharedClipboardLoadIcon, [this]() {moveSharedClipboardToCurrentClipboard(); });
 }
 
 void Canvas::HandleAnyButtonsClicked(COORD mouseCoords)
@@ -197,9 +195,10 @@ void Canvas::InitialiseTextures() {
     rectToolIcon = new Texture(L"./ToolIcons/rect_tool_icon.txr");
     rectFillToolIcon = new Texture(L"./ToolIcons/rect_fill_tool_icon.txr");
     lineToolIcon = new Texture(L"./ToolIcons/line_tool_icon.txr");
-    copyToolIcon = new Texture(L"./ToolIcons/copy_tool_icon.txr");
-    copyToolToggleIcon = new Texture(L"./ToolIcons/copy_tool_toggle_icon.txr");
-    copyToolSaveIcon = new Texture(L"./ToolIcons/copy_tool_save_icon.txr");
+    clipboardToolIcon = new Texture(L"./ToolIcons/copy_tool_icon.txr");
+    clipboardToolToggleIcon = new Texture(L"./ToolIcons/copy_tool_toggle_icon.txr");
+    sharedClipboardSaveIcon = new Texture(L"./ToolIcons/shared_clipboard_save_icon.txr");
+    sharedClipboardLoadIcon = new Texture(L"./ToolIcons/shared_clipboard_load_icon.txr");
 }
 
 int Canvas::GetIllumination()
@@ -438,17 +437,26 @@ void Canvas::SetClipboardTextureSample(TextureSample* newTextureSample) {
 
 void Canvas::AddCurrentTextureSampleToSharedClipboard()
 {
-    delete sharedClipboardTextureSample;
-    sharedClipboardTextureSample = clipboardTextureSample;
+    delete sharedClipboardTextureSample;  // Clean up existing shared clipboard sample
+    if (clipboardTextureSample) {
+        sharedClipboardTextureSample = clipboardTextureSample->Clone();  // Deep copy
+    }
+    else {
+        sharedClipboardTextureSample = nullptr;  // No current texture to copy
+    }
 }
 
 void Canvas::moveSharedClipboardToCurrentClipboard()
 {
-    delete clipboardTextureSample;
-    clipboardTextureSample = sharedClipboardTextureSample;
-    toolStates.at(ToolType::BRUSH_COPY)->ResetTool();
+    //toolStates.at(ToolType::BRUSH_COPY)->ResetTool(); 
     toolStates.at(ToolType::BRUSH_COPY)->SetClicks(true);
-
+    delete clipboardTextureSample;  // Clean up existing texture sample
+    if (sharedClipboardTextureSample) {
+        clipboardTextureSample = sharedClipboardTextureSample->Clone();  // Deep copy
+    }
+    else {
+        clipboardTextureSample = nullptr;  // No shared texture to copy
+    }
 }
 
 void Canvas::ClearCurrentBrushstrokeTexture() {
