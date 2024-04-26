@@ -23,8 +23,12 @@ Texture* Canvas::rectFillToolIcon = nullptr;
 Texture* Canvas::lineToolIcon = nullptr;
 Texture* Canvas::clipboardToolIcon = nullptr;
 Texture* Canvas::clipboardToolToggleIcon = nullptr;
+Texture* Canvas::clipboardToolToggle2Icon = nullptr;
 Texture* Canvas::sharedClipboardSaveIcon = nullptr;
+Texture* Canvas::sharedClipboardDeleteIcon = nullptr;
 Texture* Canvas::sharedClipboardLoadIcon = nullptr;
+Texture* Canvas::sharedClipboardLoadedIcon = nullptr;
+
 
 // shared clipboard initialised with default 'empty' sample
 Canvas::TextureSample* Canvas::sharedClipboardTextureSample{ new TextureSample };
@@ -175,9 +179,9 @@ void Canvas::PopulateToolButtonsContainer()
     brushButtonsContainer->AddButton(true, rectToolIcon, [this]() { SwitchTool(ToolType::BRUSH_RECT); });
     brushButtonsContainer->AddButton(true, rectFillToolIcon, [this]() { SwitchTool(ToolType::BRUSH_RECT_FILLED); });
     brushButtonsContainer->AddButton(true, clipboardToolIcon, [this]() { SwitchTool(ToolType::BRUSH_COPY); });
-    brushButtonsContainer->AddButton(false, clipboardToolToggleIcon, [this]() { ToggleCurrentToolOption(); });
-    brushButtonsContainer->AddButton(false, sharedClipboardSaveIcon, [this]() {AddCurrentTextureSampleToSharedClipboard(); });
-    brushButtonsContainer->AddButton(false, sharedClipboardLoadIcon, [this]() {moveSharedClipboardToCurrentClipboard(); });
+    brushButtonsContainer->AddButton(false, clipboardToolToggleIcon, clipboardToolToggle2Icon, [this]() { ToggleClipboardOption(); });
+    brushButtonsContainer->AddButton(false, sharedClipboardSaveIcon, sharedClipboardDeleteIcon, [this]() { CopyCurrentTextureSampleToSharedClipboard(); });
+    brushButtonsContainer->AddButton(false, sharedClipboardLoadIcon, sharedClipboardLoadedIcon, [this]() { CopySharedClipboardToCurrentClipboard(); });
 }
 
 void Canvas::HandleAnyButtonsClicked(COORD mouseCoords)
@@ -197,8 +201,12 @@ void Canvas::InitialiseTextures() {
     lineToolIcon = new Texture(L"./ToolIcons/line_tool_icon.txr");
     clipboardToolIcon = new Texture(L"./ToolIcons/copy_tool_icon.txr");
     clipboardToolToggleIcon = new Texture(L"./ToolIcons/copy_tool_toggle_icon.txr");
+    clipboardToolToggle2Icon = new Texture(L"./ToolIcons/copy_tool_toggle2_icon.txr");
     sharedClipboardSaveIcon = new Texture(L"./ToolIcons/shared_clipboard_save_icon.txr");
+    sharedClipboardDeleteIcon = new Texture(L"./ToolIcons/shared_clipboard_delete_icon.txr");
     sharedClipboardLoadIcon = new Texture(L"./ToolIcons/shared_clipboard_load_icon.txr");
+    sharedClipboardLoadedIcon = new Texture(L"./ToolIcons/shared_clipboard_loaded_icon.txr");
+
 }
 
 int Canvas::GetIllumination()
@@ -268,7 +276,7 @@ void Canvas::SwitchTool(ToolType type) {
     // reset any tool specific logic
     if (currentToolState)
         currentToolState->ResetTool();
-    // serach for new tool
+    // search for new tool
     auto it = toolStates.find(type);
     if (it != toolStates.end()) {
         currentToolState = it->second;  // Update the current tool state pointer
@@ -279,9 +287,18 @@ void Canvas::SwitchTool(ToolType type) {
     }
 }
 
-void Canvas::ToggleCurrentToolOption()
+void Canvas::ToggleClipboardOption()
 {
-    currentToolState->ToggleOption();
+    // Attempt to find the BRUSH_COPY tool in the map of tool states
+    auto it = toolStates.find(ToolType::BRUSH_COPY);
+    if (it != toolStates.end()) {
+        // If BRUSH_COPY is found, toggle its option
+        it->second->ToggleOption();  // Toggle option of the BRUSH_COPY
+    }
+    else {
+        // Log an error if the BRUSH_COPY tool is not found in toolStates
+        drawingClass.AddToLog(L"Unable to toggle BRUSH_COPY tool as it is not found in toolStates.");
+    }
 }
 
 void Canvas::SetBrushToDelete()
@@ -435,27 +452,41 @@ void Canvas::SetClipboardTextureSample(TextureSample* newTextureSample) {
     }
 }
 
-void Canvas::AddCurrentTextureSampleToSharedClipboard()
+void Canvas::CopyCurrentTextureSampleToSharedClipboard()
 {
-    delete sharedClipboardTextureSample;  // Clean up existing shared clipboard sample
-    if (clipboardTextureSample) {
-        sharedClipboardTextureSample = clipboardTextureSample->Clone();  // Deep copy
+    // Check if the currentToolState is valid and corresponds the copy brush
+    if (currentToolState != nullptr && toolStates[ToolType::BRUSH_COPY] == currentToolState)
+    {
+        delete sharedClipboardTextureSample;  // Clean up existing shared clipboard sample
+        if (clipboardTextureSample) {
+            sharedClipboardTextureSample = clipboardTextureSample->Clone();  // Deep copy
+        }
+        else {
+            sharedClipboardTextureSample = nullptr;  // No current texture to copy
+        }
     }
     else {
-        sharedClipboardTextureSample = nullptr;  // No current texture to copy
+        drawingClass.AddToLog(L"Unable to add current texture sample to shared clipboard as BRUSH_COPY not active tool");
     }
 }
 
-void Canvas::moveSharedClipboardToCurrentClipboard()
+void Canvas::CopySharedClipboardToCurrentClipboard()
 {
-    //toolStates.at(ToolType::BRUSH_COPY)->ResetTool(); 
-    toolStates.at(ToolType::BRUSH_COPY)->SetClicks(true);
-    delete clipboardTextureSample;  // Clean up existing texture sample
-    if (sharedClipboardTextureSample) {
-        clipboardTextureSample = sharedClipboardTextureSample->Clone();  // Deep copy
+    // Check if the currentToolState is valid and corresponds the copy brush
+    if (currentToolState != nullptr && toolStates[ToolType::BRUSH_COPY] == currentToolState)
+    {
+        // activate initial click so brush ready to paint to brush texture
+        toolStates.at(ToolType::BRUSH_COPY)->SetClicks(true);
+        delete clipboardTextureSample;  // Clean up existing texture sample
+        if (sharedClipboardTextureSample) {
+            clipboardTextureSample = sharedClipboardTextureSample->Clone();  // Deep copy
+        }
+        else {
+            clipboardTextureSample = nullptr;  // No shared texture to copy
+        }
     }
     else {
-        clipboardTextureSample = nullptr;  // No shared texture to copy
+        drawingClass.AddToLog(L"Unable to add current texture sample to shared clipboard as BRUSH_COPY not active tool");
     }
 }
 
@@ -686,8 +717,17 @@ void Canvas::DrawCanvas()
 
 void Canvas::DrawButtons()
 {
+    if (sharedClipboardTextureSample != nullptr)
+    {
+        brushButtonsContainer->SetButtonAppearance(9, true);
+    }
+
     colourButtonsContainer->DrawButtons();
     brushButtonsContainer->DrawButtons();
+    if (sharedClipboardTextureSample != nullptr)
+    {
+
+    }
 }
 
 void Canvas::DisplayBrushPointer(COORD mouseCoords)

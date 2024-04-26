@@ -247,8 +247,12 @@ public:
     }
 
     void DisplayPointer(COORD mouseCoords) {
-        int width = canvas.GetClipboardTextureSample()->width;
-        int height = canvas.GetClipboardTextureSample()->height;
+
+        // Access the sample and canvas only once
+        const auto& sample = *canvas.GetClipboardTextureSample();
+
+        int width = sample.width;
+        int height = sample.height;
         int zoom = canvas.GetZoomLevel();
 
         // Calculate base coordinates for drawing
@@ -257,24 +261,24 @@ public:
         int baseY = pixelCoord.Y - (height - 1) * zoom;
 
         // Iterate through sample pixels
-        for (const Canvas::PixelSample& pixel : canvas.GetClipboardTextureSample()->pixels) {
+        for (const Canvas::PixelSample& pixel : sample.pixels) {
             int x = baseX + pixel.x * zoom;
             int y = baseY + pixel.y * zoom;
 
             // Check for valid drawing position
-            if (canvas.AreCoordsWithinCanvas(COORD{(short)x, (short)y}))
+            if (canvas.AreCoordsWithinCanvas(COORD{ (short)x, (short)y }))
             {
-                short glyph = pixel.glyph;
-                short colour = pixel.colour;
-
                 // When drawPartialSample is true, draw all pixels except delete pixels
-                if (drawPartialSample && glyph != canvas.deletePixel.Char.UnicodeChar) {
-                    canvas.drawingClass.DrawBlock(x, y, zoom, colour, glyph);
+                if (drawPartialSample)
+                {
+                    if (pixel.glyph != canvas.deletePixel.Char.UnicodeChar)
+                    {
+                        canvas.drawingClass.DrawBlock(x, y, zoom, pixel.colour, pixel.glyph);
+                    }
                 }
                 // When drawPartialSample is false, draw all pixels
-                else if (!drawPartialSample) {
-                    canvas.drawingClass.DrawBlock(x, y, zoom, colour, glyph);
-                }
+                else
+                    canvas.drawingClass.DrawBlock(x, y, zoom, pixel.colour, pixel.glyph);
             }
         }
     }

@@ -105,6 +105,53 @@ bool ButtonContainer::AddButton(bool highlightable, Texture* iconTexture, std::f
     }
 }
 
+// button made with two textures
+bool ButtonContainer::AddButton(bool highlightable, Texture* iconTexture, Texture* iconTexture2, std::function<void()> onClickFunction)
+{
+
+    int buttonId = buttons.size();
+    if (buttonId >= rows * columns)
+    {
+        drawingClass.AddToLog(L"Too many buttons added to ButtonContainer.");
+        return false;
+    }
+    else
+    {
+        int height{ iconTexture->GetHeight() };
+        int width{ iconTexture->GetWidth() };
+        // Calculate the column and row position for this button based on its ID
+        int columnPosition = buttonId % columns;
+        int rowPosition = buttonId / columns;  // Integer division will naturally floor the result
+
+        // if 1st button
+        if (columnPosition == 0 && rowPosition == 0)
+        {
+            nextXPos = xPos + spacing;
+            nextYPos = yPos + spacing;
+            tallestInRow = height;
+        }
+        // if starting new row
+        else if (columnPosition == 0)
+        {
+            nextXPos = xPos + spacing;
+            nextYPos += tallestInRow + spacing;
+            tallestInRow = height; // first height the tallest
+        }
+        // keep track of tallest button in row
+        else
+            if (height > tallestInRow)
+                tallestInRow = height;
+
+        // add button
+        Button* newButton = new Button(nextXPos, nextYPos, highlightable, iconTexture, iconTexture2, onClickFunction);
+        buttons.push_back(newButton);
+
+        nextXPos += width + spacing; // Prepare nextXPos for the next button in the same row
+
+        return true;
+    }
+}
+
 
 void ButtonContainer::HandleMouseClick(COORD mouseCoord)
 {
@@ -122,9 +169,9 @@ void ButtonContainer::HandleMouseClick(COORD mouseCoord)
     }
 }
 
-void ButtonContainer::ActivateLastClicked()
+void ButtonContainer::SetButtonAppearance(int buttonPosition, bool state)
 {
-    buttons.at(lastClicked)->Clicked();
+    buttons.at(buttonPosition)->SetButtonState(state);
 }
 
 void ButtonContainer::DrawButtons()

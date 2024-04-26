@@ -139,10 +139,11 @@ private:
     static Texture* lineToolIcon;
     static Texture* clipboardToolIcon;
     static Texture* clipboardToolToggleIcon;
+    static Texture* clipboardToolToggle2Icon;
     static Texture* sharedClipboardSaveIcon;
+    static Texture* sharedClipboardDeleteIcon;
     static Texture* sharedClipboardLoadIcon;
-
-
+    static Texture* sharedClipboardLoadedIcon;
 
     // container for the concrete classes
     std::unordered_map<ToolType, IToolState*> toolStates;
@@ -195,7 +196,7 @@ public:
     void SetBrushColour(short colour);
     void SetBrushColourAndGlyph(short colour, short glyph);
     void SwitchTool(ToolType type);
-    void ToggleCurrentToolOption();
+    void ToggleClipboardOption();
     int ChangeCanvasOffset(COORD change);
     bool AreCoordsWithinCanvas(COORD coords);
     void SetBrushTextureToBackground();
@@ -211,8 +212,8 @@ public:
     TextureSample* GetClipboardTextureSample() const;
     void SetClipboardTextureSample(TextureSample* newTextureSample);
 
-    void AddCurrentTextureSampleToSharedClipboard();
-    void moveSharedClipboardToCurrentClipboard();
+    void CopyCurrentTextureSampleToSharedClipboard();
+    void CopySharedClipboardToCurrentClipboard();
 
     void SetBrushToDelete();
     void ChangeBrushSize(int sizeChange);
