@@ -33,68 +33,54 @@ private:
         int width;
         int height;
         bool highlightable;
+        bool toggleable;
         bool toggleState;
         short colour;
+        Texture* onTexture;
+        Texture* offTexture;
         Texture* texture;
-        Texture* texture2;
-        // Function pointer type that takes no arguments and returns void
         std::function<void()> OnClick;
 
-        // Primary constructor
-        Button(int x, int y, bool highlight, int w, int h, short c, Texture* iconTexture = nullptr, Texture* iconTexture2 = nullptr, std::function<void()> onClickFunction = nullptr)
-            : xPos{ x }, yPos{ y }, highlightable{ highlight }, width{ w }, height{ h }, colour{ c },
-            texture{ iconTexture }, texture2{ iconTexture2 }, OnClick(onClickFunction), toggleState{ false } {}
+        // Primary constructor for two different textures
+        Button(int x, int y, bool highlight, bool toggle, int w, int h, short c, Texture* onTex, Texture* offTex, std::function<void()> onClickFunction = nullptr)
+            : xPos{ x }, yPos{ y }, highlightable{ highlight }, toggleable{ toggle }, width{ w }, height{ h }, colour{ c },
+            onTexture{ onTex }, offTexture{ offTex }, texture{ onTex }, OnClick(onClickFunction), toggleState{ false } {}
 
-        // Constructor with width and height only
-        Button(int x, int y, bool highlight, int w, int h, short c, std::function<void()> onClickFunction)
-            : Button(x, y, highlight, w, h, c, nullptr, nullptr, onClickFunction) { }
+        // Constructor for a single texture (no toggle effect)
+        Button(int x, int y, bool highlight, bool toggle, int w, int h, short c, Texture* tex, std::function<void()> onClickFunction = nullptr)
+            : xPos{ x }, yPos{ y }, highlightable{ highlight }, toggleable{ toggle }, width{ w }, height{ h }, colour{ c },
+            onTexture{ tex }, offTexture{ tex }, texture{ tex }, OnClick(onClickFunction), toggleState{ false } {}
 
-        // Constructor with a single texture
-        Button(int x, int y, bool highlight, Texture* iconTexture, std::function<void()> onClickFunction)
-            : Button(x, y, highlight, iconTexture->GetWidth(), iconTexture->GetHeight(), FG_DARK_BLUE, iconTexture, nullptr, onClickFunction) { }
-
-        // Constructor with two textures
-        Button(int x, int y, bool highlight, Texture* iconTexture, Texture* iconTexture2, std::function<void()> onClickFunction)
-            : Button(x, y, highlight, iconTexture->GetWidth(), iconTexture->GetHeight(), FG_DARK_BLUE, iconTexture, iconTexture2, onClickFunction) { }
-
-
-        // Deleted copy constructor and copy assignment operator as not needed
-        Button(const Button&) = delete;
-        Button& operator=(const Button&) = delete;
-
-        ~Button()
-        {
-            delete texture;
-            delete texture2;
+        ~Button() {
+            // Delete only if onTexture and offTexture are different
+            if (onTexture != offTexture) {
+                delete onTexture;
+            }
+            delete offTexture;
         }
 
-        // when button clicked
         void Clicked() {
-            if (OnClick) { // Check if the function pointer is not null
-                OnClick(); // Call the function
+            if (OnClick) {
+                OnClick(); // Invoke the onClick handler if set
                 ToggleButton();
             }
         }
 
-        // Determine if a mouse click is on the button
-        bool IsMouseClickOnButton(COORD mouseClick) {
-            return mouseClick.X >= xPos && mouseClick.X < (xPos + width) && mouseClick.Y >= yPos && mouseClick.Y < (yPos + height);
+        bool IsMouseClickOnButton(COORD mouseClick) const {
+            return mouseClick.X >= xPos && mouseClick.X < (xPos + width) &&
+                mouseClick.Y >= yPos && mouseClick.Y < (yPos + height);
         }
 
-        // toggle
         void ToggleButton() {
-            if (texture2 != nullptr) // only toggles if two textures
-            {
-                std::swap(texture, texture2);
+            if (toggleable && onTexture != offTexture) { // Check if two distinct textures are available
                 toggleState = !toggleState;
+                texture = toggleState ? onTexture : offTexture;
             }
         }
 
-        void SetButtonState(bool state) {
-            if (texture2 != nullptr) // only toggles if two textures
-            {
-                if (state)
-                std::swap(texture, texture2);
+        void SetButtonTexture(bool state) {
+            if (onTexture != offTexture) { // Check if toggle effect is intended
+                texture = state ? onTexture : offTexture;
             }
         }
     };
@@ -113,11 +99,11 @@ public:
 
     ~ButtonContainer();
 
-    bool AddButton(bool highlightable, int width, int height, short colour, std::function<void()> onClickFunction);
+    bool AddButton(bool highlightable, bool toggleable, int width, int height, short colour, std::function<void()> onClickFunction);
 
-    bool AddButton(bool highlightable, Texture* texture, std::function<void()> onClickFunction);
+    bool AddButton(bool highlightable, bool toggleable, Texture* texture, std::function<void()> onClickFunction);
 
-    bool AddButton(bool highlightable, Texture* texture, Texture* texture2, std::function<void()> onClickFunction);
+    bool AddButton(bool highlightable, bool toggleable, Texture* texture, Texture* texture2, std::function<void()> onClickFunction);
 
     void HandleMouseClick(COORD);
 

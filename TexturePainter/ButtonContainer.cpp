@@ -15,7 +15,7 @@ ButtonContainer::~ButtonContainer()
 }
 
 // button made with dimentions and colour
-bool ButtonContainer::AddButton(bool highlightable, int width, int height, short colour, std::function<void()> onClickFunction)
+bool ButtonContainer::AddButton(bool highlightable, bool toggleable, int width, int height, short colour, std::function<void()> onClickFunction)
 {
     int buttonId = buttons.size();
     if (buttonId >= rows * columns)
@@ -49,7 +49,7 @@ bool ButtonContainer::AddButton(bool highlightable, int width, int height, short
                 tallestInRow = height;
 
         // add button
-        Button* newButton = new Button(nextXPos, nextYPos, highlightable, width, height, colour, onClickFunction);
+        Button* newButton = new Button(nextXPos, nextYPos, highlightable, toggleable, width, height, colour, onClickFunction);
         buttons.push_back(newButton);
 
         nextXPos += width + spacing; // Prepare nextXPos for the next button in the same row
@@ -59,7 +59,7 @@ bool ButtonContainer::AddButton(bool highlightable, int width, int height, short
 }
 
 // button made with a texture
-bool ButtonContainer::AddButton(bool highlightable, Texture* iconTexture, std::function<void()> onClickFunction)
+bool ButtonContainer::AddButton(bool highlightable, bool toggleable, Texture* iconTexture, std::function<void()> onClickFunction)
 {
 
     int buttonId = buttons.size();
@@ -106,7 +106,7 @@ bool ButtonContainer::AddButton(bool highlightable, Texture* iconTexture, std::f
 }
 
 // button made with two textures
-bool ButtonContainer::AddButton(bool highlightable, Texture* iconTexture, Texture* iconTexture2, std::function<void()> onClickFunction)
+bool ButtonContainer::AddButton(bool highlightable, bool toggleable, Texture* iconTexture, Texture* iconTexture2, std::function<void()> onClickFunction)
 {
 
     int buttonId = buttons.size();
@@ -171,7 +171,7 @@ void ButtonContainer::HandleMouseClick(COORD mouseCoord)
 
 void ButtonContainer::SetButtonAppearance(int buttonPosition, bool state)
 {
-    buttons.at(buttonPosition)->SetButtonState(state);
+    buttons.at(buttonPosition)->SetButtonTexture(state);
 }
 
 void ButtonContainer::DrawButtons()
