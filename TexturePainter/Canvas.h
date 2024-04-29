@@ -45,10 +45,9 @@ private:
 
     ToolType currentBrushType;
     int brushSize;
-    bool initialClick;
-    COORD initialClickCoords;
 
     CHAR_INFO currentPixel;
+    CHAR_INFO drawPixel;
     CHAR_INFO deletePixel;
     CHAR_INFO cutPixel;
 
@@ -211,11 +210,13 @@ public:
     void AddTextureSampleToClipboard(COORD topLeft, COORD bottomRight);
     TextureSample* GetClipboardTextureSample() const;
     void SetClipboardTextureSample(TextureSample* newTextureSample);
+    bool GetSharedClipboardTextureState();
 
     void CopyCurrentTextureSampleToSharedClipboard();
     void CopySharedClipboardToCurrentClipboard();
 
     void SetBrushToDelete();
+    void SetBrushToCurrentPixel();
     void ChangeBrushSize(int sizeChange);
     void PaintPoint(int x, int y);
     void PaintGlyph(int x, int y);

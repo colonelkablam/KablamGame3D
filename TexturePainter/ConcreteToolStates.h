@@ -203,7 +203,6 @@ public:
 
 class CopyBrushState : public IToolState {
 
-    bool textureBeenSampled{ false };
     bool drawPartialSample{ true };
 
 public:
@@ -212,9 +211,9 @@ public:
 
     void HandleBrushStroke(COORD mouseCoords) override {
         
-        if (!textureBeenSampled)
+        if (canvas.clipboardTextureSample == nullptr)
         {
-            if (!initialClick)
+            if (initialClick == false)
             {
                 initialClickCoords = mouseCoords;
                 initialClick = true;
@@ -225,20 +224,19 @@ public:
                 canvas.PaintRectangleGlyphs(initialClickCoords.X, initialClickCoords.Y, mouseCoords.X, mouseCoords.Y, false, 1);
             }
         }
-        else
+        else // only drawing if not nullptr
         {
-            COORD placement{ mouseCoords.X - (short)canvas.GetClipboardTextureSample()->width + 1, mouseCoords.Y - (short)canvas.GetClipboardTextureSample()->height + 1};
+            COORD placement{ mouseCoords.X - (short)canvas.clipboardTextureSample->width + 1, mouseCoords.Y - (short)canvas.clipboardTextureSample->height + 1};
             canvas.PaintClipboardTextureSample(placement, drawPartialSample);
         }
 
     }
 
     void HandleMouseRelease(COORD mouseCoords) override {
-        if (!textureBeenSampled)
+        if (canvas.clipboardTextureSample == nullptr)
         {
             canvas.ClearCurrentBrushstrokeTexture();
             canvas.AddTextureSampleToClipboard(initialClickCoords, mouseCoords);
-            textureBeenSampled = true;
         }
         else
         {
@@ -248,39 +246,45 @@ public:
 
     void DisplayPointer(COORD mouseCoords) {
 
-        // Access the sample and canvas only once
-        const auto& sample = *canvas.GetClipboardTextureSample();
+        if (canvas.clipboardTextureSample != nullptr)
+        {
+            // Access the sample and canvas only once
+            const auto& sample = *canvas.clipboardTextureSample;
 
-        int width = sample.width;
-        int height = sample.height;
-        int zoom = canvas.GetZoomLevel();
+            int width = sample.width;
+            int height = sample.height;
+            int zoom = canvas.GetZoomLevel();
 
-        // Calculate base coordinates for drawing
-        COORD pixelCoord = canvas.coordinateStrategy->ConvertCoordsToCanvasPixel(mouseCoords);
-        int baseX = pixelCoord.X - (width - 1) * zoom;
-        int baseY = pixelCoord.Y - (height - 1) * zoom;
+            // Calculate base coordinates for drawing
+            COORD pixelCoord = canvas.coordinateStrategy->ConvertCoordsToCanvasPixel(mouseCoords);
+            int baseX = pixelCoord.X - (width - 1) * zoom;
+            int baseY = pixelCoord.Y - (height - 1) * zoom;
 
-        // Iterate through sample pixels
-        for (const Canvas::PixelSample& pixel : sample.pixels) {
-            int x = baseX + pixel.x * zoom;
-            int y = baseY + pixel.y * zoom;
+            // Iterate through sample pixels
+            for (const Canvas::PixelSample& pixel : sample.pixels) {
+                int x = baseX + pixel.x * zoom;
+                int y = baseY + pixel.y * zoom;
 
-            // Check for valid drawing position
-            if (canvas.AreCoordsWithinCanvas(COORD{ (short)x, (short)y }))
-            {
-                // When drawPartialSample is true, draw all pixels except delete pixels
-                if (drawPartialSample)
+                // Check for valid drawing position
+                if (canvas.AreCoordsWithinCanvas(COORD{ (short)x, (short)y }))
                 {
-                    if (pixel.glyph != canvas.deletePixel.Char.UnicodeChar)
+                    // When drawPartialSample is true, draw all pixels except delete pixels
+                    if (drawPartialSample)
                     {
-                        canvas.drawingClass.DrawBlock(x, y, zoom, pixel.colour, pixel.glyph);
+                        if (pixel.glyph != canvas.deletePixel.Char.UnicodeChar)
+                        {
+                            canvas.drawingClass.DrawBlock(x, y, zoom, pixel.colour, pixel.glyph);
+                        }
                     }
+                    // When drawPartialSample is false, draw all pixels
+                    else
+                        canvas.drawingClass.DrawBlock(x, y, zoom, pixel.colour, pixel.glyph);
                 }
-                // When drawPartialSample is false, draw all pixels
-                else
-                    canvas.drawingClass.DrawBlock(x, y, zoom, pixel.colour, pixel.glyph);
             }
+
         }
+
+
     }
 
     void ToggleOption()
@@ -300,8 +304,8 @@ public:
     void ResetTool() override
     {
         initialClick = false;
-        textureBeenSampled = false;
-        canvas.GetClipboardTextureSample()->Reset();
+        delete canvas.clipboardTextureSample;
+        canvas.clipboardTextureSample = nullptr;
     }
 };
 

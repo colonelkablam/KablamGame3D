@@ -301,8 +301,8 @@ bool TexturePainter::HandleKeyPress()
     // when right mouse lifted
     if (keyArray[VK_RBUTTON].bReleased)
     {
-        if (currentCanvas->AreCoordsWithinCanvas(mouseCoords))
-            currentCanvas->HandleLeftMouseRelease(mouseCoords);
+        currentCanvas->SetBrushToCurrentPixel(); // back to the current pixel
+        currentCanvas->HandleLeftMouseRelease(mouseCoords);
     }
 
     if (keyArray[VK_OEM_PLUS].bPressed)
@@ -417,6 +417,11 @@ bool TexturePainter::HandleKeyPress()
     }
 
     return true;
+}
+
+bool TexturePainter::GetCurrentSharedClipboardTextureState()
+{
+    return currentCanvas->GetSharedClipboardTextureState();
 }
 
 bool TexturePainter::GatherNewTextureValues(std::wstring& textureName, int& textureWidth, int& textureHeight, int& illumination)

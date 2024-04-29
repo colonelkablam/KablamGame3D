@@ -49,6 +49,7 @@ public:
     // member methods for TexturePainter
 
     bool GetUserStartInput(); // needed to load up textures
+    bool GetCurrentSharedClipboardTextureState();
 
 protected:
     // virtual methods from KablamEngine to be defined
