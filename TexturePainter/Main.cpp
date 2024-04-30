@@ -28,6 +28,8 @@ int main()
 
 	std::cout << "End of main() Texture Painter reached.\n";
 
+	Canvas::CleanUpStaticPointers();
+
 	//Sleep(3000);
 
 	return 0;

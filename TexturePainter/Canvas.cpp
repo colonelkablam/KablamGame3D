@@ -18,9 +18,11 @@ Texture* Canvas::deleteToolIcon = nullptr;
 Texture* Canvas::blockToolIcon = nullptr;
 Texture* Canvas::increaseToolIcon = nullptr;
 Texture* Canvas::decreaseToolIcon = nullptr;
+Texture* Canvas::lineToolIcon = nullptr;
 Texture* Canvas::rectToolIcon = nullptr;
 Texture* Canvas::rectFillToolIcon = nullptr;
-Texture* Canvas::lineToolIcon = nullptr;
+Texture* Canvas::circleToolIcon = nullptr;
+Texture* Canvas::circleFillToolIcon = nullptr;
 Texture* Canvas::clipboardToolIcon = nullptr;
 Texture* Canvas::clipboardToolToggleIcon = nullptr;
 Texture* Canvas::clipboardToolToggle2Icon = nullptr;
@@ -80,6 +82,8 @@ void Canvas::Initialise(const std::wstring& saveFolder, const std::wstring& file
     toolStates[ToolType::BRUSH_LINE] = new LineBrushState(*this);
     toolStates[ToolType::BRUSH_RECT] = new RectBrushState(*this);
     toolStates[ToolType::BRUSH_RECT_FILLED] = new FilledRectBrushState(*this);
+    toolStates[ToolType::BRUSH_CIRCLE] = new CircleBrushState(*this);
+    toolStates[ToolType::BRUSH_CIRCLE_FILLED] = new FilledCircleBrushState(*this);
     toolStates[ToolType::BRUSH_COPY] = new CopyBrushState(*this);
 }
 
@@ -102,17 +106,47 @@ Canvas::~Canvas() {
     }
 
     delete clipboardTextureSample;
-    delete sharedClipboardTextureSample;
+    delete colourButtonsContainer;
+    delete brushButtonsContainer;
 
+}
+
+// delete the static pointers
+void Canvas::CleanUpStaticPointers()
+{
+    delete sharedClipboardTextureSample;
     delete deleteToolIcon;
     delete blockToolIcon;
     delete increaseToolIcon;
     delete decreaseToolIcon;
+    delete lineToolIcon;
     delete rectToolIcon;
     delete rectFillToolIcon;
-    delete lineToolIcon;
+    delete circleToolIcon;
+    delete circleFillToolIcon;
     delete clipboardToolIcon;
     delete clipboardToolToggleIcon;
+    delete clipboardToolToggle2Icon;
+    delete sharedClipboardSaveIcon;
+    delete sharedClipboardDeleteIcon;
+    delete sharedClipboardLoadIcon;
+    delete sharedClipboardLoadedIcon;
+
+    sharedClipboardTextureSample = nullptr;
+    deleteToolIcon = nullptr;
+    blockToolIcon = nullptr;
+    increaseToolIcon = nullptr;
+    decreaseToolIcon = nullptr;
+    rectToolIcon = nullptr;
+    rectFillToolIcon = nullptr;
+    lineToolIcon = nullptr;
+    clipboardToolIcon = nullptr;
+    clipboardToolToggleIcon = nullptr;
+    clipboardToolToggle2Icon = nullptr;
+    sharedClipboardSaveIcon = nullptr;
+    sharedClipboardDeleteIcon = nullptr;
+    sharedClipboardLoadIcon = nullptr;
+    sharedClipboardLoadedIcon = nullptr;
 }
 
 bool Canvas::SaveTexture(const std::wstring& filePath)
@@ -179,9 +213,11 @@ void Canvas::PopulateToolButtonsContainer()
     brushButtonsContainer->AddButton(true, lineToolIcon, [this]() { SwitchTool(ToolType::BRUSH_LINE); });
     brushButtonsContainer->AddButton(true, rectToolIcon, [this]() { SwitchTool(ToolType::BRUSH_RECT); });
     brushButtonsContainer->AddButton(true, rectFillToolIcon, [this]() { SwitchTool(ToolType::BRUSH_RECT_FILLED); });
+    brushButtonsContainer->AddButton(true, circleToolIcon, [this]() { SwitchTool(ToolType::BRUSH_CIRCLE); });
+    brushButtonsContainer->AddButton(true, circleFillToolIcon, [this]() { SwitchTool(ToolType::BRUSH_CIRCLE_FILLED); });
     brushButtonsContainer->AddButton(true, clipboardToolIcon, [this]() { SwitchTool(ToolType::BRUSH_COPY); });
-    brushButtonsContainer->AddButton(false, true, clipboardToolToggleIcon, clipboardToolToggle2Icon, [this]() { ToggleClipboardOption(); });
-    brushButtonsContainer->AddButton(false, true, sharedClipboardSaveIcon, sharedClipboardDeleteIcon, [this]() { CopyCurrentTextureSampleToSharedClipboard(); });
+    brushButtonsContainer->AddButton(false, true, clipboardToolToggle2Icon, clipboardToolToggleIcon, [this]() { ToggleClipboardOption(); });
+    brushButtonsContainer->AddButton(false, true, sharedClipboardSaveIcon, sharedClipboardDeleteIcon, [this]() { ManageSharedClipboardTextureSample(); });
     brushButtonsContainer->AddButton(false, false, sharedClipboardLoadIcon, sharedClipboardLoadedIcon, [this]() { CopySharedClipboardToCurrentClipboard(); });
 }
 
@@ -197,9 +233,11 @@ void Canvas::InitialiseTextures() {
     blockToolIcon = new Texture(L"./ToolIcons/block_tool_icon.txr");
     increaseToolIcon = new Texture(L"./ToolIcons/increase_tool_icon.txr");
     decreaseToolIcon = new Texture(L"./ToolIcons/decrease_tool_icon.txr");
+    lineToolIcon = new Texture(L"./ToolIcons/line_tool_icon.txr");
     rectToolIcon = new Texture(L"./ToolIcons/rect_tool_icon.txr");
     rectFillToolIcon = new Texture(L"./ToolIcons/rect_fill_tool_icon.txr");
-    lineToolIcon = new Texture(L"./ToolIcons/line_tool_icon.txr");
+    circleToolIcon = new Texture(L"./ToolIcons/circle_tool_icon.txr");
+    circleFillToolIcon = new Texture(L"./ToolIcons/circle_fill_tool_icon.txr");
     clipboardToolIcon = new Texture(L"./ToolIcons/copy_tool_icon.txr");
     clipboardToolToggleIcon = new Texture(L"./ToolIcons/copy_tool_toggle_icon.txr");
     clipboardToolToggle2Icon = new Texture(L"./ToolIcons/copy_tool_toggle2_icon.txr");
@@ -207,7 +245,6 @@ void Canvas::InitialiseTextures() {
     sharedClipboardDeleteIcon = new Texture(L"./ToolIcons/shared_clipboard_delete_icon.txr");
     sharedClipboardLoadIcon = new Texture(L"./ToolIcons/shared_clipboard_load_icon.txr");
     sharedClipboardLoadedIcon = new Texture(L"./ToolIcons/shared_clipboard_loaded_icon.txr");
-
 }
 
 int Canvas::GetIllumination()
@@ -466,31 +503,35 @@ bool Canvas::GetSharedClipboardTextureState()
     return sharedClipboardTextureSample == nullptr ? false : true;
 }
 
-// this will add sample to shared clipboard if it is empty, and delete sample if full
-void Canvas::CopyCurrentTextureSampleToSharedClipboard()
+// this method will either
+// - copy sample to shared clipboard if it is empty 
+// - OR delete shared clipboard if already populated
+void Canvas::ManageSharedClipboardTextureSample()
 {
-    // Check if the currentToolState is valid and corresponds the copy brush
-    if (currentToolState != nullptr && toolStates[ToolType::BRUSH_COPY] == currentToolState)
+    // Check if the currentToolState is valid and corresponds the copy brush and clipboard sample isn't a nullptr
+    if (toolStates[ToolType::BRUSH_COPY] == currentToolState && clipboardTextureSample != nullptr)
     {
+        // if shared clipboard is empty then populate with a deep copy of canvas clipboard
         if (sharedClipboardTextureSample == nullptr)
         {
             sharedClipboardTextureSample = clipboardTextureSample->Clone();  // Deep copy
         }
+        // otherwise delete shared clipboard and set to nullptr
         else {
             delete sharedClipboardTextureSample;  // Clean up existing shared clipboard sample
             sharedClipboardTextureSample = nullptr;  // No current texture to copy
-    
         }
     }
     else {
-        drawingClass.AddToLog(L"Unable to add current texture sample to shared clipboard as BRUSH_COPY not active tool");
+        drawingClass.AddToLog(L"Unable to add canvas texture sample to shared clipboard as BRUSH_COPY not active tool OR nullptr sample.");
     }
 }
 
+// 
 void Canvas::CopySharedClipboardToCurrentClipboard()
 {
-    // Check if the currentToolState is valid, corresponds the copy brush, and insn't a nullptr
-    if (currentToolState != nullptr && toolStates[ToolType::BRUSH_COPY] == currentToolState && sharedClipboardTextureSample != nullptr)
+    // Check if the currentToolState corresponds the copy brush, and insn't a nullptr
+    if (toolStates[ToolType::BRUSH_COPY] == currentToolState && sharedClipboardTextureSample != nullptr)
     {
         // activate initial click so brush ready to paint to brush texture
         toolStates.at(ToolType::BRUSH_COPY)->SetClicks(true);
@@ -503,11 +544,12 @@ void Canvas::CopySharedClipboardToCurrentClipboard()
         }
     }
     else {
-        drawingClass.AddToLog(L"Unable to add current texture sample to shared clipboard as BRUSH_COPY not active tool");
+        drawingClass.AddToLog(L"Unable to add shared texture sample to canvas clipboard as BRUSH_COPY not active tool OR nullptr sample.");
     }
 }
 
-void Canvas::ClearCurrentBrushstrokeTexture() {
+void Canvas::ClearCurrentBrushstrokeTexture()
+{
     currentBrushStrokeTexture.Clear();
 }
 
@@ -596,7 +638,8 @@ void Canvas::PaintBlock(int x, int y, int sideLength)
 
 }
 
-void Canvas::PaintRectangleCoords(int x0, int y0, int x1, int y1, bool filled, int lineWidth) {
+void Canvas::PaintRectangleCoords(int x0, int y0, int x1, int y1, bool filled, int lineWidth)
+{
     // Normalize coordinates
     int left = std::min(x0, x1);
     int top = std::min(y0, y1);
@@ -629,7 +672,8 @@ void Canvas::PaintRectangleCoords(int x0, int y0, int x1, int y1, bool filled, i
 }
 
 // paints glyphs over the texture
-void Canvas::PaintRectangleGlyphs(int x0, int y0, int x1, int y1, bool filled, int lineWidth) {
+void Canvas::PaintRectangleGlyphs(int x0, int y0, int x1, int y1, bool filled, int lineWidth)
+{
     // Normalize coordinates
     int left = std::min(x0, x1);
     int top = std::min(y0, y1);
@@ -658,6 +702,61 @@ void Canvas::PaintRectangleGlyphs(int x0, int y0, int x1, int y1, bool filled, i
                 PaintGlyph(right - i, y); // Right side
             }
         }
+    }
+}
+
+// ChatGPT used (with guidance!) to create this set of functions
+void Canvas::PaintCircleCoords(int centerX, int centerY, int pointX, int pointY, bool filled, int thickness)
+{
+    int radius = static_cast<int>(std::sqrt((pointX - centerX) * (pointX - centerX) + (pointY - centerY) * (pointY - centerY)));
+
+    if (filled) {
+        // Draw filled circle
+        for (int y = -radius; y <= radius; y++) {
+            for (int x = -radius; x <= radius; x++) {
+                if (x * x + y * y <= radius * radius) {
+                    PaintPoint(centerX + x, centerY + y);
+                }
+            }
+        }
+    }
+    else {
+        // Draw thick circle outline, preventing spikes
+        DrawThickCircleOutline(centerX, centerY, radius, thickness);
+    }
+}
+
+// helper to Canvas::PaintCircleCoords
+void Canvas::DrawThickCircleOutline(int cx, int cy, int radius, int thickness) {
+    int x = 0;
+    int y = radius;
+    int p = (5 - radius * 4) / 4;
+
+    SetCirclePixels(cx, cy, x, y, thickness);
+    while (x < y) {
+        x++;
+        if (p < 0) {
+            p += 2 * x + 1;
+        }
+        else {
+            y--;
+            p += 2 * (x - y) + 1;
+        }
+        SetCirclePixels(cx, cy, x, y, thickness);
+    }
+}
+
+// helper to Canvas::PaintCircleCoords
+void Canvas::SetCirclePixels(int cx, int cy, int x, int y, int thickness) {
+    for (int i = 0; i < thickness; i++) {
+        PaintPoint(cx + x, cy + y + i);
+        PaintPoint(cx - x, cy + y + i);
+        PaintPoint(cx + x, cy - y - i);
+        PaintPoint(cx - x, cy - y - i);
+        PaintPoint(cx + y, cy + x + i);
+        PaintPoint(cx - y, cy + x + i);
+        PaintPoint(cx + y, cy - x - i);
+        PaintPoint(cx - y, cy - x - i);
     }
 }
 
@@ -728,7 +827,7 @@ void Canvas::DrawCanvas()
     // draw border around canvas display panel
     drawingClass.DrawRectangleEdgeLength(topLeft.X - 1, topLeft.Y - 1, TexturePainter::CANVAS_DISPLAY_WIDTH + 2, TexturePainter::CANVAS_DISPLAY_HEIGHT + 2, FG_RED, false, PIXEL_HALF);
     
-    // link brush buttons 8 and 9 to if shared clipboard contains texture sample (true) or nullptr (false)
+    // link brush buttons 8 and 9 to if shared clipboard contains texture sample (true) or nullptr (false) // simple observer 
     brushButtonsContainer->UpdateButtonAppearance(8, GetSharedClipboardTextureState());
     brushButtonsContainer->UpdateButtonAppearance(9, GetSharedClipboardTextureState());
     DrawButtons();
@@ -741,15 +840,21 @@ void Canvas::DrawCanvas()
 
 void Canvas::DrawButtons()
 {
-    colourButtonsContainer->DrawButtons();
-    brushButtonsContainer->DrawButtons();
+    colourButtonsContainer->DrawButtons(drawingClass.GetMousePosition());
+    brushButtonsContainer->DrawButtons(drawingClass.GetMousePosition());
 }
 
-void Canvas::DisplayBrushPointer(COORD mouseCoords)
+void Canvas::DisplayBrushPointer(COORD mouseCoords, bool justOnePixel)
 {
     // converts the mouse coordinates to the texture and back to screen to 'snap' pointer to correct pixels - accounts for zoom/scrolling etc
     COORD pointerCoords{ coordinateStrategy->ConvertCoordsToCanvasPixel(mouseCoords) };
-    drawingClass.DrawBlock(pointerCoords.X, pointerCoords.Y, brushSize * zoomLevel, drawPixel.Attributes, PIXEL_HALF);
+
+    int size{ brushSize };
+
+    if (justOnePixel)
+        size = 1;
+
+    drawingClass.DrawBlock(pointerCoords.X, pointerCoords.Y, size * zoomLevel, drawPixel.Attributes, PIXEL_HALF);
 }
 
 void Canvas::UndoLastCommand()

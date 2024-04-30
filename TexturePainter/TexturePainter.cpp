@@ -419,6 +419,11 @@ bool TexturePainter::HandleKeyPress()
     return true;
 }
 
+bool TexturePainter::GetLeftMouseHeld()
+{
+    return keyArray[VK_LBUTTON].bHeld;
+}
+
 bool TexturePainter::GetCurrentSharedClipboardTextureState()
 {
     return currentCanvas->GetSharedClipboardTextureState();

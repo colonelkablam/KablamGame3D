@@ -50,6 +50,8 @@ public:
 
     bool GetUserStartInput(); // needed to load up textures
     bool GetCurrentSharedClipboardTextureState();
+    bool GetLeftMouseHeld();
+
 
 protected:
     // virtual methods from KablamEngine to be defined

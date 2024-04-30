@@ -2,7 +2,7 @@
 #include "ButtonContainer.h"
 
 ButtonContainer::ButtonContainer(TexturePainter& drawer, int x, int y, int col, int row, short colour, int space)
-    : drawingClass{ drawer }, xPos{ x }, yPos{ y }, lastClicked{ 0 }, columns{ col }, rows{ row },
+    : drawingClass{ drawer }, xPos{ x }, yPos{ y }, highlighted{ 0 }, columns{ col }, rows{ row },
     background{ colour }, spacing{ space }, nextXPos { 0 }, nextYPos{ 0 }, tallestInRow{ 0 } {}
 
 ButtonContainer::~ButtonContainer()
@@ -89,9 +89,12 @@ void ButtonContainer::HandleMouseClick(COORD mouseCoord)
     {
         if (button->IsMouseClickOnButton(mouseCoord))
         {
+            mouseClickPosition = mouseCoord;
             button->Clicked();
             if (button->highlightable)
-                lastClicked = count;
+                highlighted = count;
+
+            drawingClass.DrawRectangleEdgeLength(buttons.at(count)->xPos - 1, buttons.at(count)->yPos - 1, buttons.at(count)->width + 2, buttons.at(count)->height + 2, FG_DARK_GREEN, true, PIXEL_QUARTER);
             break;
         }
         count++;
@@ -102,12 +105,12 @@ void ButtonContainer::HandleMouseClick(COORD mouseCoord)
 void ButtonContainer::UpdateButtonAppearance(size_t buttonIndex, bool state)
 {
     if (buttonIndex < buttons.size())
-        buttons.at(buttonIndex)->SetButtonTexture(state);
+        buttons.at(buttonIndex)->UpdateButtonTexture(state);
     else
         drawingClass.AddToLog(L"Attempted to set appearance of a button outside button container vector index");
 }
 
-void ButtonContainer::DrawButtons()
+void ButtonContainer::DrawButtons(COORD mousePosition)
 {
     for (const Button* button : buttons) {
         if (button->texture == nullptr)
@@ -115,10 +118,22 @@ void ButtonContainer::DrawButtons()
         else
             drawingClass.DrawTextureToScreen(*button->texture, button->xPos, button->yPos, 1, true);
 
+        // draw default border
         drawingClass.DrawRectangleEdgeLength(button->xPos - 1, button->yPos - 1, button->width + 2, button->height + 2, background, false, PIXEL_HALF);
+
+        // highlight if button clicked
+        if (button->IsMouseClickOnButton(mousePosition) && drawingClass.GetLeftMouseHeld())
+            drawingClass.DrawRectangleEdgeLength(button->xPos, button->yPos, button->width, button->height, FG_GREEN, true, PIXEL_HALF);
+
     }
-    // highlight last clicked
-    drawingClass.DrawRectangleEdgeLength(buttons.at(lastClicked)->xPos - 1, buttons.at(lastClicked)->yPos - 1, buttons.at(lastClicked)->width + 2, buttons.at(lastClicked)->height + 2, TexturePainter::HIGHLIGHT_COLOUR, false, PIXEL_QUARTER);
+
+    // highlight last clicked highlightable button in the container (size_t)
+    if (highlighted < buttons.size())
+        drawingClass.DrawRectangleEdgeLength(buttons.at(highlighted)->xPos - 1, buttons.at(highlighted)->yPos - 1, buttons.at(highlighted)->width + 2, buttons.at(highlighted)->height + 2, TexturePainter::HIGHLIGHT_COLOUR, false, PIXEL_QUARTER);
+    else
+        // log an error if `highlighted` is out of bounds
+        drawingClass.AddToLog(L"Highlighted button index out of range");
+
 
 
 }

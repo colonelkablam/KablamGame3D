@@ -151,6 +151,110 @@ public:
     }
 };
 
+
+class CircleBrushState : public IToolState {
+public:
+    CircleBrushState(Canvas& canvas)
+        : IToolState{ canvas } {}
+
+
+    void HandleBrushStroke(COORD mouseCoords) override {
+        if (!initialClick)
+        {
+            initialClickCoords = mouseCoords;
+            initialClick = true;
+        }
+        else
+        {
+            int size = canvas.GetBrushSize();
+            canvas.ClearCurrentBrushstrokeTexture();
+            canvas.PaintCircleCoords(initialClickCoords.X, initialClickCoords.Y, mouseCoords.X + size - 1, mouseCoords.Y + size - 1, false, size);
+        }
+    }
+
+    void HandleMouseRelease(COORD mouseCoords) override {
+        canvas.SetBrushTextureToBackground();
+        ResetClicks();
+    }
+
+    void DisplayPointer(COORD mouseCoords)
+    {
+        canvas.DisplayBrushPointer(mouseCoords);
+    }
+
+    void ToggleOption()
+    {
+        // do nothing
+    }
+
+    void ResetClicks()
+    {
+        initialClick = false;
+    }
+
+    void SetClicks(bool value)
+    {
+        initialClick = value;
+    }
+
+    void ResetTool() override
+    {
+        initialClick = false;
+
+    }
+};
+
+class FilledCircleBrushState : public IToolState {
+public:
+    FilledCircleBrushState(Canvas& canvas)
+        : IToolState{ canvas } {}
+
+    void HandleBrushStroke(COORD mouseCoords) override {
+        if (!initialClick)
+        {
+            initialClickCoords = mouseCoords;
+            initialClick = true;
+        }
+        else
+        {
+            int size = canvas.GetBrushSize();
+            canvas.ClearCurrentBrushstrokeTexture();
+            canvas.PaintRectangleCoords(initialClickCoords.X, initialClickCoords.Y, mouseCoords.X, mouseCoords.Y, true);
+        }
+    }
+
+    void HandleMouseRelease(COORD mouseCoords) override {
+        canvas.SetBrushTextureToBackground();
+        ResetClicks();
+    }
+
+    void DisplayPointer(COORD mouseCoords)
+    {
+        canvas.DisplayBrushPointer(mouseCoords, true);
+    }
+
+    void ToggleOption()
+    {
+        // do nothing
+    }
+
+    void ResetClicks()
+    {
+        initialClick = false;
+    }
+
+    void SetClicks(bool value)
+    {
+        initialClick = value;
+    }
+
+    void ResetTool() override
+    {
+        initialClick = false;
+
+    }
+};
+
 class LineBrushState : public IToolState {
 public:
     LineBrushState(Canvas& canvas)

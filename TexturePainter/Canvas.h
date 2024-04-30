@@ -17,6 +17,8 @@ enum class ToolType {
     BRUSH_BLOCK,
     BRUSH_RECT,
     BRUSH_RECT_FILLED,
+    BRUSH_CIRCLE,
+    BRUSH_CIRCLE_FILLED,
     BRUSH_LINE,
     BRUSH_COPY
 };
@@ -133,9 +135,11 @@ private:
     static Texture* blockToolIcon;
     static Texture* increaseToolIcon;
     static Texture* decreaseToolIcon;
+    static Texture* lineToolIcon;
     static Texture* rectToolIcon;
     static Texture* rectFillToolIcon;
-    static Texture* lineToolIcon;
+    static Texture* circleToolIcon;
+    static Texture* circleFillToolIcon;
     static Texture* clipboardToolIcon;
     static Texture* clipboardToolToggleIcon;
     static Texture* clipboardToolToggle2Icon;
@@ -170,6 +174,9 @@ public:
     Canvas(TexturePainter& drawer, const std::wstring& saveFolder, const std::wstring& fileName, short xPos, short yPos);
 
     ~Canvas();
+
+    // to delete the static pointers
+    static void CleanUpStaticPointers();
     
 // instance methods
     bool SaveTexture(const std::wstring& filePath);
@@ -212,7 +219,7 @@ public:
     void SetClipboardTextureSample(TextureSample* newTextureSample);
     bool GetSharedClipboardTextureState();
 
-    void CopyCurrentTextureSampleToSharedClipboard();
+    void ManageSharedClipboardTextureSample();
     void CopySharedClipboardToCurrentClipboard();
 
     void SetBrushToDelete();
@@ -224,11 +231,19 @@ public:
     void PaintBlock(int x, int y, int sideLength);
     void PaintRectangleCoords(int x0, int y0, int x1, int y1, bool filled = true, int lineWidth = 1);
     void PaintRectangleGlyphs(int x0, int y0, int x1, int y1, bool filled = true, int lineWidth = 1);
+    void PaintCircleCoords(int centerX, int centerY, int pointX, int pointY, bool filled, int lineWidth = 1);
+private:
+    void DrawThickCircleOutline(int cx, int cy, int radius, int thickness);
+
+    // helper to Canvas::PaintCircleCoords
+    void SetCirclePixels(int cx, int cy, int x, int y, int thickness);
+
+public:
     void PaintClipboardTextureSample(COORD topLeft, bool partialSample = false);
     
     void DrawCanvas();
     void DrawButtons();
-    void DisplayBrushPointer(COORD);
+    void DisplayBrushPointer(COORD coords, bool justOnePixel = false);
     void UndoLastCommand();
     void RedoLastCommand();
     int GetSizeUndoStack();

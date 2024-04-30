@@ -15,7 +15,8 @@ private:
     int xPos;
     int yPos;
 
-    int lastClicked;
+    size_t highlighted;
+    COORD mouseClickPosition;
     short background;
 
     // handling button placements
@@ -36,6 +37,7 @@ private:
         bool toggleable;
         bool toggleState;
         short colour;
+        // will be sourced from a shared static pointer to textures in the Canvas class
         Texture* offTexture;
         Texture* onTexture;
         Texture* texture;
@@ -59,11 +61,7 @@ private:
             : Button(x, y, highlight, w, h, false, nullptr, nullptr, c, onClickFunction, initState) {}
 
         ~Button() {
-            // Delete only if onTexture and offTexture are different
-            if (onTexture != offTexture) {
-                delete onTexture;
-            }
-            delete offTexture;
+            // Do not delete pointers here as they are sourced from a static pointer 
         }
 
         void Clicked() {
@@ -78,6 +76,7 @@ private:
                 mouseClick.Y >= yPos && mouseClick.Y < (yPos + height);
         }
 
+        // change the look and toggle when clicked on
         void ToggleButton() {
             // Check if two distinct textures are available AND not a colour button
             if (toggleable && onTexture != offTexture && texture != nullptr) { 
@@ -86,8 +85,10 @@ private:
             }
         }
 
-        void SetButtonTexture(bool state) {
-            if (onTexture != offTexture) { // Check if toggle effect is intended
+        // change the look of a button without clicking on it (regardless if toggleable)
+        void UpdateButtonTexture(bool state) {
+            // Check if toggle effect is intended
+            if (onTexture != offTexture) {
                 texture = state ? onTexture : offTexture;
             }
         }
@@ -119,7 +120,7 @@ public:
 
     void UpdateButtonAppearance(size_t buttonNumber, bool state);
 
-    void DrawButtons();
+    void DrawButtons(COORD mousePosition);
 
 };
 
