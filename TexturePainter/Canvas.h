@@ -35,6 +35,7 @@ private:
     static const int START_ZOOM_LEVEL = 1;
     static const int START_BRUSH_SIZE = 1;
     static const ToolType STARTING_TOOL = ToolType::BRUSH_BLOCK;
+    static const size_t MAX_BRUSH_SIZE = 8;
 
     // button container positions
     const int COLOUR_BUTTON_XPOS = 1;
@@ -124,6 +125,7 @@ private:
     TextureSample* clipboardTextureSample;
 
     static TextureSample* sharedClipboardTextureSample;
+    bool sharedClipboardState;
 
 
     // canvas button containers
@@ -229,20 +231,15 @@ public:
     void PaintGlyph(int x, int y);
     void PaintLine(int x0, int y0, int x1, int y1, int lineThickness = 1);
     void PaintBlock(int x, int y, int sideLength);
+    void PaintBlockCentred(int x, int y, int sideLength);
     void PaintRectangleCoords(int x0, int y0, int x1, int y1, bool filled = true, int lineWidth = 1);
     void PaintRectangleGlyphs(int x0, int y0, int x1, int y1, bool filled = true, int lineWidth = 1);
     void PaintCircleCoords(int centerX, int centerY, int pointX, int pointY, bool filled, int lineWidth = 1);
-private:
-    void DrawThickCircleOutline(int cx, int cy, int radius, int thickness);
-
-    // helper to Canvas::PaintCircleCoords
-    void SetCirclePixels(int cx, int cy, int x, int y, int thickness);
-
-public:
     void PaintClipboardTextureSample(COORD topLeft, bool partialSample = false);
     
     void DrawCanvas();
     void DrawButtons();
+    void UpdateButtonAppearance();
     void DisplayBrushPointer(COORD coords, bool justOnePixel = false);
     void UndoLastCommand();
     void RedoLastCommand();

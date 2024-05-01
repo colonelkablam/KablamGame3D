@@ -204,7 +204,7 @@ void Canvas::PopulateColourButtonsContainer()
 void Canvas::PopulateToolButtonsContainer()
 {
     // container for tool bottons
-    brushButtonsContainer = new ButtonContainer(drawingClass, BRUSH_BUTTON_XPOS, BRUSH_BUTTON_YPOS, 10, 1);
+    brushButtonsContainer = new ButtonContainer(drawingClass, BRUSH_BUTTON_XPOS, BRUSH_BUTTON_YPOS, 12, 1);
 
     // populate tool button container
     brushButtonsContainer->AddButton(true, blockToolIcon, [this]() { SwitchTool(ToolType::BRUSH_BLOCK); });
@@ -218,6 +218,7 @@ void Canvas::PopulateToolButtonsContainer()
     brushButtonsContainer->AddButton(true, clipboardToolIcon, [this]() { SwitchTool(ToolType::BRUSH_COPY); });
     brushButtonsContainer->AddButton(false, true, clipboardToolToggle2Icon, clipboardToolToggleIcon, [this]() { ToggleClipboardOption(); });
     brushButtonsContainer->AddButton(false, true, sharedClipboardSaveIcon, sharedClipboardDeleteIcon, [this]() { ManageSharedClipboardTextureSample(); });
+    brushButtonsContainer->AddExternalBoolPtr()
     brushButtonsContainer->AddButton(false, false, sharedClipboardLoadIcon, sharedClipboardLoadedIcon, [this]() { CopySharedClipboardToCurrentClipboard(); });
 }
 
@@ -589,7 +590,7 @@ void Canvas::ApplyUndoBrushstroke(const Brushstroke& stroke)
 
 void Canvas::ChangeBrushSize(int sizeChange)
 {
-    int newSize = (brushSize - 1 + sizeChange + 5) % 5 + 1;
+    int newSize = (brushSize - 1 + sizeChange + MAX_BRUSH_SIZE) % MAX_BRUSH_SIZE + 1;
     brushSize = newSize;
 }
 
@@ -636,6 +637,17 @@ void Canvas::PaintBlock(int x, int y, int sideLength)
         for (size_t j{ 0 }; j < sideLength; j++)
             PaintPoint(x + i, y + j);
 
+}
+
+void Canvas::PaintBlockCentred(int x, int y, int sideLength)
+{
+    // Draws a square centered at (x, y) with the specified size
+    int half = sideLength / 2;
+    for (int dx = -half; dx <= half; ++dx) {
+        for (int dy = -half; dy <= half; ++dy) {
+            PaintPoint(x + dx, y + dy);
+        }
+    }
 }
 
 void Canvas::PaintRectangleCoords(int x0, int y0, int x1, int y1, bool filled, int lineWidth)
@@ -705,58 +717,44 @@ void Canvas::PaintRectangleGlyphs(int x0, int y0, int x1, int y1, bool filled, i
     }
 }
 
-// ChatGPT used (with guidance!) to create this set of functions
-void Canvas::PaintCircleCoords(int centerX, int centerY, int pointX, int pointY, bool filled, int thickness)
-{
-    int radius = static_cast<int>(std::sqrt((pointX - centerX) * (pointX - centerX) + (pointY - centerY) * (pointY - centerY)));
+// ChatGPT used (with guidance!) to create this method
+void Canvas::PaintCircleCoords(int centerX, int centerY, int pointX, int pointY, bool filled, int pointSize) {
+    // Calculate the radius using the distance formula
+    int radius = static_cast<int>(std::round(std::sqrt((pointX - centerX) * (pointX - centerY) + (pointY - centerY) * (pointY - centerY))));
 
     if (filled) {
-        // Draw filled circle
-        for (int y = -radius; y <= radius; y++) {
-            for (int x = -radius; x <= radius; x++) {
+        // Draw filled circle using large points
+        for (int y = -radius; y <= radius; ++y) {
+            for (int x = -radius; x <= radius; ++x) {
                 if (x * x + y * y <= radius * radius) {
-                    PaintPoint(centerX + x, centerY + y);
+                    PaintBlockCentred(centerX + x, centerY + y, (int)pointSize/2);
                 }
             }
         }
     }
     else {
-        // Draw thick circle outline, preventing spikes
-        DrawThickCircleOutline(centerX, centerY, radius, thickness);
-    }
-}
+        // Draw circle outline using Midpoint Circle Algorithm with large points
+        int x = radius, y = 0;
+        int decisionOver2 = 1 - x;
 
-// helper to Canvas::PaintCircleCoords
-void Canvas::DrawThickCircleOutline(int cx, int cy, int radius, int thickness) {
-    int x = 0;
-    int y = radius;
-    int p = (5 - radius * 4) / 4;
-
-    SetCirclePixels(cx, cy, x, y, thickness);
-    while (x < y) {
-        x++;
-        if (p < 0) {
-            p += 2 * x + 1;
+        while (y <= x) {
+            PaintBlockCentred(centerX + x, centerY + y, pointSize); // Octant 1
+            PaintBlockCentred(centerX + y, centerY + x, pointSize); // Octant 2
+            PaintBlockCentred(centerX - y, centerY + x, pointSize); // Octant 3
+            PaintBlockCentred(centerX - x, centerY + y, pointSize); // Octant 4
+            PaintBlockCentred(centerX - x, centerY - y, pointSize); // Octant 5
+            PaintBlockCentred(centerX - y, centerY - x, pointSize); // Octant 6
+            PaintBlockCentred(centerX + y, centerY - x, pointSize); // Octant 7
+            PaintBlockCentred(centerX + x, centerY - y, pointSize); // Octant 8
+            ++y;
+            if (decisionOver2 <= 0) {
+                decisionOver2 += 2 * y + 1;   // Change for y -> y+1
+            }
+            else {
+                --x;
+                decisionOver2 += 2 * (y - x) + 1;   // Change for y -> y+1, x -> x-1
+            }
         }
-        else {
-            y--;
-            p += 2 * (x - y) + 1;
-        }
-        SetCirclePixels(cx, cy, x, y, thickness);
-    }
-}
-
-// helper to Canvas::PaintCircleCoords
-void Canvas::SetCirclePixels(int cx, int cy, int x, int y, int thickness) {
-    for (int i = 0; i < thickness; i++) {
-        PaintPoint(cx + x, cy + y + i);
-        PaintPoint(cx - x, cy + y + i);
-        PaintPoint(cx + x, cy - y - i);
-        PaintPoint(cx - x, cy - y - i);
-        PaintPoint(cx + y, cy + x + i);
-        PaintPoint(cx - y, cy + x + i);
-        PaintPoint(cx + y, cy - x - i);
-        PaintPoint(cx - y, cy - x - i);
     }
 }
 
@@ -828,14 +826,19 @@ void Canvas::DrawCanvas()
     drawingClass.DrawRectangleEdgeLength(topLeft.X - 1, topLeft.Y - 1, TexturePainter::CANVAS_DISPLAY_WIDTH + 2, TexturePainter::CANVAS_DISPLAY_HEIGHT + 2, FG_RED, false, PIXEL_HALF);
     
     // link brush buttons 8 and 9 to if shared clipboard contains texture sample (true) or nullptr (false) // simple observer 
-    brushButtonsContainer->UpdateButtonAppearance(8, GetSharedClipboardTextureState());
-    brushButtonsContainer->UpdateButtonAppearance(9, GetSharedClipboardTextureState());
+    UpdateButtonAppearance();
     DrawButtons();
 
     // draw mouse pointer
     if (AreCoordsWithinCanvas(mouseCoords))
         currentToolState->DisplayPointer(mouseCoords);
 
+}
+
+void Canvas::UpdateButtonAppearance()
+{
+    brushButtonsContainer->UpdateButtonAppearance(8, GetSharedClipboardTextureState());
+    brushButtonsContainer->UpdateButtonAppearance(9, GetSharedClipboardTextureState());
 }
 
 void Canvas::DrawButtons()

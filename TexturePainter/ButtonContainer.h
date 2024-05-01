@@ -37,16 +37,20 @@ private:
         bool toggleable;
         bool toggleState;
         short colour;
-        // will be sourced from a shared static pointer to textures in the Canvas class
+        // will be sourced from a shared static pointer to textures in the Canvas class avoiding duplication for every canvas
         Texture* offTexture;
         Texture* onTexture;
         Texture* texture;
+
         std::function<void()> OnClick;
+        // Pointer to the external boolean value
+        bool* externalBoolPtr; 
+
 
         // primary constructor
-        Button(int x, int y, bool highlight, int w, int h, bool toggle, Texture* offTex, Texture* onTex, short c, std::function<void()> onClickFunction, bool initState)
+        Button(int x, int y, bool highlight, int w, int h, bool toggle, Texture* offTex, Texture* onTex, short c, std::function<void()> onClickFunction, bool initState, bool* extBool = nullptr)
             : xPos{ x }, yPos{ y }, highlightable{ highlight }, toggleable{ toggle }, width{ w }, height{ h }, colour{ c },
-            onTexture{ onTex }, offTexture{ offTex }, texture{ initState ? onTex : offTex }, OnClick(onClickFunction), toggleState{ initState } {}
+            onTexture{ onTex }, offTexture{ offTex }, texture{ initState ? onTex : offTex }, OnClick(onClickFunction), toggleState{ initState }, externalBoolPtr{ extBool } {}
 
         // For two different textures, able to toggle
         Button(int x, int y, bool highlight, bool toggle, Texture* offTex, Texture* onTex, std::function<void()> onClickFunction = nullptr, bool initState = false)
@@ -62,6 +66,10 @@ private:
 
         ~Button() {
             // Do not delete pointers here as they are sourced from a static pointer 
+        }
+
+        void SetExternalBool(bool* ptr) {
+            externalBoolPtr = ptr;
         }
 
         void Clicked() {
@@ -91,6 +99,24 @@ private:
             if (onTexture != offTexture) {
                 texture = state ? onTexture : offTexture;
             }
+        }
+
+        bool UpdateTextureFromExternalBool() {
+            if (externalBoolPtr == nullptr) {
+                // return false as no value assigned
+                return false;
+            }
+
+            // safe to dereference the pointer
+            if (*externalBoolPtr) {
+                // Set to one texture if true
+                texture = onTexture;
+            }
+            else {
+                // Set to the off texture if false
+                texture = offTexture;
+            }
+            return true;
         }
     };
 
