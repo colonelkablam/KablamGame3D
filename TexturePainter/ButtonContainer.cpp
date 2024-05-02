@@ -82,6 +82,24 @@ void ButtonContainer::UpdatePosition(int buttonId, int width, int height) {
     nextXPos += width + spacing; // Update position for next button
 }
 
+bool ButtonContainer::AddExternalBoolPtr(bool* externalBoolean)
+{
+    if (externalBoolean == nullptr)
+    {
+        drawingClass.AddToLog(L"Unable to add external boolean to button (index " + std::to_wstring(buttons.size() - 1) + L"); nullptr recieved.");
+        return false;
+    }
+    else if (buttons.empty()) {
+        drawingClass.AddToLog(L"Unable to add external boolean to button; buttons container is empty.");
+        return false;
+    }
+    else {
+        // Set the external boolean pointer for the most recently added button
+        buttons.back()->SetExternalBool(externalBoolean);
+        return true;
+    }
+}
+
 void ButtonContainer::HandleMouseClick(COORD mouseCoord)
 {
     int count{ 0 };
@@ -101,13 +119,13 @@ void ButtonContainer::HandleMouseClick(COORD mouseCoord)
     }
 }
 
-// update a particular button
-void ButtonContainer::UpdateButtonAppearance(size_t buttonIndex, bool state)
+// update buttons
+void ButtonContainer::UpdateButtonAppearance()
 {
-    if (buttonIndex < buttons.size())
-        buttons.at(buttonIndex)->UpdateButtonTexture(state);
-    else
-        drawingClass.AddToLog(L"Attempted to set appearance of a button outside button container vector index");
+    for (Button* button : buttons)
+    {
+        button->UpdateTextureFromExternalBool();
+    }
 }
 
 void ButtonContainer::DrawButtons(COORD mousePosition)

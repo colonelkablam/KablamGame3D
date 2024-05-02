@@ -44,7 +44,8 @@ bool TexturePainter::OnGameUpdate(float fElapsedTime) {
     FillScreenBuffer(); // clear screen before next frame
     HandleKeyPress();
 
-    currentCanvas->DrawCanvas();
+    currentCanvas->UpdateButtonAppearance(); // updates buttons checking for changes in any connected bools
+    currentCanvas->DrawCanvas(); // handles whole canvas (including buttons)
 
     DrawHeadingInfo(1, 1);
     DrawToolInfo(1, 11);

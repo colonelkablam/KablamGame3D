@@ -140,11 +140,13 @@ public:
 
     bool AddButton(bool highlightable, bool toggleable, Texture* offTexture, Texture* onTexture, std::function<void()> onClickFunction);
 
+    bool AddExternalBoolPtr(bool* externalBoolean);
+
     void UpdatePosition(int buttonId, int width, int height);
 
     void HandleMouseClick(COORD);
 
-    void UpdateButtonAppearance(size_t buttonNumber, bool state);
+    void UpdateButtonAppearance();
 
     void DrawButtons(COORD mousePosition);
 

@@ -30,6 +30,7 @@ Texture* Canvas::sharedClipboardSaveIcon = nullptr;
 Texture* Canvas::sharedClipboardDeleteIcon = nullptr;
 Texture* Canvas::sharedClipboardLoadIcon = nullptr;
 Texture* Canvas::sharedClipboardLoadedIcon = nullptr;
+bool Canvas::sharedClipboardFilled = false;
 
 
 // shared clipboard initialised with default nullptr
@@ -218,8 +219,11 @@ void Canvas::PopulateToolButtonsContainer()
     brushButtonsContainer->AddButton(true, clipboardToolIcon, [this]() { SwitchTool(ToolType::BRUSH_COPY); });
     brushButtonsContainer->AddButton(false, true, clipboardToolToggle2Icon, clipboardToolToggleIcon, [this]() { ToggleClipboardOption(); });
     brushButtonsContainer->AddButton(false, true, sharedClipboardSaveIcon, sharedClipboardDeleteIcon, [this]() { ManageSharedClipboardTextureSample(); });
-    brushButtonsContainer->AddExternalBoolPtr()
+    // add external bool pointer to last added button
+    brushButtonsContainer->AddExternalBoolPtr(&sharedClipboardFilled);
     brushButtonsContainer->AddButton(false, false, sharedClipboardLoadIcon, sharedClipboardLoadedIcon, [this]() { CopySharedClipboardToCurrentClipboard(); });
+    // add external bool pointer to last added button
+    brushButtonsContainer->AddExternalBoolPtr(&sharedClipboardFilled); 
 }
 
 void Canvas::HandleAnyButtonsClicked(COORD mouseCoords)
@@ -825,8 +829,6 @@ void Canvas::DrawCanvas()
     // draw border around canvas display panel
     drawingClass.DrawRectangleEdgeLength(topLeft.X - 1, topLeft.Y - 1, TexturePainter::CANVAS_DISPLAY_WIDTH + 2, TexturePainter::CANVAS_DISPLAY_HEIGHT + 2, FG_RED, false, PIXEL_HALF);
     
-    // link brush buttons 8 and 9 to if shared clipboard contains texture sample (true) or nullptr (false) // simple observer 
-    UpdateButtonAppearance();
     DrawButtons();
 
     // draw mouse pointer
@@ -835,10 +837,12 @@ void Canvas::DrawCanvas()
 
 }
 
+// update called in parent class - updates external boolean pointers and button appearences
 void Canvas::UpdateButtonAppearance()
 {
-    brushButtonsContainer->UpdateButtonAppearance(8, GetSharedClipboardTextureState());
-    brushButtonsContainer->UpdateButtonAppearance(9, GetSharedClipboardTextureState());
+    // update bools used as external pointers in buttons
+    sharedClipboardFilled = GetSharedClipboardTextureState();
+    brushButtonsContainer->UpdateButtonAppearance();
 }
 
 void Canvas::DrawButtons()

@@ -125,8 +125,7 @@ private:
     TextureSample* clipboardTextureSample;
 
     static TextureSample* sharedClipboardTextureSample;
-    bool sharedClipboardState;
-
+    static bool sharedClipboardFilled;
 
     // canvas button containers
     ButtonContainer* colourButtonsContainer;

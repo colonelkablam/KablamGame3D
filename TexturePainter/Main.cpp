@@ -26,11 +26,11 @@ int main()
 		texturePainter.Start();
 	}
 
-	std::cout << "End of main() Texture Painter reached.\n";
-
+	// manually clean up any static pointers in canvas
 	Canvas::CleanUpStaticPointers();
 
-	//Sleep(3000);
+	// print that the end of main reached to OG console
+	std::cout << "End of main() Texture Painter reached.\n";
 
 	return 0;
 }
