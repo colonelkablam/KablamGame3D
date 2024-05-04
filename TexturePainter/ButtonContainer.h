@@ -40,10 +40,10 @@ private:
 
         // will be sourced from a shared static pointer to textures in the Canvas class
         // avoiding duplication for every canvas
-        Texture* offTexture;
-        Texture* onTexture;
-        Texture* texture;
-        std::function<void()> OnClick;
+        Texture* textureFunction1;
+        Texture* textureFunction2;
+        Texture* currentTexture;
+        std::vector<std::function<void()>> clickFunctions;
 
         // Pointer to the external boolean value - will effect appearance
         bool* externalBoolPtrAppearance;
@@ -53,21 +53,24 @@ private:
         bool active; // can button be clicked
 
         // primary constructor
-        Button(int x, int y, bool highlight, int w, int h, bool toggle, Texture* offTex, Texture* onTex, short c, std::function<void()> onClickFunction, bool initState, bool* extBool = nullptr)
+        Button(int x, int y, bool highlight, int w, int h, bool toggle, Texture* tex1, Texture* tex2, short c, std::function<void()> onClickFunction1, std::function<void()> onClickFunction2, bool initState)
             : xPos{ x }, yPos{ y }, highlightable{ highlight }, toggleable{ toggle }, width{ w }, height{ h }, colour{ c }, active {false},
-            onTexture{ onTex }, offTexture{ offTex }, texture{ initState ? onTex : offTex }, OnClick(onClickFunction), toggleState{ initState }, externalBoolPtrAppearance{ extBool } {}
+            textureFunction1{ tex1 }, textureFunction2{ tex2 }, currentTexture{ initState ? tex1 : tex2 }, toggleState{ initState }, externalBoolPtrAppearance{ nullptr }
+        {
+            
+        }
 
         // For two different textures, able to toggle
-        Button(int x, int y, bool highlightable, bool toggleable, Texture* offTex, Texture* onTex, std::function<void()> onClickFunction = nullptr, bool initState = false)
-            : Button(x, y, highlightable, onTex->GetWidth(), onTex->GetHeight(), toggleable, offTex, onTex, 0, onClickFunction, initState) {}
+        Button(int x, int y, bool highlightable, bool toggleable, Texture* tex1, Texture* tex2, std::function<void()> onClickFunction1 = nullptr, std::function<void()> onClickFunction2 = nullptr, bool initState = false)
+            : Button(x, y, highlightable, tex1->GetWidth(), tex1->GetHeight(), toggleable, tex1, tex2, 0, onClickFunction1, onClickFunction2, initState) {}
 
         // For a single texture, unable to toggle
-        Button(int x, int y, bool highlightable, Texture* tex, std::function<void()> onClickFunction = nullptr, bool initState = false)
-            : Button(x, y, highlightable, tex->GetWidth(), tex->GetHeight(), false, tex, tex, 0, onClickFunction, initState) {}
+        Button(int x, int y, bool highlightable, Texture* tex, std::function<void()> onClickFunction)
+            : Button(x, y, highlightable, tex->GetWidth(), tex->GetHeight(), false, tex, tex, 0, onClickFunction, nullptr, false) {}
 
         // For dimensions and a color, unable to toggle
-        Button(int x, int y, bool highlightable, int w, int h, short c, std::function<void()> onClickFunction = nullptr, bool initState = false)
-            : Button(x, y, highlightable, w, h, false, nullptr, nullptr, c, onClickFunction, initState) {}
+        Button(int x, int y, bool highlightable, int w, int h, short c, std::function<void()> onClickFunction)
+            : Button(x, y, highlightable, w, h, false, nullptr, nullptr, c, onClickFunction, nullptr, false) {}
 
         ~Button() {
             // Do not delete pointers here as they are sourced from a static pointer 
@@ -111,8 +114,14 @@ private:
 
         void Clicked()
         {
-            if (OnClick) {
-                OnClick(); // Invoke the onClick handler if set
+            if (!active) // If the button is not active, exit early
+                return;
+
+            auto& functionToCall = toggleState ? clickFunctions.at(1) : clickFunctions.at(0);
+
+            if (functionToCall) // If the function is not nullptr, execute it
+            {
+                functionToCall();
                 ToggleButton();
             }
         }
@@ -127,9 +136,9 @@ private:
         void ToggleButton()
         {
             // Check if two distinct textures are available AND not a colour button
-            if (toggleable && onTexture != offTexture && texture != nullptr) { 
+            if (toggleable && textureFunction2 != textureFunction1 && currentTexture != nullptr) { 
                 toggleState = !toggleState;
-                texture = toggleState ? onTexture : offTexture;
+                currentTexture = toggleState ? textureFunction2 : textureFunction1;
             }
         }
 
@@ -137,26 +146,28 @@ private:
         void UpdateButtonTexture(bool state)
         {
             // Check if toggle effect is intended
-            if (onTexture != offTexture) {
-                texture = state ? onTexture : offTexture;
+            if (textureFunction2 != textureFunction1) {
+                currentTexture = state ? textureFunction2 : textureFunction1;
             }
         }
 
-        bool UpdateTextureApperanceFromExternalBool()
+        // change the texture and toggleState from external bool
+        bool UpdateTextureAppearanceFromExternalBool()
         {
             if (externalBoolPtrAppearance == nullptr) {
-                // return false as no value assigned
+                // failure if the pointer is nullptr
                 return false;
             }
 
-            // safe to dereference the pointer
+            // Dereference the pointer and check its value
             if (*externalBoolPtrAppearance) {
-                // Set to one texture if true
-                texture = onTexture;
+                // Assign texture and toggle state accordingly
+                currentTexture = textureFunction2;
+                toggleState = true;
             }
             else {
-                // Set to the off texture if false
-                texture = offTexture;
+                currentTexture = textureFunction1;
+                toggleState = false;
             }
             return true;
         }
@@ -180,7 +191,7 @@ public:
 
     bool AddButton(bool highlightable, Texture* texture, std::function<void()> onClickFunction);
 
-    bool AddButton(bool highlightable, bool toggleable, Texture* offTexture, Texture* onTexture, std::function<void()> onClickFunction);
+    bool AddButton(bool highlightable, bool toggleable, Texture* offTexture, Texture* onTexture, std::function<void()> onClickFunction1, std::function<void()> onClickFunction2 = nullptr);
 
     bool AddExternalBoolPtr(bool* externalBoolean);
 

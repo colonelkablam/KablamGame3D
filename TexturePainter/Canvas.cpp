@@ -221,11 +221,9 @@ void Canvas::PopulateToolButtonsContainer()
     brushButtonsContainer->AddButton(true, circleFillToolIcon, [this]() { SwitchTool(ToolType::BRUSH_CIRCLE_FILLED); });
     brushButtonsContainer->AddButton(true, clipboardToolIcon, [this]() { SwitchTool(ToolType::BRUSH_COPY); });
     
-    brushButtonsContainer->AddButton(false, false, clipboardToolToggle2Icon, clipboardToolToggleIcon, [this]() { ToggleClipboardOption(); });
+    brushButtonsContainer->AddButton(false, true, clipboardToolToggle2Icon, clipboardToolToggleIcon, [this]() { toolStates.at(ToolType::BRUSH_COPY)->ToggleToolState(); });
     // add the activating tool
     brushButtonsContainer->AddNewToolToButtonActivateList(ToolType::BRUSH_COPY);
-    // link button appearance to paintPartialSample bool
-    brushButtonsContainer->AddExternalBoolPtr(&paintPartialSample);
 
     brushButtonsContainer->AddButton(false, false, sharedClipboardSaveIcon, sharedClipboardDeleteIcon, [this]() { ManageSharedClipboardTextureSample(); });
     // add the activating tool

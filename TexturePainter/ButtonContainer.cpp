@@ -45,7 +45,7 @@ bool ButtonContainer::AddButton(bool highlightable, Texture* iconTexture, std::f
 }
 
 // button made with two textures
-bool ButtonContainer::AddButton(bool highlightable, bool toggleable, Texture* offTexture, Texture* onTexture, std::function<void()> onClickFunction) {
+bool ButtonContainer::AddButton(bool highlightable, bool toggleable, Texture* offTexture, Texture* onTexture, std::function<void()> onClickFunction1, std::function<void()> onClickFunction2) {
     int buttonId = buttons.size();
     if (buttonId >= rows * columns) {
         drawingClass.AddToLog(L"Too many buttons added to ButtonContainer.");
@@ -55,7 +55,7 @@ bool ButtonContainer::AddButton(bool highlightable, bool toggleable, Texture* of
     int height = offTexture->GetHeight();
     int width = onTexture->GetWidth();
     UpdatePosition(buttonId, width, height);
-    Button* newButton = new Button(nextXPos - width, nextYPos, highlightable, toggleable, offTexture, onTexture, onClickFunction);
+    Button* newButton = new Button(nextXPos - width, nextYPos, highlightable, toggleable, offTexture, onTexture, onClickFunction1, onClickFunction2);
     buttons.push_back(newButton);
     return true;
 }
@@ -139,17 +139,17 @@ void ButtonContainer::UpdateButtonAppearance()
 {
     for (Button* button : buttons)
     {
-        button->UpdateTextureApperanceFromExternalBool();
+        button->UpdateTextureAppearanceFromExternalBool();
     }
 }
 
 void ButtonContainer::DrawButtons(COORD mousePosition)
 {
     for (const Button* button : buttons) {
-        if (button->texture == nullptr)
+        if (button->currentTexture == nullptr)
             drawingClass.DrawRectangleEdgeLength(button->xPos, button->yPos, button->width, button->height, button->colour, true, button->IsButtonActive() ? PIXEL_SOLID : PIXEL_HALF);
         else
-            drawingClass.DrawTextureToScreen(*button->texture, button->xPos, button->yPos, 1, true, !button->IsButtonActive());
+            drawingClass.DrawTextureToScreen(*button->currentTexture, button->xPos, button->yPos, 1, true, !button->IsButtonActive());
 
         // draw default border
         drawingClass.DrawRectangleEdgeLength(button->xPos - 1, button->yPos - 1, button->width + 2, button->height + 2, background, false, PIXEL_HALF);
