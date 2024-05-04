@@ -25,9 +25,14 @@ public:
         canvas.DisplayBrushPointer(mouseCoords);
     }
 
-    void ToggleOption()
+    void ToggleToolState()
     {
-        // do nothing
+        toggleState = !toggleState;
+    }
+
+    bool GetToggleState()
+    {
+        return toggleState;
     }
     
     void ResetClicks()
@@ -78,9 +83,14 @@ public:
         canvas.DisplayBrushPointer(mouseCoords);
     }
 
-    void ToggleOption()
+    void ToggleToolState()
     {
-        // do nothing
+        toggleState = !toggleState;
+    }
+
+    bool GetToggleState()
+    {
+        return toggleState;
     }
 
     void ResetClicks()
@@ -129,9 +139,14 @@ public:
         canvas.DisplayBrushPointer(mouseCoords);
     }
 
-    void ToggleOption()
+    void ToggleToolState()
     {
-        // do nothing
+        toggleState = !toggleState;
+    }
+
+    bool GetToggleState()
+    {
+        return toggleState;
     }
 
     void ResetClicks()
@@ -182,9 +197,14 @@ public:
         canvas.DisplayBrushPointer(mouseCoords);
     }
 
-    void ToggleOption()
+    void ToggleToolState()
     {
-        // do nothing
+        toggleState = !toggleState;
+    }
+
+    bool GetToggleState()
+    {
+        return toggleState;
     }
 
     void ResetClicks()
@@ -219,7 +239,7 @@ public:
         {
             int size = canvas.GetBrushSize();
             canvas.ClearCurrentBrushstrokeTexture();
-            canvas.PaintRectangleCoords(initialClickCoords.X, initialClickCoords.Y, mouseCoords.X, mouseCoords.Y, true);
+            canvas.PaintCircleCoords(initialClickCoords.X, initialClickCoords.Y, mouseCoords.X + size - 1, mouseCoords.Y + size - 1, true);
         }
     }
 
@@ -230,12 +250,17 @@ public:
 
     void DisplayPointer(COORD mouseCoords)
     {
-        canvas.DisplayBrushPointer(mouseCoords, true);
+        canvas.DisplayBrushPointer(mouseCoords);
     }
 
-    void ToggleOption()
+    void ToggleToolState()
     {
-        // do nothing
+        toggleState = !toggleState;
+    }
+
+    bool GetToggleState()
+    {
+        return toggleState;
     }
 
     void ResetClicks()
@@ -284,10 +309,16 @@ public:
         canvas.DisplayBrushPointer(mouseCoords);
     }
 
-    void ToggleOption()
+    void ToggleToolState()
     {
-        // do nothing
+        toggleState = !toggleState;
     }
+
+    bool GetToggleState()
+    {
+        return toggleState;
+    }
+
     void ResetClicks()
     {
         initialClick = false;
@@ -331,7 +362,7 @@ public:
         else // only drawing if not nullptr
         {
             COORD placement{ mouseCoords.X - (short)canvas.clipboardTextureSample->width + 1, mouseCoords.Y - (short)canvas.clipboardTextureSample->height + 1};
-            canvas.PaintClipboardTextureSample(placement, drawPartialSample);
+            canvas.PaintClipboardTextureSample(placement, toggleState); // toggleState is partial/full clipboard texture drawn
         }
 
     }
@@ -372,29 +403,32 @@ public:
                 // Check for valid drawing position
                 if (canvas.AreCoordsWithinCanvas(COORD{ (short)x, (short)y }))
                 {
-                    // When drawPartialSample is true, draw all pixels except delete pixels
-                    if (drawPartialSample)
+                    // When toggleState is true, draw all pixels except delete pixels
+                    if (toggleState)
                     {
                         if (pixel.glyph != canvas.deletePixel.Char.UnicodeChar)
                         {
                             canvas.drawingClass.DrawBlock(x, y, zoom, pixel.colour, pixel.glyph);
                         }
                     }
-                    // When drawPartialSample is false, draw all pixels
+                    // When toggleState is false, draw all pixels
                     else
                         canvas.drawingClass.DrawBlock(x, y, zoom, pixel.colour, pixel.glyph);
                 }
             }
-
         }
-
-
     }
 
-    void ToggleOption()
+    void ToggleToolState()
     {
-        drawPartialSample = !drawPartialSample;
+        toggleState = !toggleState;
     }
+
+    bool GetToggleState()
+    {
+        return toggleState;
+    }
+
     void ResetClicks() // default false
     {
         initialClick = false;

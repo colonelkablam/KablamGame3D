@@ -95,9 +95,16 @@ bool ButtonContainer::AddExternalBoolPtr(bool* externalBoolean)
     }
     else {
         // Set the external boolean pointer for the most recently added button
-        buttons.back()->SetExternalBool(externalBoolean);
+        buttons.back()->SetExternalAppearanceBool(externalBoolean);
         return true;
     }
+}
+
+// Add list of toolTypes that activate button to last button added
+bool ButtonContainer::AddNewToolToButtonActivateList(ToolType newTool)
+{
+    buttons.back()->AddNewToolToActivateList(newTool);
+    return true;
 }
 
 void ButtonContainer::HandleMouseClick(COORD mouseCoord)
@@ -119,12 +126,20 @@ void ButtonContainer::HandleMouseClick(COORD mouseCoord)
     }
 }
 
+void ButtonContainer::UpdateButtonActive(ToolType currentToolType)
+{
+    for (Button* button : buttons)
+    {
+        button->UpdateIfActive(currentToolType);
+    }
+}
+
 // update buttons
 void ButtonContainer::UpdateButtonAppearance()
 {
     for (Button* button : buttons)
     {
-        button->UpdateTextureFromExternalBool();
+        button->UpdateTextureApperanceFromExternalBool();
     }
 }
 
@@ -132,15 +147,15 @@ void ButtonContainer::DrawButtons(COORD mousePosition)
 {
     for (const Button* button : buttons) {
         if (button->texture == nullptr)
-            drawingClass.DrawRectangleEdgeLength(button->xPos, button->yPos, button->width, button->height, button->colour, true, PIXEL_SOLID);
+            drawingClass.DrawRectangleEdgeLength(button->xPos, button->yPos, button->width, button->height, button->colour, true, button->IsButtonActive() ? PIXEL_SOLID : PIXEL_HALF);
         else
-            drawingClass.DrawTextureToScreen(*button->texture, button->xPos, button->yPos, 1, true);
+            drawingClass.DrawTextureToScreen(*button->texture, button->xPos, button->yPos, 1, true, !button->IsButtonActive());
 
         // draw default border
         drawingClass.DrawRectangleEdgeLength(button->xPos - 1, button->yPos - 1, button->width + 2, button->height + 2, background, false, PIXEL_HALF);
 
         // highlight if button clicked
-        if (button->IsMouseClickOnButton(mousePosition) && drawingClass.GetLeftMouseHeld())
+        if (button->IsMouseClickOnButton(mousePosition) && drawingClass.GetLeftMouseHeld() && button->IsButtonActive())
             drawingClass.DrawRectangleEdgeLength(button->xPos, button->yPos, button->width, button->height, FG_GREEN, true, PIXEL_HALF);
 
     }

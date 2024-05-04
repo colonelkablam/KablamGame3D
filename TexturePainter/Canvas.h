@@ -2,29 +2,20 @@
 
 #include <stack>
 #include <unordered_map>
+
 #include "Texture.h"
 #include "UndoRedoManager.h"
 #include "ICoordinateStrategy.h"
 #include "ButtonContainer.h"
-
 
 // Forward declarations to resolve circular dependencies
 class BrushstrokeCommand;
 class TexturePainter;
 class IToolState;
 
-enum class ToolType {
-    BRUSH_BLOCK,
-    BRUSH_RECT,
-    BRUSH_RECT_FILLED,
-    BRUSH_CIRCLE,
-    BRUSH_CIRCLE_FILLED,
-    BRUSH_LINE,
-    BRUSH_COPY
-};
 
 class Canvas {
-    
+   
     //friend class as will be using this parent classes methods
     friend class BrushstrokeCommand;
     friend class CopyBrushState;
@@ -123,6 +114,7 @@ private:
 
     // stores cut texture sample
     TextureSample* clipboardTextureSample;
+    bool paintPartialSample;
 
     static TextureSample* sharedClipboardTextureSample;
     static bool sharedClipboardFilled;
@@ -203,6 +195,8 @@ public:
     void SetBrushColour(short colour);
     void SetBrushColourAndGlyph(short colour, short glyph);
     void SwitchTool(ToolType type);
+    bool UpdateActiveButtons();
+    ToolType GetCurrentToolType();
     void ToggleClipboardOption();
     int ChangeCanvasOffset(COORD change);
     bool AreCoordsWithinCanvas(COORD coords);
@@ -238,7 +232,7 @@ public:
     
     void DrawCanvas();
     void DrawButtons();
-    void UpdateButtonAppearance();
+    void UpdateButtons();
     void DisplayBrushPointer(COORD coords, bool justOnePixel = false);
     void UndoLastCommand();
     void RedoLastCommand();

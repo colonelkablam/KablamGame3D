@@ -481,7 +481,7 @@ void KablamEngine::DrawCircle(int xCenter, int yCenter, int radius, short colour
 }
 
 // this is for drawing texture directly to screen pixels
-int KablamEngine::DrawTextureToScreen(const Texture& texture, int xScreen, int yScreen, float scale, bool showEmptyPix)
+int KablamEngine::DrawTextureToScreen(const Texture& texture, int xScreen, int yScreen, float scale, bool showEmptyPix, bool greyedOut)
 {
     for (int x{ 0 }; x < texture.GetWidth() * scale; x++)
     {
@@ -499,6 +499,11 @@ int KablamEngine::DrawTextureToScreen(const Texture& texture, int xScreen, int y
             {
                 glyph = L'X';
                 colour = FG_DARK_GREY;
+            }
+            else if (greyedOut) // useful for buttons etc.
+            {
+                colour = colour | BG_GREY;
+                glyph = PIXEL_HALF;
             }
 
             // Draw scaled pixel

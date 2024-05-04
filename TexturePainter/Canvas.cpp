@@ -41,6 +41,7 @@ Canvas::Canvas(TexturePainter& drawer, int width, int height, int illumination, 
     : drawingClass{ drawer },
     backgroundTexture{ width, height, illumination },
     clipboardTextureSample{ nullptr }, // clipboard initialised with default nullptr
+    paintPartialSample{ false },
     topLeft{ xPos, yPos },
     canvasViewOffset{ 0, 0 },
     zoomLevel{ START_ZOOM_LEVEL },
@@ -98,6 +99,8 @@ void Canvas::PostInitialise()
 
     PopulateColourButtonsContainer();
     PopulateToolButtonsContainer();
+    UpdateActiveButtons();
+
 }
 
 // destructor
@@ -217,13 +220,25 @@ void Canvas::PopulateToolButtonsContainer()
     brushButtonsContainer->AddButton(true, circleToolIcon, [this]() { SwitchTool(ToolType::BRUSH_CIRCLE); });
     brushButtonsContainer->AddButton(true, circleFillToolIcon, [this]() { SwitchTool(ToolType::BRUSH_CIRCLE_FILLED); });
     brushButtonsContainer->AddButton(true, clipboardToolIcon, [this]() { SwitchTool(ToolType::BRUSH_COPY); });
-    brushButtonsContainer->AddButton(false, true, clipboardToolToggle2Icon, clipboardToolToggleIcon, [this]() { ToggleClipboardOption(); });
-    brushButtonsContainer->AddButton(false, true, sharedClipboardSaveIcon, sharedClipboardDeleteIcon, [this]() { ManageSharedClipboardTextureSample(); });
-    // add external bool pointer to last added button
+    
+    brushButtonsContainer->AddButton(false, false, clipboardToolToggle2Icon, clipboardToolToggleIcon, [this]() { ToggleClipboardOption(); });
+    // add the activating tool
+    brushButtonsContainer->AddNewToolToButtonActivateList(ToolType::BRUSH_COPY);
+    // link button appearance to paintPartialSample bool
+    brushButtonsContainer->AddExternalBoolPtr(&paintPartialSample);
+
+    brushButtonsContainer->AddButton(false, false, sharedClipboardSaveIcon, sharedClipboardDeleteIcon, [this]() { ManageSharedClipboardTextureSample(); });
+    // add the activating tool
+    brushButtonsContainer->AddNewToolToButtonActivateList(ToolType::BRUSH_COPY);
+    // link button appearance to sharedClipboardFilled bool
     brushButtonsContainer->AddExternalBoolPtr(&sharedClipboardFilled);
+
+
     brushButtonsContainer->AddButton(false, false, sharedClipboardLoadIcon, sharedClipboardLoadedIcon, [this]() { CopySharedClipboardToCurrentClipboard(); });
-    // add external bool pointer to last added button
-    brushButtonsContainer->AddExternalBoolPtr(&sharedClipboardFilled); 
+    // add the activating tool
+    brushButtonsContainer->AddNewToolToButtonActivateList(ToolType::BRUSH_COPY);
+    // link button appearance to sharedClipboardFilled bool
+    brushButtonsContainer->AddExternalBoolPtr(&sharedClipboardFilled);
 }
 
 void Canvas::HandleAnyButtonsClicked(COORD mouseCoords)
@@ -326,24 +341,52 @@ void Canvas::SwitchTool(ToolType type) {
     auto it = toolStates.find(type);
     if (it != toolStates.end()) {
         currentToolState = it->second;  // Update the current tool state pointer
+        UpdateActiveButtons();
+    }
+    else
+        drawingClass.AddToLog(L"Unable to switch tools.");
+}
+
+bool Canvas::UpdateActiveButtons()
+{   
+    // update buttons to check if active
+    if (brushButtonsContainer != nullptr)
+    {
+        brushButtonsContainer->UpdateButtonActive(GetCurrentToolType());
+        return true;
+
     }
     else
     {
-        drawingClass.AddToLog(L"Unable to switch tools.");
+        drawingClass.AddToLog(L"Unable to update buttons in brushButtonContainer as nullptr.");
+        return false;
     }
+}
+
+ToolType Canvas::GetCurrentToolType()
+{
+    for (const auto& pair : toolStates) {
+        if (pair.second == currentToolState) {
+            return pair.first; // Return the matching ToolType
+        }
+    }
+    // return invalid if currentToolState doesn't return
+    drawingClass.AddToLog(L"Unable to return a ToolType as currentToolState not recognised.");
+    return ToolType::BRUSH_INVALID;
 }
 
 void Canvas::ToggleClipboardOption()
 {
-    // Attempt to find the BRUSH_COPY tool in the map of tool states
-    auto it = toolStates.find(ToolType::BRUSH_COPY);
-    if (it != toolStates.end()) {
-        // If BRUSH_COPY is found, toggle its option
-        it->second->ToggleOption();  // Toggle option of the BRUSH_COPY
+    // Check if the currentToolState is BRUSH_COPY 
+    if (toolStates[ToolType::BRUSH_COPY] == currentToolState)
+    {
+        // activate initial click so brush ready to paint to brush texture
+        toolStates.at(ToolType::BRUSH_COPY)->ToggleToolState();
+        paintPartialSample = toolStates.at(ToolType::BRUSH_COPY)->GetToggleState();
     }
     else {
         // Log an error if the BRUSH_COPY tool is not found in toolStates
-        drawingClass.AddToLog(L"Unable to toggle BRUSH_COPY tool as it is not found in toolStates.");
+        drawingClass.AddToLog(L"Unable to toggle BRUSH_COPY tool as it is not current tool state.");
     }
 }
 
@@ -513,11 +556,11 @@ bool Canvas::GetSharedClipboardTextureState()
 // - OR delete shared clipboard if already populated
 void Canvas::ManageSharedClipboardTextureSample()
 {
-    // Check if the currentToolState is valid and corresponds the copy brush and clipboard sample isn't a nullptr
-    if (toolStates[ToolType::BRUSH_COPY] == currentToolState && clipboardTextureSample != nullptr)
+    // Check if the currentToolState is BRUSH_COPY 
+    if (toolStates[ToolType::BRUSH_COPY] == currentToolState)
     {
-        // if shared clipboard is empty then populate with a deep copy of canvas clipboard
-        if (sharedClipboardTextureSample == nullptr)
+        // if shared clipboard is empty then populate with a deep copy of canvas clipboard (only if canvas clipb. not null)
+        if (sharedClipboardTextureSample == nullptr && clipboardTextureSample != nullptr)
         {
             sharedClipboardTextureSample = clipboardTextureSample->Clone();  // Deep copy
         }
@@ -724,42 +767,41 @@ void Canvas::PaintRectangleGlyphs(int x0, int y0, int x1, int y1, bool filled, i
 // ChatGPT used (with guidance!) to create this method
 void Canvas::PaintCircleCoords(int centerX, int centerY, int pointX, int pointY, bool filled, int pointSize) {
     // Calculate the radius using the distance formula
-    int radius = static_cast<int>(std::round(std::sqrt((pointX - centerX) * (pointX - centerY) + (pointY - centerY) * (pointY - centerY))));
+    int radius = static_cast<int>(std::round(std::sqrt((pointX - centerX) * (pointX - centerX) + (pointY - centerY) * (pointY - centerY))));
 
+    // Draw circle outline using Midpoint Circle Algorithm with large points
+    int x = radius, y = 0;
+    int decisionOver2 = 1 - x;
+
+    while (y <= x) {
+        PaintBlockCentred(centerX + x, centerY + y, pointSize ); // Octant 1
+        PaintBlockCentred(centerX + y, centerY + x, pointSize ); // Octant 2
+        PaintBlockCentred(centerX - y, centerY + x, pointSize ); // Octant 3
+        PaintBlockCentred(centerX - x, centerY + y, pointSize ); // Octant 4
+        PaintBlockCentred(centerX - x, centerY - y, pointSize ); // Octant 5
+        PaintBlockCentred(centerX - y, centerY - x, pointSize ); // Octant 6
+        PaintBlockCentred(centerX + y, centerY - x, pointSize ); // Octant 7
+        PaintBlockCentred(centerX + x, centerY - y, pointSize ); // Octant 8
+        ++y;
+        if (decisionOver2 <= 0) {
+            decisionOver2 += 2 * y + 1;   // Change for y -> y+1
+        }
+        else {
+            --x;
+            decisionOver2 += 2 * (y - x) + 1;   // Change for y -> y+1, x -> x-1
+        }
+    }
+    // if filled
     if (filled) {
-        // Draw filled circle using large points
+        // Draw a filled circle by filling horizontal lines across each vertical position
         for (int y = -radius; y <= radius; ++y) {
-            for (int x = -radius; x <= radius; ++x) {
-                if (x * x + y * y <= radius * radius) {
-                    PaintBlockCentred(centerX + x, centerY + y, (int)pointSize/2);
-                }
+            int lineWidth = static_cast<int>(std::sqrt(radius * radius - y * y));
+            for (int x = -lineWidth; x <= lineWidth; ++x) {
+                PaintBlockCentred(centerX + x, centerY + y, pointSize);
             }
         }
     }
-    else {
-        // Draw circle outline using Midpoint Circle Algorithm with large points
-        int x = radius, y = 0;
-        int decisionOver2 = 1 - x;
 
-        while (y <= x) {
-            PaintBlockCentred(centerX + x, centerY + y, pointSize); // Octant 1
-            PaintBlockCentred(centerX + y, centerY + x, pointSize); // Octant 2
-            PaintBlockCentred(centerX - y, centerY + x, pointSize); // Octant 3
-            PaintBlockCentred(centerX - x, centerY + y, pointSize); // Octant 4
-            PaintBlockCentred(centerX - x, centerY - y, pointSize); // Octant 5
-            PaintBlockCentred(centerX - y, centerY - x, pointSize); // Octant 6
-            PaintBlockCentred(centerX + y, centerY - x, pointSize); // Octant 7
-            PaintBlockCentred(centerX + x, centerY - y, pointSize); // Octant 8
-            ++y;
-            if (decisionOver2 <= 0) {
-                decisionOver2 += 2 * y + 1;   // Change for y -> y+1
-            }
-            else {
-                --x;
-                decisionOver2 += 2 * (y - x) + 1;   // Change for y -> y+1, x -> x-1
-            }
-        }
-    }
 }
 
 void Canvas::PaintClipboardTextureSample(COORD topLeft, bool partialSample)
@@ -838,10 +880,12 @@ void Canvas::DrawCanvas()
 }
 
 // update called in parent class - updates external boolean pointers and button appearences
-void Canvas::UpdateButtonAppearance()
+void Canvas::UpdateButtons()
 {
+    // Updating if button active occurs in SwitchTool()
     // update bools used as external pointers in buttons
     sharedClipboardFilled = GetSharedClipboardTextureState();
+    //update appearance
     brushButtonsContainer->UpdateButtonAppearance();
 }
 
