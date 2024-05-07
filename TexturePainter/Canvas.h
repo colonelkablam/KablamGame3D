@@ -18,7 +18,7 @@ class Canvas {
    
     //friend class as will be using this parent classes methods
     friend class BrushstrokeCommand;
-    friend class CopyBrushState;
+    friend class CopyToolState;
 
 private:
     static const short STARTING_COLOUR = FG_BLACK;
@@ -121,7 +121,7 @@ private:
 
     // canvas button containers
     ButtonContainer* colourButtonsContainer;
-    ButtonContainer* brushButtonsContainer;
+    ButtonContainer* toolButtonsContainer;
 
     // containers for button icons
     static Texture* deleteToolIcon;
@@ -133,6 +133,7 @@ private:
     static Texture* rectFillToolIcon;
     static Texture* circleToolIcon;
     static Texture* circleFillToolIcon;
+    static Texture* fillToolIcon;
     static Texture* clipboardToolIcon;
     static Texture* clipboardToolToggleIcon;
     static Texture* clipboardToolToggle2Icon;
@@ -180,6 +181,7 @@ public:
 
     void PopulateColourButtonsContainer();
     void PopulateToolButtonsContainer();
+    bool AreCoordsWithinButtons(COORD mouseCoords);
     void HandleAnyButtonsClicked(COORD mouseCoords);
     static void InitialiseTextures();
 
@@ -190,6 +192,7 @@ public:
     void DecreaseZoomLevel();
     int GetTextureWidth();
     int GetTextureHeight();
+    short GetBackgroundTextureSample(COORD mouseCoords);
     int GetBrushSize();
     short GetBrushColour();
     void SetBrushColour(short colour);
@@ -197,7 +200,6 @@ public:
     void SwitchTool(ToolType type);
     bool UpdateActiveButtons();
     ToolType GetCurrentToolType();
-    void ToggleClipboardOption();
     int ChangeCanvasOffset(COORD change);
     bool AreCoordsWithinCanvas(COORD coords);
     void SetBrushTextureToBackground();

@@ -54,10 +54,13 @@ private:
 
         // primary constructor
         Button(int x, int y, bool highlight, int w, int h, bool toggle, Texture* tex1, Texture* tex2, short c, std::function<void()> onClickFunction1, std::function<void()> onClickFunction2, bool initState)
-            : xPos{ x }, yPos{ y }, highlightable{ highlight }, toggleable{ toggle }, width{ w }, height{ h }, colour{ c }, active {false},
+            : xPos{ x }, yPos{ y }, highlightable{ highlight }, toggleable{ toggle }, width{ w }, height{ h }, colour{ c }, active {true},
             textureFunction1{ tex1 }, textureFunction2{ tex2 }, currentTexture{ initState ? tex1 : tex2 }, toggleState{ initState }, externalBoolPtrAppearance{ nullptr }
         {
-            
+            if (onClickFunction1)
+                clickFunctions.push_back(onClickFunction1);
+            if (onClickFunction2)
+                clickFunctions.push_back(onClickFunction2);
         }
 
         // For two different textures, able to toggle
@@ -114,16 +117,25 @@ private:
 
         void Clicked()
         {
-            if (!active) // If the button is not active, exit early
+            size_t numFunctions = clickFunctions.size();
+
+            if (!active || numFunctions == 0) // If the button is not active or no functions, exit
                 return;
 
-            auto& functionToCall = toggleState ? clickFunctions.at(1) : clickFunctions.at(0);
-
-            if (functionToCall) // If the function is not nullptr, execute it
+            if (numFunctions == 1)
             {
-                functionToCall();
-                ToggleButton();
+                auto& functionToCall = clickFunctions.at(0);
+                if (functionToCall) // Check if the function is not nullptr
+                    functionToCall(); // Call the function
             }
+            else if (numFunctions == 2)
+            {
+                auto& functionToCall = toggleState ? clickFunctions.at(1) : clickFunctions.at(0);
+                if (functionToCall) // Check if the function is not nullptr
+                    functionToCall(); // Call the function
+            }
+
+            ToggleButton();
         }
 
         bool IsMouseClickOnButton(const COORD& mouseClick) const
@@ -138,7 +150,7 @@ private:
             // Check if two distinct textures are available AND not a colour button
             if (toggleable && textureFunction2 != textureFunction1 && currentTexture != nullptr) { 
                 toggleState = !toggleState;
-                currentTexture = toggleState ? textureFunction2 : textureFunction1;
+                currentTexture = toggleState ? textureFunction1 : textureFunction2;
             }
         }
 
@@ -199,7 +211,9 @@ public:
 
     void UpdatePosition(int buttonId, int width, int height);
 
-    void HandleMouseClick(COORD);
+    void HandleMouseClick(COORD mouseCoord);
+
+    bool MouseOverButton(COORD mouseCoord);
 
     void UpdateButtonActive(ToolType currentToolType);
 

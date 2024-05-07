@@ -255,8 +255,8 @@ void TexturePainter::DrawHeadingInfo(int x, int y)
 
 void TexturePainter::DrawToolInfo(int x, int y)
 {
-    WriteStringToBuffer(x + 4, y, L"Brush");
-    DrawBlock(x + 4, y + 2, currentCanvas->GetBrushSize(), currentCanvas->GetBrushColour() | BG_MAGENTA, PIXEL_THREEQUARTERS);
+    WriteStringToBuffer(x + 1, y, L"Current Brush");
+    DrawBlock(x + 4, y + 2, currentCanvas->GetBrushSize(), currentCanvas->GetBrushColour() | BG_DARK_GREY, PIXEL_THREEQUARTERS);
 }
 
 bool TexturePainter::HandleKeyPress()
@@ -269,10 +269,7 @@ bool TexturePainter::HandleKeyPress()
         if (currentCanvas->AreCoordsWithinCanvas(mouseCoords))
             currentCanvas->HandleLeftMouseClick(mouseCoords);
         else
-        {
-            // check if over any of the buttons when clicked
             currentCanvas->HandleAnyButtonsClicked(mouseCoords);
-        }
 
     } // if continues to be held
     else if (keyArray[VK_LBUTTON].bHeld)
@@ -281,15 +278,15 @@ bool TexturePainter::HandleKeyPress()
             currentCanvas->HandleLeftMouseClick(mouseCoords);
     }
 
-
     // when left mouse lifted
     if (keyArray[VK_LBUTTON].bReleased)
     {
-        if (currentCanvas->AreCoordsWithinCanvas(mouseCoords))
+        // only mouse release if not over buttons
+        if (!currentCanvas->AreCoordsWithinButtons(mouseCoords))
             currentCanvas->HandleLeftMouseRelease(mouseCoords);
     }
 
-    // makes right click a delete action
+    // makes right click a delete action - will not activate buttons
     if (keyArray[VK_RBUTTON].bHeld)
     {
         if (currentCanvas->AreCoordsWithinCanvas(mouseCoords))

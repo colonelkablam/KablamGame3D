@@ -116,14 +116,23 @@ void ButtonContainer::HandleMouseClick(COORD mouseCoord)
         {
             mouseClickPosition = mouseCoord;
             button->Clicked();
-            if (button->highlightable)
+            if (button->highlightable && button->IsButtonActive())
                 highlighted = count;
 
-            drawingClass.DrawRectangleEdgeLength(buttons.at(count)->xPos - 1, buttons.at(count)->yPos - 1, buttons.at(count)->width + 2, buttons.at(count)->height + 2, FG_DARK_GREEN, true, PIXEL_QUARTER);
             break;
         }
         count++;
     }
+}
+
+bool ButtonContainer::MouseOverButton(COORD mouseCoord)
+{
+    for (Button* button : buttons)
+    {
+        if (button->IsMouseClickOnButton(mouseCoord))
+            return true;
+    }
+    return false;
 }
 
 void ButtonContainer::UpdateButtonActive(ToolType currentToolType)
@@ -147,7 +156,7 @@ void ButtonContainer::DrawButtons(COORD mousePosition)
 {
     for (const Button* button : buttons) {
         if (button->currentTexture == nullptr)
-            drawingClass.DrawRectangleEdgeLength(button->xPos, button->yPos, button->width, button->height, button->colour, true, button->IsButtonActive() ? PIXEL_SOLID : PIXEL_HALF);
+            drawingClass.DrawRectangleEdgeLength(button->xPos, button->yPos, button->width, button->height, button->colour, true, button->IsButtonActive() ? PIXEL_SOLID : PIXEL_QUARTER);
         else
             drawingClass.DrawTextureToScreen(*button->currentTexture, button->xPos, button->yPos, 1, true, !button->IsButtonActive());
 
@@ -156,7 +165,9 @@ void ButtonContainer::DrawButtons(COORD mousePosition)
 
         // highlight if button clicked
         if (button->IsMouseClickOnButton(mousePosition) && drawingClass.GetLeftMouseHeld() && button->IsButtonActive())
+        {
             drawingClass.DrawRectangleEdgeLength(button->xPos, button->yPos, button->width, button->height, FG_GREEN, true, PIXEL_HALF);
+        }
 
     }
 

@@ -502,8 +502,8 @@ int KablamEngine::DrawTextureToScreen(const Texture& texture, int xScreen, int y
             }
             else if (greyedOut) // useful for buttons etc.
             {
-                colour = colour | BG_GREY;
-                glyph = PIXEL_HALF;
+                colour = colour;
+                glyph = PIXEL_QUARTER;
             }
 
             // Draw scaled pixel

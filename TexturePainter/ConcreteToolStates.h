@@ -3,11 +3,11 @@
 #include "IToolState.h";
 #include "Canvas.h"
 
-class BlockBrushState : public IToolState
+class BrushToolState : public IToolState
 {
 public:
 
-    BlockBrushState(Canvas& canvas)
+    BrushToolState(Canvas& canvas)
         : IToolState{ canvas } {}
 
     // Correct placement of handleBrushStroke
@@ -53,9 +53,65 @@ public:
 
 };
 
-class RectBrushState : public IToolState {
+class LineToolState : public IToolState {
 public:
-    RectBrushState(Canvas& canvas)
+    LineToolState(Canvas& canvas)
+        : IToolState{ canvas } {}
+
+    void HandleBrushStroke(COORD mouseCoords) override {
+        if (!initialClick)
+        {
+            initialClickCoords = mouseCoords;
+            initialClick = true;
+        }
+        else
+        {
+            int size = canvas.GetBrushSize();
+            canvas.ClearCurrentBrushstrokeTexture();
+            canvas.PaintLine(initialClickCoords.X, initialClickCoords.Y, mouseCoords.X, mouseCoords.Y, size);
+        }
+    }
+
+    void HandleMouseRelease(COORD mouseCoords) override {
+        canvas.SetBrushTextureToBackground();
+        ResetClicks();
+    }
+
+    void DisplayPointer(COORD mouseCoords)
+    {
+        canvas.DisplayBrushPointer(mouseCoords);
+    }
+
+    void ToggleToolState()
+    {
+        toggleState = !toggleState;
+    }
+
+    bool GetToggleState()
+    {
+        return toggleState;
+    }
+
+    void ResetClicks()
+    {
+        initialClick = false;
+    }
+
+    void SetClicks(bool value)
+    {
+        initialClick = value;
+    }
+
+    void ResetTool() override
+    {
+        initialClick = false;
+
+    }
+};
+
+class RectToolState : public IToolState {
+public:
+    RectToolState(Canvas& canvas)
         : IToolState{ canvas } {}
 
 
@@ -110,9 +166,9 @@ public:
     }
 };
 
-class FilledRectBrushState : public IToolState {
+class FilledRectToolState : public IToolState {
 public:
-    FilledRectBrushState(Canvas& canvas)
+    FilledRectToolState(Canvas& canvas)
         : IToolState{ canvas } {}
 
     void HandleBrushStroke(COORD mouseCoords) override {
@@ -167,9 +223,9 @@ public:
 };
 
 
-class CircleBrushState : public IToolState {
+class CircleToolState : public IToolState {
 public:
-    CircleBrushState(Canvas& canvas)
+    CircleToolState(Canvas& canvas)
         : IToolState{ canvas } {}
 
 
@@ -224,9 +280,9 @@ public:
     }
 };
 
-class FilledCircleBrushState : public IToolState {
+class FilledCircleToolState : public IToolState {
 public:
-    FilledCircleBrushState(Canvas& canvas)
+    FilledCircleToolState(Canvas& canvas)
         : IToolState{ canvas } {}
 
     void HandleBrushStroke(COORD mouseCoords) override {
@@ -280,25 +336,21 @@ public:
     }
 };
 
-class LineBrushState : public IToolState {
+class FillToolState : public IToolState
+{
 public:
-    LineBrushState(Canvas& canvas)
+
+    FillToolState(Canvas& canvas)
         : IToolState{ canvas } {}
 
+    // Correct placement of handleBrushStroke
     void HandleBrushStroke(COORD mouseCoords) override {
-        if (!initialClick)
-        {
-            initialClickCoords = mouseCoords;
-            initialClick = true;
-        }
-        else
-        {
-            int size = canvas.GetBrushSize();
-            canvas.ClearCurrentBrushstrokeTexture();
-            canvas.PaintLine(initialClickCoords.X, initialClickCoords.Y, mouseCoords.X, mouseCoords.Y, size);
-        }
+        short colourToFill = canvas.GetBackgroundTextureSample(mouseCoords);
+
+        // Perform flood fill starting from mouseCoords
+        FloodFill(mouseCoords.X, mouseCoords.Y, colourToFill, canvas.GetTextureWidth(), canvas.GetTextureHeight());
     }
-    
+
     void HandleMouseRelease(COORD mouseCoords) override {
         canvas.SetBrushTextureToBackground();
         ResetClicks();
@@ -306,7 +358,7 @@ public:
 
     void DisplayPointer(COORD mouseCoords)
     {
-        canvas.DisplayBrushPointer(mouseCoords);
+        canvas.DisplayBrushPointer(mouseCoords, true);
     }
 
     void ToggleToolState()
@@ -334,14 +386,53 @@ public:
         initialClick = false;
 
     }
+
+    // additional concrete method to handle a flood fill
+    void FloodFill(short x, short y, short targetColor, int textureWidth, int textureHeight) {
+        
+        // 1D array to track visited pixels
+        std::vector<bool> visited(textureWidth * textureHeight, false); // fill with false
+
+        // flood fill using a stack-based approach
+        std::stack<int> stack;
+        stack.push(x + y * textureWidth); // Convert 2D to 1D index
+
+        while (!stack.empty()) {
+            int currentIndex = stack.top();
+            stack.pop();
+
+            short currentX = currentIndex % textureWidth;
+            short currentY = currentIndex / textureWidth;
+
+            // Check if the current pixel is within bounds and has not been visited
+            if (currentX < 0 || currentX >= textureWidth || currentY < 0 || currentY >= textureHeight || visited[currentIndex])
+                continue;
+
+            // Update stack
+            visited[currentIndex] = true;
+
+            // Check if the current pixel has the target color
+            if (canvas.GetBackgroundTextureSample({ currentX, currentY }) != targetColor)
+                continue;
+
+            // Fill the current pixel
+            canvas.PaintPoint(currentX, currentY);
+
+            // Add adjacent pixels to the stack
+            stack.push((currentX + 1) + currentY * textureWidth); // Right
+            stack.push((currentX - 1) + currentY * textureWidth); // Left
+            stack.push(currentX + (currentY + 1) * textureWidth); // Down
+            stack.push(currentX + (currentY - 1) * textureWidth); // Up
+        }
+    }
+
 };
 
-class CopyBrushState : public IToolState {
 
-    bool drawPartialSample{ true };
+class CopyToolState : public IToolState {
 
 public:
-    CopyBrushState(Canvas& canvas)
+    CopyToolState(Canvas& canvas)
         : IToolState{ canvas } {}
 
     void HandleBrushStroke(COORD mouseCoords) override {
