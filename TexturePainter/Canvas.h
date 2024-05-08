@@ -3,6 +3,8 @@
 #include <stack>
 #include <unordered_map>
 
+#include "ToolTypeEnums.h"
+
 #include "Texture.h"
 #include "UndoRedoManager.h"
 #include "ICoordinateStrategy.h"

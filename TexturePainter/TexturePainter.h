@@ -1,19 +1,6 @@
 #pragma once
 
 #include "KablamEngine.h"
-
-enum class ToolType {
-    BRUSH_BLOCK,
-    BRUSH_LINE,
-    BRUSH_RECT,
-    BRUSH_RECT_FILLED,
-    BRUSH_CIRCLE,
-    BRUSH_CIRCLE_FILLED,
-    BRUSH_FILL,
-    BRUSH_COPY,
-    BRUSH_INVALID
-};
-
 #include "Canvas.h"
 #include "ButtonContainer.h"
 

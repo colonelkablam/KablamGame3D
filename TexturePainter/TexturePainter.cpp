@@ -15,12 +15,11 @@ TexturePainter::TexturePainter(std::wstring newTitle)
 
 TexturePainter::~TexturePainter()
 {
-    for (Canvas* canvas: canvases)
+    for (Canvas* canvas : canvases)
     {
         delete canvas;
         canvas = nullptr;
     }
-
 }
 
 bool TexturePainter::OnGameCreate() 
@@ -44,7 +43,7 @@ bool TexturePainter::OnGameUpdate(float fElapsedTime) {
     FillScreenBuffer(); // clear screen before next frame
     HandleKeyPress();
 
-    currentCanvas->UpdateButtons(); // updates buttons checking for changes in any connected bools
+    currentCanvas->UpdateButtons(); // updates buttons checking for changes in any connected bools/states
     currentCanvas->DrawCanvas(); // handles whole canvas (including buttons)
 
     DrawHeadingInfo(1, 1);

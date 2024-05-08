@@ -218,12 +218,12 @@ void Canvas::PopulateColourButtonsContainer()
     {
         colourButtonsContainer->AddButton(true, 5, 5, colour, [this, colour]() { SetBrushColour(colour); });
         AddDrawingToolActivationOnly(colourButtonsContainer);
-        colourButtonsContainer->AddNewToolToButtonActivateList(ToolType::BRUSH_FILL);
+        colourButtonsContainer->AddNewToolToButtonActivateList(ToolType::BRUSH_FILL); // add fill toolType
 
 
         colourButtonsContainer->AddButton(true, 5, 5, colour | FG_INTENSITY, [this, colour]() { SetBrushColour(colour | FG_INTENSITY); });
         AddDrawingToolActivationOnly(colourButtonsContainer);
-        colourButtonsContainer->AddNewToolToButtonActivateList(ToolType::BRUSH_FILL);
+        colourButtonsContainer->AddNewToolToButtonActivateList(ToolType::BRUSH_FILL); // add fill toolType
     }
 
     colourButtonsContainer->AddButton(true, deleteToolIcon, [this]() { SetBrushToDelete(); });
@@ -392,6 +392,7 @@ void Canvas::SwitchTool(ToolType type) {
         drawingClass.AddToLog(L"Unable to switch tools.");
 }
 
+// only updateing if buttons active in SwitchTool() for efficiancy 
 bool Canvas::UpdateActiveButtons()
 {   
     // update buttons to check if active
@@ -886,8 +887,8 @@ void Canvas::DrawCanvas()
     // draw border around canvas display panel
     drawingClass.DrawRectangleEdgeLength(topLeft.X - 1, topLeft.Y - 1, TexturePainter::CANVAS_DISPLAY_WIDTH + 2, TexturePainter::CANVAS_DISPLAY_HEIGHT + 2, FG_RED, false, PIXEL_HALF);
     // cover up pixel overspill when zooming (rather than drawing partial zoomed pixels!)
-    drawingClass.DrawLine(topLeft.X, bottomRight.Y + 1,
-                          bottomRight.X, bottomRight.Y + 1,
+    drawingClass.DrawLine(topLeft.X, bottomRight.Y + 2,
+                          bottomRight.X, bottomRight.Y + 2,
                           FG_BLACK, PIXEL_SOLID, 2);
 
     DrawButtons();
@@ -898,13 +899,16 @@ void Canvas::DrawCanvas()
 
 }
 
-// update called in parent class - updates external boolean pointers and button appearences
+// update called in parent class (TexturePainter) in OnGameUpate() 
+// this updates any external boolean pointers and button appearences via containers
 void Canvas::UpdateButtons()
 {
     // Updating if button active occurs in SwitchTool()
     // update bools used as external pointers in buttons
     sharedClipboardFilled = GetSharedClipboardTextureState();
-    //update appearance
+
+    //update appearance as external bool/button active state can change
+    colourButtonsContainer->UpdateButtonAppearance();
     toolButtonsContainer->UpdateButtonAppearance();
 }
 
