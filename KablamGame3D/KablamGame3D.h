@@ -72,6 +72,9 @@ private:
 		bool jump = false;
 		bool pause = false;
 		bool toggleMap = false;
+		bool toggleNextDisplay = false;
+		bool togglePrevDisplay = false;
+
 	};
 
 	ActionStates actionStates;
@@ -97,6 +100,56 @@ private:
 	bool bPlayerJumping = false;
 
 	int nMapDisplayStatus = 0;
+
+	enum DisplayState {
+		NORMAL,
+		DISTANCE_SHADING,
+		ANGLE_SHADING,
+		LINEAR_INT,
+		MIP_MAP,
+		PRE_RENDERED, // ?
+		DISPLAY_STATE_COUNT // Automatically gives us the count of states
+	};
+
+	struct DisplayManager
+	{
+		DisplayState currentDisplay = DisplayState::NORMAL;
+
+		DisplayState GetDisplay()
+		{
+			return currentDisplay;
+		}
+
+		void SetDisplay(DisplayState newDisplay)
+		{
+			currentDisplay = newDisplay;
+		}
+
+		void SetNextDisplay()
+		{
+			currentDisplay = static_cast<DisplayState>((currentDisplay + 1) % DISPLAY_STATE_COUNT);
+		}
+
+		void SetPreviousDisplay()
+		{
+			currentDisplay = static_cast<DisplayState>((currentDisplay - 1) % DISPLAY_STATE_COUNT);
+		}
+
+		std::wstring DisplayStateToString() {
+			switch (currentDisplay) {
+			case NORMAL: return L"NORMAL";
+			case DISTANCE_SHADING: return L"DISTANCE_SHADING";
+			case ANGLE_SHADING: return L"ANGLE_SHADING";
+			case LINEAR_INT: return L"LINEAR_INT";
+			case MIP_MAP: return L"MIP_MAP";
+			case PRE_RENDERED: return L"PRE_RENDERED";
+			default: return L"UNKNOWN";
+			}
+		}
+
+	};
+
+	DisplayManager displayManager;
 
 
 public:
@@ -126,6 +179,9 @@ private:
 	void SetVerticalWallCollisionValues(float rayAngle, float& yDistanceToWall, float& yTileHit, int& yWallType);	
 
 	void SetHorizontalSurfaceHitCoords(int yColumn, float rayAngle, FloatCoord& hitCoords, COORD& indexCoords, bool lookingUp);
+
+	void SetRenderPixel(CHAR_INFO& pixel, const Texture* textureToRender, const float textureTileXHit, const float textureTileYHit, const float distanceToHit, const DisplayState displaySetting);
+
 
 	// get ray length from opposite and adjacent sides of ray vector
 	float RayLength(float px, float py, float rx, float ry) const;

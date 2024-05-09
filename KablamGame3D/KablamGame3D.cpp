@@ -34,16 +34,16 @@ bool KablamGame3D::OnGameCreate()
 
 	// import texture data
 	wallTextures.push_back(nullptr); // position 0 will return nullptr
-	wallTextures.push_back(new Texture(L"./Textures/wall_1_main.txr"));
-	wallTextures.push_back(new Texture(L"./Textures/wall_door.txr"));
+	wallTextures.push_back(new Texture(L"./Textures/wall_main_1.txr"));
+	wallTextures.push_back(new Texture(L"./Textures/wall_door_1.txr"));
 
 	floorTextures.push_back(nullptr); // position 0 will return nullptr
-	floorTextures.push_back(new Texture(L"./Textures/floor_cheque.txr"));
+	floorTextures.push_back(new Texture(L"./Textures/floor_main_1.txr"));
 	floorTextures.push_back(new Texture(L"./Textures/floor_lava.txr"));
 
 	ceilingTextures.push_back(nullptr); // position 0 will return nullptr
-	ceilingTextures.push_back(new Texture(L"./Textures/ceiling_main.txr"));
-	ceilingTextures.push_back(new Texture(L"./Textures/ceiling_light.txr"));
+	ceilingTextures.push_back(new Texture(L"./Textures/ceiling_main_1.txr"));
+	ceilingTextures.push_back(new Texture(L"./Textures/ceiling_light_1.txr"));
 
 	spriteTextures.push_back(new Texture(L"./Textures/test_sprite.txr"));
 
@@ -62,11 +62,13 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 
 	ApplyMovementAndActions(fElapsedTime);
 
-	//RenderScreen();
+	// get the display setting before rendering the screen
+	DisplayState displaySetting = displayManager.GetDisplay();
 
 	// calculate ratio to multiply screen column by to get ray angle
 	float fAngleIncrement = FOV / static_cast<float>(GetConsoleWidth());
 	float fStartingAngle = fPlayerA - FOV / 2.0f;
+
 
 	// iterating through screen columns
 	for (int x{ 0 }; x < GetConsoleWidth(); x++)
@@ -153,7 +155,6 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 		int nCeiling{ (int)(fCeiling) };
 		int nFloor{ (int)(fFloor) };
 
-
 		// draw the full column
 		for (int y{ 0 }; y < GetConsoleHeight(); y++)
 		{
@@ -179,28 +180,13 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				float fXTextureTileHit{ ceilingHitCoords.X - ceilingHitIndex.X };
 				float fYTextureTileHit{ ceilingHitCoords.Y - ceilingHitIndex.Y };
 
-				// char to draw 'shade'
-				short nCeilingShadeGlyph{ GetGlyphShadeByDistance(fDistanceToCeiling) };
-
-				// detail level (if mipmapping used)
-				int nDetailLevel{ GetMipmapDetailLevel(fDistanceToCeiling) };
-
 				// texture to use
 				int nCeilingType{ GetMapValue(ceilingHitIndex.X, ceilingHitIndex.Y, mapCeilingTiles) };
 
-				// draw corresponding pixel per ceiling tile
-				if (ceilingTextures[nCeilingType] == nullptr) // handle nullptr
-				{
-					DrawPoint(x, y, pixel);
-				}
-				else
-				{
-					short colour = ceilingTextures[nCeilingType]->SampleColour(fXTextureTileHit, fYTextureTileHit);
-					if (ceilingTextures.at(nCeilingType)->GetIllumination() != 0)
-						nCeilingShadeGlyph = PIXEL_QUARTER;
+				// render pixel according to current display setting
+				SetRenderPixel(pixel, ceilingTextures.at(nCeilingType), fXTextureTileHit, fYTextureTileHit, fDistanceToCeiling, displaySetting);
 
-					DrawPoint(x, y, colour, nCeilingShadeGlyph);
-				}
+				DrawPoint(x, y, pixel);
 
 			}
 			// draw a WALL character
@@ -218,17 +204,10 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				// calculate Y sample of texture tile (ratio of y value and wall height in pixels)
 				float fSampleY = ((float)y - (float)nCeiling) / ((float)nFloor + 1 - (float)nCeiling );
 
-				if (fDistanceToWall < 0)
-				{
-					DrawPoint(x, y, wallTextures[nWallType]->SampleColour(fTileHit, fSampleY), PIXEL_SOLID);
-				}
-				else {
-					pixel = wallTextures[nWallType]->LinearInterpolationWithGlyphShading(fTileHit, fSampleY);
-					//pixel = wallTextures[nWallType]->SamplePixelWithMipmap(fTileHit, fSampleY, nMipmapDetailLevel);
-					//pixel = wallTextures[nWallType]->SamplePixel(fTileHit, fSampleY);
+				// render pixel according to current display setting
+				SetRenderPixel(pixel, wallTextures.at(nWallType), fTileHit, fSampleY, fDistanceToWall, displaySetting);
 
-					DrawPoint(x, y, pixel);
-				}
+				DrawPoint(x, y, pixel);
 
 			}
 			// draw a FLOOR character
@@ -262,19 +241,11 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				// texture to use
 				int nFloorType = GetMapValue(floorHitIndex.X, floorHitIndex.Y, mapFloorTiles);
 
-				// draw corresponding pixel per ceiling tile
-				if (floorTextures[nFloorType] == nullptr) // handle nullptr
-				{
-					DrawPoint(x, y, pixel);
-				}
-				else
-				{
-					short colour = floorTextures[nFloorType]->SampleColour(fXTextureTileHit, fYTextureTileHit);
-					if (floorTextures.at(nFloorType)->GetIllumination() != 0)
-						nFloorShadeGlyph = PIXEL_SOLID;
+				// render pixel according to current display setting
+				SetRenderPixel(pixel, floorTextures.at(nFloorType), fXTextureTileHit, fYTextureTileHit, fDistanceToFloor, displaySetting);
 
-					DrawPoint(x, y, colour, nFloorShadeGlyph);
-				}
+				DrawPoint(x, y, pixel);
+
 			}
 
 		} // end of column
@@ -291,6 +262,8 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 
 
 // member methods of derived KablamGame class
+
+
 
 // key press actions
 
@@ -312,6 +285,9 @@ void KablamGame3D::HandleKeyPress()
 	actionStates.jump = GetKeyState(VK_SPACE).bHeld;
 	actionStates.pause = GetKeyState(L'P').bPressed;
 	actionStates.toggleMap = GetKeyState(L'M').bPressed;
+	actionStates.toggleNextDisplay = GetKeyState(VK_OEM_PERIOD).bPressed;
+	actionStates.togglePrevDisplay = GetKeyState(VK_OEM_COMMA).bPressed;
+
 
 }
 
@@ -420,7 +396,6 @@ bool KablamGame3D::ApplyMovementAndActions(float fElapsedTime)
 	}
 
 	// use 
-
 	if (actionStates.use)
 	{
 		DisplayAlertMessage(L"Use button pressed.");
@@ -429,6 +404,22 @@ bool KablamGame3D::ApplyMovementAndActions(float fElapsedTime)
 	// map
 	if (actionStates.toggleMap)
 		nMapDisplayStatus = (nMapDisplayStatus + 1) % 3;
+
+
+	// display selection
+	if (actionStates.toggleNextDisplay)
+	{
+		displayManager.SetNextDisplay();
+		DisplayAlertMessage(L"Display set to: " + displayManager.DisplayStateToString());
+
+	}
+	if (actionStates.togglePrevDisplay)
+	{
+		displayManager.SetPreviousDisplay();
+		DisplayAlertMessage(L"Display set to: " + displayManager.DisplayStateToString());
+
+	}
+
 	
 	// pause
 	if (actionStates.pause)
@@ -633,6 +624,56 @@ void KablamGame3D::SetHorizontalSurfaceHitCoords(int yColumn, float rayAngle, Fl
 		indexCoords.Y = (int)hitCoords.Y - 1;
 	else
 		indexCoords.Y = (int)hitCoords.Y;
+}
+
+void KablamGame3D::SetRenderPixel(CHAR_INFO& pixel, const Texture* textureToRender, const float textureTileXHit, const float textureTileYHit, const float distanceToHit, const DisplayState displaySetting)
+{	
+	// draw corresponding pixel per ceiling tile
+	if (textureToRender == nullptr) // handle nullptr by not changing default pixel
+		return;
+
+	//DrawPoint(x, y, colour, nCeilingShadeGlyph);
+	if (displaySetting == DisplayState::NORMAL)
+	{
+		pixel = textureToRender->SamplePixel(textureTileXHit, textureTileYHit);
+	}
+
+	else if (displaySetting == DisplayState::DISTANCE_SHADING)
+	{
+		// char to draw 'shade'
+		pixel.Char.UnicodeChar = GetGlyphShadeByDistance(distanceToHit);
+		// colour
+		pixel.Attributes = textureToRender->SampleColour(textureTileXHit, textureTileYHit);
+	}
+	else if (displaySetting == DisplayState::ANGLE_SHADING)
+	{
+		// TBC
+
+	}
+	else if (displaySetting == DisplayState::LINEAR_INT)
+	{
+		pixel = textureToRender->LinearInterpolationWithGlyphShading(textureTileXHit, textureTileYHit);
+	}
+	else if (displaySetting == DisplayState::MIP_MAP)
+	{
+		// detail level (if mipmapping used)
+		int nDetailLevel{ GetMipmapDetailLevel(distanceToHit) };
+
+		pixel = textureToRender->SamplePixelWithMipmap(textureTileXHit, textureTileYHit, nDetailLevel);
+	}
+	else if (displaySetting == DisplayState::PRE_RENDERED)
+	{
+		// TBC
+	}
+	else // default pixel used
+	{
+		return;
+	}
+
+	// if texture has an illumination value greater than 0 make it as 'bright' as possible with full pixel
+	if (textureToRender->GetIllumination() != 0)
+		pixel.Char.UnicodeChar = PIXEL_SOLID;
+
 }
 
 

@@ -138,12 +138,12 @@ private:
 
 	// filtering sampling
 public:
-	CHAR_INFO LinearInterpolationWithGlyphShading(float x, float y);
+	CHAR_INFO LinearInterpolationWithGlyphShading(float x, float y) const;
 
 private:
-	void SetColourAndDeltaFromSecondaryTexel(int ix, int iy, float dx, float dy, short primaryColour, short& secondaryColour, float& delta);
+	void SetColourAndDeltaFromSecondaryTexel(int ix, int iy, float dx, float dy, short primaryColour, short& secondaryColour, float& delta) const;
 	
-	short GetGlyphFromDelta(float delta);
+	short GetGlyphFromDelta(float delta) const;
 
 public:
 	int GetIllumination() const;

@@ -361,7 +361,7 @@ CHAR_INFO Texture::SamplePixelWithMipmap(float x, float y, float detail) const {
 }
 
 // looks at 4 closest texels and picks dominant (c00) and secondary (c01) colour
-CHAR_INFO Texture::LinearInterpolationWithGlyphShading(float x, float y) {
+CHAR_INFO Texture::LinearInterpolationWithGlyphShading(float x, float y) const {
 
 	CHAR_INFO pixel;
 	// Ensure x and y are within the expected range [0.0, 1.0]
@@ -399,7 +399,7 @@ CHAR_INFO Texture::LinearInterpolationWithGlyphShading(float x, float y) {
 }
 
 // takes a reference to second colour and delta for modification
-void Texture::SetColourAndDeltaFromSecondaryTexel(int ix, int iy, float dx, float dy, short primaryColour, short& secondaryColour, float& delta) {
+void Texture::SetColourAndDeltaFromSecondaryTexel(int ix, int iy, float dx, float dy, short primaryColour, short& secondaryColour, float& delta) const {
 
 	//	 BOTTOM RIGHT quadrant of texel
 	if (dx >= 0.5f && dy >= 0.5f) {
@@ -494,7 +494,7 @@ void Texture::SetColourAndDeltaFromSecondaryTexel(int ix, int iy, float dx, floa
 	}
 }
 
-short Texture::GetGlyphFromDelta(float delta) {
+short Texture::GetGlyphFromDelta(float delta) const {
 	// Determine the glyph based on delta
 	if (delta < 0.30)
 		return PIXEL_SOLID;
