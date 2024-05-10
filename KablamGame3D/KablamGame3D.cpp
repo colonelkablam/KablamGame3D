@@ -818,7 +818,7 @@ void KablamGame3D::DisplayMap(int xPos, int yPos, int scale) {
 
 void KablamGame3D::DisplayScore()
 {
-	std::wstring text{ L"KamblamEngine3D" };
+	std::wstring text{ L"KamblamEngine3D @ . ?" };
 	textDisplay.DisplayString(*this, 10, nScreenHeight - 10, text, FG_DARK_BLUE, PIXEL_SOLID);
 }
 

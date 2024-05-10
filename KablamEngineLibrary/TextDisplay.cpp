@@ -5,7 +5,21 @@ TextDisplay::TextDisplay()
 {
 	// Initialize character patterns A-Z, 0-9
 	letterPatterns = {
-		{L'A', std::array<int, CHAR_WIDTH * CHAR_HEIGHT>{
+			{L' ', std::array<int, CHAR_WIDTH * CHAR_HEIGHT>{
+				0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0
+			}},
+			{L'.', std::array<int, CHAR_WIDTH * CHAR_HEIGHT>{
+				0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0,
+				0, 0, 1, 0, 0
+			}},
+			{L'A', std::array<int, CHAR_WIDTH * CHAR_HEIGHT>{
 				0, 1, 1, 1, 0,
 				1, 0, 0, 0, 1,
 				1, 1, 1, 1, 1,
@@ -256,6 +270,13 @@ TextDisplay::TextDisplay()
 				1, 1, 1, 1, 1,
 				0, 0, 0, 0, 1,
 				1, 1, 1, 1, 1
+			}},
+			{ L'?', std::array<int, CHAR_WIDTH * CHAR_HEIGHT>{
+				1, 1, 1, 1, 1,
+				0, 0, 0, 0, 1,
+				0, 1, 1, 1, 1,
+				0, 0, 0, 0, 0,
+				0, 0, 1, 0, 0
 			}}
 	};
 }
@@ -270,23 +291,21 @@ void TextDisplay::AddPattern(wchar_t wc, const std::array<int, CHAR_WIDTH* CHAR_
 void TextDisplay::DisplayChar(KablamEngine& game, int x, int y, short colour, short glyph, wchar_t wc)
 {
 	auto it = letterPatterns.find(toupper(wc));
-	if (it != letterPatterns.end())
-	{
-		const auto& pattern = it->second;
-		for (int i = 0; i < CHAR_WIDTH; ++i)
-		{
-			for (int j = 0; j < CHAR_HEIGHT; ++j)
-			{
-				if (pattern[j * CHAR_WIDTH + i] == 1)
-				{
-					int drawX = x + i;
-					int drawY = y + j;
+	const auto& pattern = (it != letterPatterns.end()) ? it->second : letterPatterns[L'?'];
 
-					if (drawX >= 0 && drawX < game.GetConsoleWidth() &&
-						drawY >= 0 && drawY < game.GetConsoleHeight())
-					{
-						game.DrawPoint(drawX, drawY, colour, glyph);
-					}
+	for (int i = 0; i < CHAR_WIDTH; ++i)
+	{
+		for (int j = 0; j < CHAR_HEIGHT; ++j)
+		{
+			if (pattern[j * CHAR_WIDTH + i] == 1)
+			{
+				int drawX = x + i;
+				int drawY = y + j;
+
+				if (drawX >= 0 && drawX < game.GetConsoleWidth() &&
+					drawY >= 0 && drawY < game.GetConsoleHeight())
+				{
+					game.DrawPoint(drawX, drawY, colour, glyph);
 				}
 			}
 		}
