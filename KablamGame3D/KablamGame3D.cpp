@@ -31,19 +31,24 @@ bool KablamGame3D::OnGameCreate()
 
 	AddToLog(L"Map data added...");
 
+	SetPlayerStart(mapFloorTiles);
 
 	// import texture data
 	wallTextures.push_back(nullptr); // position 0 will return nullptr
-	wallTextures.push_back(new Texture(L"./Textures/wall_main_1.txr"));
-	wallTextures.push_back(new Texture(L"./Textures/wall_door_1.txr"));
+	wallTextures.push_back(new Texture(L"./Textures/wall_main_32.txr"));
+	wallTextures.push_back(new Texture(L"./Textures/wall_door_32.txr"));
 
-	floorTextures.push_back(nullptr); // position 0 will return nullptr
-	floorTextures.push_back(new Texture(L"./Textures/floor_main_1.txr"));
-	floorTextures.push_back(new Texture(L"./Textures/floor_lava.txr"));
+	// Prepare floorTextures vector with size 10 and initialize with nullptr
+	floorTextures.resize(10, nullptr);
+	floorTextures.at(1) = new Texture(L"./Textures/floor_main_32.txr");
+	floorTextures.at(2) = new Texture(L"./Textures/floor_lava_32.txr");
+	floorTextures.at(8) = new Texture(L"./Textures/floor_start_32.txr");
+	floorTextures.at(9) = new Texture(L"./Textures/floor_finish_32.txr");
+
 
 	ceilingTextures.push_back(nullptr); // position 0 will return nullptr
-	ceilingTextures.push_back(new Texture(L"./Textures/ceiling_main_1.txr"));
-	ceilingTextures.push_back(new Texture(L"./Textures/ceiling_light_1.txr"));
+	ceilingTextures.push_back(new Texture(L"./Textures/ceiling_main_32.txr"));
+	ceilingTextures.push_back(new Texture(L"./Textures/ceiling_light_32.txr"));
 
 	spriteTextures.push_back(new Texture(L"./Textures/test_sprite.txr"));
 
@@ -119,16 +124,19 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 		float fDistanceToWall{ 1000.0f };
 		float fTileHit{ -1.0f };
 		int nWallType{ 0 };
+		bool bHitXWall{ false };
 
 		// get shortist distance and correlating tile hit axis and wall type
 		if (fYDistanceToWall <= fXDistanceToWall)
 		{
+			// bHitXWall = false; // record X-axis boundry hit - no need to implement as already false
 			fDistanceToWall = fYDistanceToWall;
 			fTileHit = fYTileHit;
 			nWallType = nWallTypeY;
 		}
 		else
 		{
+			bHitXWall = true; // record X-axis boundry hit
 			fDistanceToWall = fXDistanceToWall;
 			fTileHit = fXTileHit;
 			nWallType = nWallTypeX;
@@ -205,7 +213,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				float fSampleY = ((float)y - (float)nCeiling) / ((float)nFloor + 1 - (float)nCeiling );
 
 				// render pixel according to current display setting
-				SetRenderPixel(pixel, wallTextures.at(nWallType), fTileHit, fSampleY, fDistanceToWall, displaySetting);
+				SetRenderPixel(pixel, wallTextures.at(nWallType), fTileHit, fSampleY, fDistanceToWall, displaySetting, bHitXWall);
 
 				DrawPoint(x, y, pixel);
 
@@ -242,7 +250,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				int nFloorType = GetMapValue(floorHitIndex.X, floorHitIndex.Y, mapFloorTiles);
 
 				// render pixel according to current display setting
-				SetRenderPixel(pixel, floorTextures.at(nFloorType), fXTextureTileHit, fYTextureTileHit, fDistanceToFloor, displaySetting);
+				SetRenderPixel(pixel, GetTexturePointer(floorTextures, nFloorType), fXTextureTileHit, fYTextureTileHit, fDistanceToFloor, displaySetting);
 
 				DrawPoint(x, y, pixel);
 
@@ -254,8 +262,8 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 	// ApplyBilinearFilterScreen(); // far too slow
 
 	DisplayAim();
-	
 	DisplayMap(5, 5, 5);
+	DisplayScore();
 
 	return true;
 } // end of OnGameUpdate
@@ -266,6 +274,38 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 
 
 // key press actions
+
+void KablamGame3D::SetPlayerStart(const std::vector<int>& floorMap)
+{
+	size_t xPosStart{ 0 };
+	size_t yPosStart{ 0 };
+	size_t xPosFinish{ 0 };
+	size_t yPosFinish{ 0 };
+
+	for (size_t x{ 0 }; x < nMapWidth; ++x)
+	{
+		for (size_t y{ 0 }; y < nMapWidth; ++y)
+		{
+			// Determine the index based on the 2D coordinates
+			int tile = floorMap[y * nMapWidth + x];
+			if (tile == 8)
+			{
+				xPosStart = x;
+				yPosStart = y;
+			}
+			else if (tile == 9)
+			{
+				xPosFinish = x;
+				yPosFinish = y;
+			}
+			// else do nothing
+		}
+	}
+
+	// Assign the starting position to the player
+	fPlayerX = static_cast<float>(xPosStart + 0.5f);
+	fPlayerY = static_cast<float>(yPosStart + 0.5f);
+}
 
 void KablamGame3D::HandleKeyPress()
 {
@@ -626,7 +666,7 @@ void KablamGame3D::SetHorizontalSurfaceHitCoords(int yColumn, float rayAngle, Fl
 		indexCoords.Y = (int)hitCoords.Y;
 }
 
-void KablamGame3D::SetRenderPixel(CHAR_INFO& pixel, const Texture* textureToRender, const float textureTileXHit, const float textureTileYHit, const float distanceToHit, const DisplayState displaySetting)
+void KablamGame3D::SetRenderPixel(CHAR_INFO& pixel, const Texture* textureToRender, const float textureTileXHit, const float textureTileYHit, const float distanceToHit, const DisplayState displaySetting, const bool hitXWall)
 {	
 	// draw corresponding pixel per ceiling tile
 	if (textureToRender == nullptr) // handle nullptr by not changing default pixel
@@ -645,10 +685,25 @@ void KablamGame3D::SetRenderPixel(CHAR_INFO& pixel, const Texture* textureToRend
 		// colour
 		pixel.Attributes = textureToRender->SampleColour(textureTileXHit, textureTileYHit);
 	}
-	else if (displaySetting == DisplayState::ANGLE_SHADING)
+	else if (displaySetting == DisplayState::ANGLE_SHADING) // same as distance but 
 	{
-		// TBC
+		// Determine the glyph shade based on distance
+		short glyph = GetGlyphShadeByDistance(distanceToHit);
 
+		// Modify the glyph further based on whether it hit an X or Y wall
+		if (hitXWall)
+		{
+			if (glyph == PIXEL_QUARTER) glyph = PIXEL_HALF;
+			else if (glyph == PIXEL_HALF) glyph = PIXEL_THREEQUARTERS;
+			else if (glyph == PIXEL_THREEQUARTERS) glyph = PIXEL_SOLID;
+
+			else glyph = PIXEL_SOLID;
+		}
+
+		pixel.Char.UnicodeChar = glyph;
+
+		// colour
+		pixel.Attributes = textureToRender->SampleColour(textureTileXHit, textureTileYHit);
 	}
 	else if (displaySetting == DisplayState::LINEAR_INT)
 	{
@@ -674,6 +729,17 @@ void KablamGame3D::SetRenderPixel(CHAR_INFO& pixel, const Texture* textureToRend
 	if (textureToRender->GetIllumination() != 0)
 		pixel.Char.UnicodeChar = PIXEL_SOLID;
 
+}
+
+// Helper function to safely get a texture pointer
+const Texture* KablamGame3D::GetTexturePointer(const std::vector<Texture*>& textures, int index)
+{
+	// Ensure the index is within bounds
+	if (index >= 0 && static_cast<size_t>(index) < textures.size())
+	{
+		return textures[index];
+	}
+	return nullptr; // Return nullptr if index is out of bounds
 }
 
 
@@ -748,6 +814,12 @@ void KablamGame3D::DisplayMap(int xPos, int yPos, int scale) {
 		DrawLine(pX, pY, pX + cosf(fPlayerA) * scale*2, pY + sinf(fPlayerA) * scale*2, FG_DARK_RED);
 		DrawPoint(pX, pY, FG_WHITE, PIXEL_SOLID);
 	}
+}
+
+void KablamGame3D::DisplayScore()
+{
+	std::wstring text{ L"KamblamEngine3D" };
+	textDisplay.DisplayString(*this, 10, nScreenHeight - 10, text, FG_DARK_BLUE, PIXEL_SOLID);
 }
 
 short KablamGame3D::GetGlyphShadeByDistance(float distance)

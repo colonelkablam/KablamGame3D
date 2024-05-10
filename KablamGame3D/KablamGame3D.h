@@ -2,6 +2,7 @@
 
 // my library
 #include "KablamEngine.h"
+#include "TextDisplay.h"
 
 // this is the actual game class - inherits from Graphics Engine
 // 
@@ -13,7 +14,7 @@ class KablamGame3D : public KablamEngine
 private:
 	const int nMapWidth = 32;
 	const int nMapHeight = 32;
-	const float fWallHUnit = 1.5f;
+	const float fWallHUnit = 1.75f;
 
 	const float PI = 3.14159f;
 	const float P2 = PI / 2.0f;
@@ -28,11 +29,11 @@ private:
 	std::vector<int> mapFloorTiles;
 	std::vector<int> mapCeilingTiles;
 
-	// vectors to hold sprite data
-	std::vector<Texture*> wallTextures{};
-	std::vector<Texture*> floorTextures{};
-	std::vector<Texture*> ceilingTextures{};
-	std::vector<Texture*> spriteTextures{};
+	// vectors to hold texture data
+	std::vector<Texture*> wallTextures;
+	std::vector<Texture*> floorTextures;
+	std::vector<Texture*> ceilingTextures;
+	std::vector<Texture*> spriteTextures;
 
 	//// crosshair
 	//int aimArray[25] = {0, 0, 1, 0, 0,
@@ -92,7 +93,7 @@ private:
 	float fPlayerY = 24.0f;
 	float fPlayerA = 0;
 
-	float fPlayerHDefault = 0.6f;
+	float fPlayerHDefault = 0.8f;
 	float fPlayerH{ fPlayerHDefault };
 	float fPlayerUpVelocity = 0.0f;
 	float fGravity = -19.0f;
@@ -149,7 +150,11 @@ private:
 
 	};
 
+	// manage the rendering state
 	DisplayManager displayManager;
+
+	// for displaying text to the screen
+	TextDisplay textDisplay;
 
 
 public:
@@ -168,6 +173,8 @@ public:
 	bool OnGameUpdate(float fElapsedTime);
 
 private:
+	void SetPlayerStart(const std::vector<int>& floorPlan);
+
 	// handle player inputs
 	void HandleKeyPress();
 
@@ -180,8 +187,9 @@ private:
 
 	void SetHorizontalSurfaceHitCoords(int yColumn, float rayAngle, FloatCoord& hitCoords, COORD& indexCoords, bool lookingUp);
 
-	void SetRenderPixel(CHAR_INFO& pixel, const Texture* textureToRender, const float textureTileXHit, const float textureTileYHit, const float distanceToHit, const DisplayState displaySetting);
+	void SetRenderPixel(CHAR_INFO& pixel, const Texture* textureToRender, const float textureTileXHit, const float textureTileYHit, const float distanceToHit, const DisplayState displaySetting, const bool hitXWall = false);
 
+	const Texture* GetTexturePointer(const std::vector<Texture*>& textures, int index);
 
 	// get ray length from opposite and adjacent sides of ray vector
 	float RayLength(float px, float py, float rx, float ry) const;
@@ -195,6 +203,8 @@ private:
 	void DisplayAim(short colour = FG_WHITE, short glyph = PIXEL_SOLID);
 
 	void DisplayMap(int xPos, int yPos, int scale);
+
+	void DisplayScore();
 
 	short GetGlyphShadeByDistance(float distance);
 
