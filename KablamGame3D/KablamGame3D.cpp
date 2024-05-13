@@ -1,4 +1,5 @@
 #include "KablamGame3D.h"
+#include <cmath>
 
 // constructors 
 KablamGame3D::KablamGame3D(std::wstring newTitle)
@@ -52,7 +53,14 @@ bool KablamGame3D::OnGameCreate()
 
 	spriteTextures.push_back(new Texture(L"./Textures/test_sprite.txr"));
 
-	AddToLog(L"Textures added...");
+	AddToLog(L"Map textures added...");
+
+	spriteBarrel = new Texture(L"./Textures/sprite_barrel32.txr");
+	spriteOctoBaddy = new Texture(L"./Textures/sprite_octobaddy32.txr");
+
+	listObjects = {
+		{12.5f, 12.5f, spriteBarrel}
+	};
 
 	SetResizeWindowLock(true);
 	SetConsoleFocusPause(true);
@@ -204,10 +212,6 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				CHAR_INFO pixel;
 				pixel.Attributes = FG_RED | BG_CYAN;
 				pixel.Char.UnicodeChar = PIXEL_HALF;
-
-				// char to draw 'shade'
-				short nWallShadeGlyph = GetGlyphShadeByDistance(fDistanceToWall);
-				int nMipmapDetailLevel = GetMipmapDetailLevel(fDistanceToWall);
 
 				// calculate Y sample of texture tile (ratio of y value and wall height in pixels)
 				float fSampleY = ((float)y - (float)nCeiling) / ((float)nFloor + 1 - (float)nCeiling );

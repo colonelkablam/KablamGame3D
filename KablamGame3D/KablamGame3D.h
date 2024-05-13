@@ -1,5 +1,7 @@
 #pragma once
 
+#include <list>
+
 // my library
 #include "KablamEngine.h"
 #include "TextDisplay.h"
@@ -35,13 +37,6 @@ private:
 	std::vector<Texture*> ceilingTextures;
 	std::vector<Texture*> spriteTextures;
 
-	//// crosshair
-	//int aimArray[25] = {0, 0, 1, 0, 0,
-	//					0, 0, 1, 0, 0,
-	//					1, 1, 1, 1, 1,
-	//					0, 0, 1, 0, 0,
-	//					0, 0, 1, 0, 0, };
-
 	// crosshair
 	int aimArray[25] = { 0, 0, 0, 0, 0,
 						 1, 0, 0, 0, 1,
@@ -49,6 +44,18 @@ private:
 						 1, 0, 0, 0, 1,
 						 0, 0, 0, 0, 0, };
 
+	Texture* spriteBarrel;
+	Texture* spriteOctoBaddy;
+
+	// simple object to represent game object
+	struct sObject {
+		float x;
+		float y;
+		Texture* sprite;
+	};
+
+	// list of objects as will be deleting items within
+	std::list<sObject> listObjects;
 
 	const float FOV = PI / 4.0f;
 	const int MAX_DEPTH_OF_VIEW = 32;

@@ -277,22 +277,46 @@ bool Texture::LoadFrom(const std::wstring& filePath)
 
 short Texture::SampleColour(float x, float y) const
 {
+
 	// Ensure x and y are within the expected range [0.0, 1.0]
 	x = std::max(0.0f, std::min(x, 1.0f));
 	y = std::max(0.0f, std::min(y, 1.0f));
 
 	// Scale the normalized coordinates to array indices - handle edge cases
-	int ix = static_cast<int>(x * (m_width));
-	ix = std::min(ix, m_width - 1);          // Clamp to the maximum valid index
-
-	int iy = static_cast<int>(y * (m_height));
-	iy = std::min(iy, m_height - 1);          // Clamp to the maximum valid index
+	int ix = static_cast<int>(std::round(x * (m_width - 1)));  // Use rounding and adjust max index
+	int iy = static_cast<int>(std::round(y * (m_height - 1))); // Use rounding and adjust max index
 
 	// Calculate the index in the colour array
 	int index = iy * m_width + ix;
 
 	// Return the colour at the index
 	return m_colourArray[index];
+
+	//// Ensure x and y are within the expected range [0.0, 1.0]
+	//x = std::max(0.0f, std::min(x, 1.0f));
+	//y = std::max(0.0f, std::min(y, 1.0f));
+
+	//// Scale the normalized coordinates to array indices - handle edge cases
+	//int ix = static_cast<int>(x * (m_width));
+	//ix = std::min(ix, m_width - 1);          // Clamp to the maximum valid index
+
+	//int iy = static_cast<int>(y * (m_height));
+	//iy = std::min(iy, m_height - 1);          // Clamp to the maximum valid index
+
+	//// Calculate the index in the colour array
+	//int index = iy * m_width + ix;
+
+	//// Return the colour at the index
+	//return m_colourArray[index];
+
+
+	//// alternative from olc
+	//int sx = (int)(x * (float)m_width);
+	//int sy = (int)(y * (float)m_height - 1.0f);
+	//if (sx < 0 || sx >= m_width || sy < 0 || sy >= m_height)
+	//	return FG_BLACK;
+	//else
+	//	return m_colourArray[sy * m_width + sx];
 }
 
 short Texture::SampleGlyph(float x, float y) const
