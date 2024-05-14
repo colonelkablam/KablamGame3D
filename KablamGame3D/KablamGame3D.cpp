@@ -32,14 +32,12 @@ bool KablamGame3D::OnGameCreate()
 
 	AddToLog(L"Map data added...");
 
-	SetPlayerStart(mapFloorTiles);
-
 	// import texture data
 	wallTextures.push_back(nullptr); // position 0 will return nullptr
 	wallTextures.push_back(new Texture(L"./Textures/wall_main_32.txr"));
 	wallTextures.push_back(new Texture(L"./Textures/wall_door_32.txr"));
 
-	// Prepare floorTextures vector with size 10 and initialize with nullptr
+	// Prepare floorTextures vector with size 10 and initialize with nullptr	// TBC for all structure texture vectors
 	floorTextures.resize(10, nullptr);
 	floorTextures.at(1) = new Texture(L"./Textures/floor_main_32.txr");
 	floorTextures.at(2) = new Texture(L"./Textures/floor_lava_32.txr");
@@ -51,21 +49,21 @@ bool KablamGame3D::OnGameCreate()
 	ceilingTextures.push_back(new Texture(L"./Textures/ceiling_main_32.txr"));
 	ceilingTextures.push_back(new Texture(L"./Textures/ceiling_light_32.txr"));
 
-	spriteTextures.push_back(new Texture(L"./Textures/test_sprite.txr"));
-
 	AddToLog(L"Map textures added...");
 
-	spriteBarrel = new Texture(L"./Textures/objectSprites/sprite_barrel32.txr");
-	spriteOctoBaddy = new Texture(L"./Textures/objectSprites/sprite_octobaddy32.txr");
+	// Sprite textures
+	spriteFloorLamp = new Texture(L"./Textures/Sprites/sprite_lamp_32.txr");
+	spriteOctoBaddy = new Texture(L"./Textures/Sprites/sprite_octobaddy_32.txr");
 
-	listObjects = {
-		{12.5f, 12.5f, spriteBarrel},
-		{10.5f, 10.5f, spriteBarrel},
-		{15.0f, 15.0f, spriteBarrel},
-		{8.5f, 8.5f, spriteOctoBaddy},
-	};
+	AddToLog(L"Sprite textures added...");
+
+	// Enviroment textures
+	skyTexture = new Texture(L"./Textures/Environments/sky_2.txr");
 
 	fDepthBuffers.resize(nScreenWidth, 1000.0f);
+
+	SetPlayerStart(mapFloorTiles);
+	SetObjectsStart(mapObjects);
 
 	SetResizeWindowLock(true);
 	SetConsoleFocusPause(true);
@@ -87,6 +85,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 	float fAngleIncrement = FOV / static_cast<float>(GetConsoleWidth());
 	float fStartingAngle = fPlayerA - FOV / 2.0f;
 
+	UpdateSkyView(); // keeps the calculations out of the screen columns loop, only needed per frame
 
 	// iterating through screen columns
 	for (int x{ 0 }; x < GetConsoleWidth(); x++)
@@ -185,9 +184,10 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 			if (y <= nCeiling)
 			{
 				// default sky pixel
-				CHAR_INFO pixel;
-				pixel.Attributes = FG_BLUE | BG_DARK_BLUE;
-				pixel.Char.UnicodeChar = PIXEL_HALF;
+				CHAR_INFO pixel{ PIXEL_SOLID, FG_BLUE };
+				//pixel = skyTexture->GetPixel((int)x/2, (int)y/3);
+
+				//pixel.Attributes += BG_BLUE;
 
 				// declare storage for ceiling ray hit
 				FloatCoord ceilingHitCoords{ 0.0f, 0.0f };
@@ -206,10 +206,17 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				// texture to use
 				int nCeilingType{ GetMapValue(ceilingHitIndex.X, ceilingHitIndex.Y, mapCeilingTiles) };
 
-				// render pixel according to current display setting
-				SetRenderPixel(pixel, ceilingTextures.at(nCeilingType), fXTextureTileHit, fYTextureTileHit, fDistanceToCeiling, displaySetting);
-
-				DrawPoint(x, y, pixel);
+				if (nCeilingType != 0)
+				{
+					// render pixel according to current display setting
+					SetRenderPixel(pixel, ceilingTextures.at(nCeilingType), fXTextureTileHit, fYTextureTileHit, fDistanceToCeiling, displaySetting);
+					DrawPoint(x, y, pixel);
+				}
+				else
+				{
+					DisplaySky(x, y);
+				}
+				
 
 			}
 			// draw a WALL character
@@ -317,6 +324,28 @@ void KablamGame3D::SetPlayerStart(const std::vector<int>& floorMap)
 	// Assign the starting position to the player
 	fPlayerX = static_cast<float>(xPosStart + 0.5f);
 	fPlayerY = static_cast<float>(yPosStart + 0.5f);
+}
+
+void KablamGame3D::SetObjectsStart(const std::vector<int>& floorMap)
+{
+	for (size_t x{ 0 }; x < nMapWidth; ++x)
+	{
+		for (size_t y{ 0 }; y < nMapWidth; ++y)
+		{
+			// Determine the index based on the 2D coordinates
+			int tile = floorMap[y * nMapWidth + x];
+			if (tile == 1)
+			{
+				listObjects.push_back({x + 0.5f, y + 0.5f, 01.0f, 1, false, false, spriteOctoBaddy });
+			}
+			else if (tile == 2)
+			{
+				listObjects.push_back({x + 0.5f, y + 0.5f, 01.0f, 1, false, true, spriteFloorLamp });
+			}
+			// else do nothing
+		}
+	}
+
 }
 
 void KablamGame3D::HandleKeyPress()
@@ -782,30 +811,30 @@ int KablamGame3D::GetMapValue(int x, int y, const std::vector<int>& map) const
 		return 0;
 }
 
-
 void KablamGame3D::DisplayObjects()
 {
 	for (const auto& object : listObjects)
 	{
 		// Can object be seen?
+		// realative position
 		float fVecX = object.x - fPlayerX;
 		float fVecY = object.y - fPlayerY;
 		float fDistanceFromPlayer = sqrtf(fVecX * fVecX + fVecY * fVecY);
 
+		// Rotate around screen
 		float fEyeX = cosf(fPlayerA);
 		float fEyeY = sinf(fPlayerA);
 
-		// Calculate angle between lamp and players feet, and players looking direction
-		// to determine if the lamp is in the players field of view
+		// Calculate angle between object and players feet, and players looking direction
+		// to determine if in the players field of view
 		float fObjectAngle = atan2f(fVecY, fVecX) - atan2f(fEyeY, fEyeX);
-		//if (fObjectAngle < -3.14159f)
-		//	fObjectAngle += 2.0f * 3.14159f;
-		//if (fObjectAngle > 3.14159f)
-		//	fObjectAngle -= 2.0f * 3.14159f;
+		if (fObjectAngle < -PI)
+			fObjectAngle += 2.0f * PI;
+		if (fObjectAngle > PI)
+			fObjectAngle -= 2.0f * PI;
 
-		bool bInPlayerFOV = fabs(fObjectAngle) < FOV / 2.0f;
+		bool bInPlayerFOV = fabs(fObjectAngle) < FOV / 1.0f;
 
-		
 		if (bInPlayerFOV)
 		{
 			float fObjectCeiling = (float)(nScreenHeight / 2.0) - nScreenHeight / ((float)fDistanceFromPlayer);
@@ -822,20 +851,47 @@ void KablamGame3D::DisplayObjects()
 				{
 					float fSampleX = lx / fObjectWidth;
 					float fSampleY = ly / fObjectHeight;
-					wchar_t c = object.sprite->SampleGlyph(fSampleX, fSampleY);
+					short glyph = object.sprite->SampleGlyph(fSampleX, fSampleY);
+
+					if (glyph != L' ' && !object.illuminated)
+						glyph = GetGlyphShadeByDistance(fDistanceFromPlayer);
+
 					int nObjectColumn = (int)(fMiddleOfObject + lx - (fObjectWidth / 2.0f));
 					if (nObjectColumn >= 0 && nObjectColumn < nScreenWidth)
-						if (c != L' ' && fDepthBuffers[nObjectColumn] >= fDistanceFromPlayer)
+					{
+						if (glyph != L' ' && fDepthBuffers[nObjectColumn] >= fDistanceFromPlayer)
 						{
-							DrawPoint(nObjectColumn, fObjectCeiling + ly, object.sprite->SampleColour(fSampleX, fSampleY), c);
+							float verticalAdjustment = (fPlayerH - fPlayerHDefault) * 300 / fDistanceFromPlayer;
+							int yPosition = (int)(fObjectCeiling + ly - fPlayerTilt + verticalAdjustment);
+
+							DrawPoint(nObjectColumn, yPosition , object.sprite->SampleColour(fSampleX, fSampleY), glyph);
 							fDepthBuffers[nObjectColumn] = fDistanceFromPlayer;
 						}
+					}
 				}
 			}
 		}
 	}
 }
 
+void KablamGame3D::UpdateSkyView()
+{
+	// angleScale is factor for angle to texture width mapping
+	float angleScale = skyTexture->GetWidth() / FOV * 2.6f;
+
+	xSkyOffset = static_cast<int>(fPlayerA * angleScale) % skyTexture->GetWidth();
+	ySkyOffset = skyTexture->GetHeight() - GetConsoleHeight() / 2 + fPlayerTilt;
+}
+
+void KablamGame3D::DisplaySky(int x, int y)
+{
+	int adjustedY = y + ySkyOffset;
+
+	if (adjustedY < 0 || adjustedY >= skyTexture->GetHeight())
+		DrawPoint(x, y, FG_DARK_BLUE);
+	else
+		DrawPoint(x, y, skyTexture->GetColour((x + xSkyOffset) % skyTexture->GetWidth(), y + ySkyOffset));
+}
 
 // display aiming cross
 void KablamGame3D::DisplayAim(short colour, short glyph)

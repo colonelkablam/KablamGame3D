@@ -30,12 +30,21 @@ private:
 	std::vector<int> mapWalls;
 	std::vector<int> mapFloorTiles;
 	std::vector<int> mapCeilingTiles;
+	std::vector<int> mapObjects;
 
 	// vectors to hold texture data
 	std::vector<Texture*> wallTextures;
 	std::vector<Texture*> floorTextures;
 	std::vector<Texture*> ceilingTextures;
 	std::vector<Texture*> spriteTextures;
+
+	Texture* skyTexture;
+	int xSkyOffset = 0;
+	int ySkyOffset = 0;
+
+	// Adjust 'angleScale' to tune how sensitive the texture offset is to player rotation
+	// Example: Assuming you want the texture to span a 90-degree field of view
+	//const float fieldOfViewRadians = 90 * (PI / 180); // Convert degrees to radians
 
 	// crosshair
 	int aimArray[25] = { 0, 0, 0, 0, 0,
@@ -44,15 +53,19 @@ private:
 						 1, 0, 0, 0, 1,
 						 0, 0, 0, 0, 0, };
 
-	Texture* spriteBarrel;
+	Texture* spriteFloorLamp;
 	Texture* spriteOctoBaddy;
 
 	std::vector <float> fDepthBuffers;
 
-	// simple object to represent game object
+	// simple object to represent a game object
 	struct sObject {
 		float x;
 		float y;
+		float z;
+		int type;
+		bool dead;
+		bool illuminated;
 		Texture* sprite;
 	};
 
@@ -66,7 +79,7 @@ private:
 	float fPlayerRotationSpeed = 1.7f;
 	float fPlayerTilt = 0.0f;
 	float fPlayerTiltSpeed = 170.0f;
-	const int TILT_MAX = 40;
+	const int TILT_MAX = 45;
 
 	struct ActionStates
 	{
@@ -102,7 +115,7 @@ private:
 	float fPlayerY = 24.0f;
 	float fPlayerA = 0;
 
-	float fPlayerHDefault = 0.8f;
+	float fPlayerHDefault = 0.7f;
 	float fPlayerH{ fPlayerHDefault };
 	float fPlayerUpVelocity = 0.0f;
 	float fGravity = -19.0f;
@@ -184,6 +197,8 @@ public:
 private:
 	void SetPlayerStart(const std::vector<int>& floorPlan);
 
+	void SetObjectsStart(const std::vector<int>& floorMap);
+
 	// handle player inputs
 	void HandleKeyPress();
 
@@ -210,6 +225,11 @@ private:
 	int GetMapValue(int x, int y, const std::vector<int>& map) const;
 
 	void DisplayObjects();
+
+	// uses player viewing angle and tilt to update sky display offsets
+	void UpdateSkyView();
+
+	void DisplaySky(int x, int y);
 
 	void DisplayAim(short colour = FG_WHITE, short glyph = PIXEL_SOLID);
 
