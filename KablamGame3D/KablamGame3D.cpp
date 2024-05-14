@@ -55,12 +55,17 @@ bool KablamGame3D::OnGameCreate()
 
 	AddToLog(L"Map textures added...");
 
-	spriteBarrel = new Texture(L"./Textures/sprite_barrel32.txr");
-	spriteOctoBaddy = new Texture(L"./Textures/sprite_octobaddy32.txr");
+	spriteBarrel = new Texture(L"./Textures/objectSprites/sprite_barrel32.txr");
+	spriteOctoBaddy = new Texture(L"./Textures/objectSprites/sprite_octobaddy32.txr");
 
 	listObjects = {
-		{12.5f, 12.5f, spriteBarrel}
+		{12.5f, 12.5f, spriteBarrel},
+		{10.5f, 10.5f, spriteBarrel},
+		{15.0f, 15.0f, spriteBarrel},
+		{8.5f, 8.5f, spriteOctoBaddy},
 	};
+
+	fDepthBuffers.resize(nScreenWidth, 1000.0f);
 
 	SetResizeWindowLock(true);
 	SetConsoleFocusPause(true);
@@ -152,6 +157,8 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 
 		// correct for fish-eye effect
 		fDistanceToWall *= cosf(fRayAngle - fPlayerA);
+
+		fDepthBuffers.at(x) = fDistanceToWall;
 
 
 		// get ratios of wall to ceiling and floor
@@ -265,6 +272,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 
 	// ApplyBilinearFilterScreen(); // far too slow
 
+	DisplayObjects();
 	DisplayAim();
 	DisplayMap(5, 5, 5);
 	DisplayScore();
@@ -773,6 +781,61 @@ int KablamGame3D::GetMapValue(int x, int y, const std::vector<int>& map) const
 	else
 		return 0;
 }
+
+
+void KablamGame3D::DisplayObjects()
+{
+	for (const auto& object : listObjects)
+	{
+		// Can object be seen?
+		float fVecX = object.x - fPlayerX;
+		float fVecY = object.y - fPlayerY;
+		float fDistanceFromPlayer = sqrtf(fVecX * fVecX + fVecY * fVecY);
+
+		float fEyeX = cosf(fPlayerA);
+		float fEyeY = sinf(fPlayerA);
+
+		// Calculate angle between lamp and players feet, and players looking direction
+		// to determine if the lamp is in the players field of view
+		float fObjectAngle = atan2f(fVecY, fVecX) - atan2f(fEyeY, fEyeX);
+		//if (fObjectAngle < -3.14159f)
+		//	fObjectAngle += 2.0f * 3.14159f;
+		//if (fObjectAngle > 3.14159f)
+		//	fObjectAngle -= 2.0f * 3.14159f;
+
+		bool bInPlayerFOV = fabs(fObjectAngle) < FOV / 2.0f;
+
+		
+		if (bInPlayerFOV)
+		{
+			float fObjectCeiling = (float)(nScreenHeight / 2.0) - nScreenHeight / ((float)fDistanceFromPlayer);
+			float fObjectFloor = nScreenHeight - fObjectCeiling;
+			float fObjectHeight = fObjectFloor - fObjectCeiling;
+			float fObjectAspectRatio = (float)object.sprite->GetHeight() / (float)object.sprite->GetWidth();
+			float fObjectWidth = fObjectHeight / fObjectAspectRatio;
+			float fMiddleOfObject = (0.5f * (fObjectAngle / (FOV / 2.0f)) + 0.5f) * (float)nScreenWidth;
+
+			// Draw object
+			for (float lx = 0; lx < fObjectWidth; lx++)
+			{
+				for (float ly = 0; ly < fObjectHeight; ly++)
+				{
+					float fSampleX = lx / fObjectWidth;
+					float fSampleY = ly / fObjectHeight;
+					wchar_t c = object.sprite->SampleGlyph(fSampleX, fSampleY);
+					int nObjectColumn = (int)(fMiddleOfObject + lx - (fObjectWidth / 2.0f));
+					if (nObjectColumn >= 0 && nObjectColumn < nScreenWidth)
+						if (c != L' ' && fDepthBuffers[nObjectColumn] >= fDistanceFromPlayer)
+						{
+							DrawPoint(nObjectColumn, fObjectCeiling + ly, object.sprite->SampleColour(fSampleX, fSampleY), c);
+							fDepthBuffers[nObjectColumn] = fDistanceFromPlayer;
+						}
+				}
+			}
+		}
+	}
+}
+
 
 // display aiming cross
 void KablamGame3D::DisplayAim(short colour, short glyph)

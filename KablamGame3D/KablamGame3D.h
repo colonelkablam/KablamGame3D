@@ -47,6 +47,8 @@ private:
 	Texture* spriteBarrel;
 	Texture* spriteOctoBaddy;
 
+	std::vector <float> fDepthBuffers;
+
 	// simple object to represent game object
 	struct sObject {
 		float x;
@@ -206,6 +208,8 @@ private:
 
 	// get map value at coord x,y
 	int GetMapValue(int x, int y, const std::vector<int>& map) const;
+
+	void DisplayObjects();
 
 	void DisplayAim(short colour = FG_WHITE, short glyph = PIXEL_SOLID);
 
