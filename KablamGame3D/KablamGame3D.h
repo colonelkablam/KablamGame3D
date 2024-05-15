@@ -67,6 +67,27 @@ private:
 		bool dead;
 		bool illuminated;
 		Texture* sprite;
+		float timer = 0.0f;
+		float frameTime = 1000.0f;
+		int animationIndex = 0;
+
+		void UpdateTime(float timePassed)
+		{
+			timer += timePassed;
+			
+			if (timer >= frameTime)
+			{
+				animationIndex = ++animationIndex % 3;
+				timer -= frameTime;
+			}
+
+		}
+
+		~sObject()
+		{
+			delete sprite;
+		}
+
 	};
 
 	// list of objects as will be deleting items within
