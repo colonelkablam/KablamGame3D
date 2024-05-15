@@ -53,7 +53,9 @@ bool KablamGame3D::OnGameCreate()
 
 	// Sprite textures
 	spriteFloorLamp = new Texture(L"./Textures/Sprites/sprite_lamp_32.txr");
-	spriteOctoBaddy = new Texture(L"./Textures/Sprites/sprite_octobaddy_32.txr");
+	spriteOctoBaddy1 = new Texture(L"./Textures/Sprites/sprite_octo_32_1.txr");
+	spriteOctoBaddy2 = new Texture(L"./Textures/Sprites/sprite_octo_32_2.txr");
+
 
 	AddToLog(L"Sprite textures added...");
 
@@ -77,6 +79,11 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 	HandleKeyPress();
 
 	ApplyMovementAndActions(fElapsedTime);
+
+	for (auto& object : listObjects)
+	{
+		object.UpdateSprite(fElapsedTime);
+	}
 
 	// get the display setting before rendering the screen
 	DisplayState displaySetting = displayManager.GetDisplay();
@@ -336,11 +343,12 @@ void KablamGame3D::SetObjectsStart(const std::vector<int>& floorMap)
 			int tile = floorMap[y * nMapWidth + x];
 			if (tile == 1)
 			{
-				listObjects.push_back({x + 0.5f, y + 0.5f, 01.0f, 1, false, false, spriteOctoBaddy });
+				listObjects.push_back({ x + 0.5f , y + 0.5f, 1.0f, 0, false, false, spriteOctoBaddy1, spriteOctoBaddy2
+					});
 			}
 			else if (tile == 2)
 			{
-				listObjects.push_back({x + 0.5f, y + 0.5f, 01.0f, 1, false, true, spriteFloorLamp });
+				listObjects.push_back({x + 0.5f, y + 0.5f, 0.0f, 0, false, true, spriteFloorLamp });
 			}
 			// else do nothing
 		}
@@ -372,8 +380,9 @@ void KablamGame3D::HandleKeyPress()
 
 }
 
-bool KablamGame3D::ApplyMovementAndActions(float fElapsedTime)
+bool KablamGame3D::ApplyMovementAndActions(const float fElapsedTime)
 {
+
 	//Handle Rotation
 	if (actionStates.rotateLeft)
 	{
@@ -405,54 +414,38 @@ bool KablamGame3D::ApplyMovementAndActions(float fElapsedTime)
 	// Handle Movement
 	if (actionStates.forward)
 	{
-		fPlayerX += cosf(fPlayerA) * fPlayerSpeed * fElapsedTime;
-		fPlayerY += sinf(fPlayerA) * fPlayerSpeed * fElapsedTime;
+		// calculate changes in x & y
+		float pdx = cosf(fPlayerA);
+		float pdy = sinf(fPlayerA);
 
-		// collision detection - reversal of movement if hitting wall
-		if (!(GetMapValue((int)fPlayerX, (int)fPlayerY, mapWalls) == 0))
-		{
-			fPlayerX -= cosf(fPlayerA) * fPlayerSpeed * fElapsedTime;
-			fPlayerY -= sinf(fPlayerA) * fPlayerSpeed * fElapsedTime;
-		}
+		TryMovement(pdx, pdy, fElapsedTime);
 	}
 
 	if (actionStates.backward)
 	{
-		fPlayerX -= cosf(fPlayerA) * fPlayerSpeed * fElapsedTime;
-		fPlayerY -= sinf(fPlayerA) * fPlayerSpeed * fElapsedTime;
+		// calculate changes in x & y
+		float pdx = -cosf(fPlayerA);
+		float pdy = -sinf(fPlayerA);
 
-		// collision detection - reversal of movement if hitting wall
-		if (!(GetMapValue((int)fPlayerX, (int)fPlayerY, mapWalls) == 0))
-		{
-			fPlayerX += cosf(fPlayerA) * fPlayerSpeed * fElapsedTime;
-			fPlayerY += sinf(fPlayerA) * fPlayerSpeed * fElapsedTime;
-		}
+		TryMovement(pdx, pdy, fElapsedTime);
 	}
 
 	if (actionStates.right)
 	{
-		fPlayerX += cosf(fPlayerA + PI / 2) * fPlayerSpeed * fElapsedTime;
-		fPlayerY += sinf(fPlayerA + PI / 2) * fPlayerSpeed * fElapsedTime;
+		// calculate changes in x & y
+		float pdx = cosf(fPlayerA + PI / 2);
+		float pdy = sinf(fPlayerA + PI / 2);
 
-		// collision detection - reversal of movement if hitting wall
-		if (!(GetMapValue((int)fPlayerX, (int)fPlayerY, mapWalls) == 0))
-		{
-			fPlayerX -= cosf(fPlayerA + PI / 2) * fPlayerSpeed * fElapsedTime;
-			fPlayerY -= sinf(fPlayerA + PI / 2) * fPlayerSpeed * fElapsedTime;
-		}
+		TryMovement(pdx, pdy, fElapsedTime);
 	}
 
 	if (actionStates.left)
 	{
-		fPlayerX += cosf(fPlayerA - PI / 2) * fPlayerSpeed * fElapsedTime;
-		fPlayerY += sinf(fPlayerA - PI / 2) * fPlayerSpeed * fElapsedTime;
+		// calculate changes in x & y
+		float pdx = cosf(fPlayerA - PI / 2);
+		float pdy = sinf(fPlayerA - PI / 2);
 
-		// collision detection - reversal of movement if hitting wall
-		if (!(GetMapValue((int)fPlayerX, (int)fPlayerY, mapWalls) == 0))
-		{
-			fPlayerX -= cosf(fPlayerA - PI / 2) * fPlayerSpeed * fElapsedTime;
-			fPlayerY -= sinf(fPlayerA - PI / 2) * fPlayerSpeed * fElapsedTime;
-		}
+		TryMovement(pdx, pdy, fElapsedTime);
 	}
 
 	// handle ACTION keys
@@ -507,6 +500,27 @@ bool KablamGame3D::ApplyMovementAndActions(float fElapsedTime)
 		DisplayAlertMessage(L"Game Paused.");
 
 	return true;
+}
+
+// helper function
+void KablamGame3D::TryMovement(float pdx, float pdy, float fElapsedTime)
+{		// set appropriate collision buffer sign
+	float xBuffer = pdx > 0 ? playerCollisionBuffer : -playerCollisionBuffer;
+	float yBuffer = pdy > 0 ? playerCollisionBuffer : -playerCollisionBuffer;
+
+	// apply movement to player x y
+	float newX = fPlayerX + pdx * fPlayerSpeed * fElapsedTime;
+	float newY = fPlayerY + pdy * fPlayerSpeed * fElapsedTime;
+
+	// Check for collisions including the buffer before updating positions
+	if (GetMapValue((int)(newX + xBuffer), (int)fPlayerY, mapWalls) == 0) {
+		fPlayerX = newX;
+	}
+
+	if (GetMapValue((int)fPlayerX, (int)(newY + yBuffer), mapWalls) == 0) {
+		fPlayerY = newY;
+	}
+
 }
 
 void KablamGame3D::SetHorizontalWallCollisionValues(float rayAngle, float& yDistanceToWall, float& yTileHit, int& yWallType)
@@ -853,7 +867,7 @@ void KablamGame3D::DisplayObjects()
 					float fSampleY = ly / fObjectHeight;
 					short glyph = object.sprite->SampleGlyph(fSampleX, fSampleY);
 
-					if (glyph != L' ' && !object.illuminated)
+					if (/*glyph != L' ' &&*/ !object.illuminated)
 						glyph = GetGlyphShadeByDistance(fDistanceFromPlayer);
 
 					int nObjectColumn = (int)(fMiddleOfObject + lx - (fObjectWidth / 2.0f));
@@ -861,7 +875,8 @@ void KablamGame3D::DisplayObjects()
 					{
 						if (glyph != L' ' && fDepthBuffers[nObjectColumn] >= fDistanceFromPlayer)
 						{
-							float verticalAdjustment = (fPlayerH - fPlayerHDefault) * 300 / fDistanceFromPlayer;
+							// accounts for player jumping/view-tilt/object height off floor z
+							float verticalAdjustment = (fPlayerH - fPlayerHDefault) * GetConsoleWidth() / fDistanceFromPlayer + (32 - 32*object.z)/fDistanceFromPlayer;
 							int yPosition = (int)(fObjectCeiling + ly - fPlayerTilt + verticalAdjustment);
 
 							DrawPoint(nObjectColumn, yPosition , object.sprite->SampleColour(fSampleX, fSampleY), glyph);

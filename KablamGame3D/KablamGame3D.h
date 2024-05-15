@@ -54,7 +54,9 @@ private:
 						 0, 0, 0, 0, 0, };
 
 	Texture* spriteFloorLamp;
-	Texture* spriteOctoBaddy;
+	Texture* spriteOctoBaddy1;
+	Texture* spriteOctoBaddy2;
+
 
 	std::vector <float> fDepthBuffers;
 
@@ -62,30 +64,45 @@ private:
 	struct sObject {
 		float x;
 		float y;
-		float z;
+		float z; // height off floor
 		int type;
 		bool dead;
 		bool illuminated;
 		Texture* sprite;
+		Texture* sprite1;
+		Texture* sprite2;
 		float timer = 0.0f;
-		float frameTime = 1000.0f;
+		float frameTime = 1;
 		int animationIndex = 0;
 
-		void UpdateTime(float timePassed)
+		// default Constructor
+		sObject(float initX = 0.0f, float initY = 0.0f, float initZ = 0.0f, int initType = 0,
+			bool isDead = false, bool isIlluminated = false, Texture* initSprite1 = nullptr, Texture* initSprite2 = nullptr,
+			float initTimer = 0.0f, float initFrameTime = 1000.0f, int initAnimationIndex = 0)
+			: x(initX), y(initY), z(initZ), type(initType), dead(isDead),
+			illuminated(isIlluminated), sprite1(initSprite1), sprite2(initSprite2), timer(initTimer),
+			frameTime(initFrameTime), animationIndex(initAnimationIndex), sprite{ initSprite1 }
+		{}
+
+		void UpdateSprite(float timePassed)
 		{
 			timer += timePassed;
-			
+
 			if (timer >= frameTime)
 			{
-				animationIndex = ++animationIndex % 3;
+				animationIndex = ++animationIndex % 2;
 				timer -= frameTime;
 			}
 
+			if (animationIndex == 0)
+				sprite = sprite1;
+			else
+				sprite = sprite2;
 		}
 
 		~sObject()
 		{
-			delete sprite;
+			//delete sprite handled by KablamGame3D;
 		}
 
 	};
@@ -101,6 +118,7 @@ private:
 	float fPlayerTilt = 0.0f;
 	float fPlayerTiltSpeed = 170.0f;
 	const int TILT_MAX = 45;
+	const float playerCollisionBuffer = 0.2f;
 
 	struct ActionStates
 	{
@@ -224,7 +242,9 @@ private:
 	void HandleKeyPress();
 
 	// apply movements to player
-	bool ApplyMovementAndActions(float fElapsedTime);
+	bool ApplyMovementAndActions(const float fElapsedTime);
+
+	void TryMovement(float pdx, float pdy, float fElapsedTime);
 
 	void SetHorizontalWallCollisionValues(float rayAngle, float& yDistanceToWall, float& yTileHit, int& yWallType);
 
