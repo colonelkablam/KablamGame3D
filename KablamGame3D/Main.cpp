@@ -16,7 +16,7 @@ int main()
 	// mega res		1280 x 720
 	// ultra res	1920 x 1080
 
-	kablamGame3D.BuildConsole(320, 180, 4, 4);
+	kablamGame3D.BuildConsole(320, 120, 4, 4);
 	
 	kablamGame3D.Start();
 
