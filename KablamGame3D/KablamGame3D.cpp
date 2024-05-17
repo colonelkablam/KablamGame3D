@@ -833,13 +833,23 @@ int KablamGame3D::GetMapValue(int x, int y, const std::vector<int>& map) const
 
 void KablamGame3D::DisplayObjects()
 {
+	// calculate all distances
+	for (auto& object : listObjects)
+		object.distFromPlayer = RayLength(fPlayerX, fPlayerY, object.x, object.y);
+
+	// Sort the list by distance from the player (furthest first)
+	listObjects.sort([this](const sObject& a, const sObject& b) {
+		// Directly compare precomputed distances
+		return a.distFromPlayer > b.distFromPlayer;
+	});
+
 	for (const auto& object : listObjects)
 	{
 		// Can object be seen?
 		// realative position
 		float fVecX = object.x - fPlayerX;
 		float fVecY = object.y - fPlayerY;
-		float fDistanceFromPlayer = RayLength(fPlayerX, fPlayerY, object.x, object.y);
+		float fDistanceFromPlayer = object.distFromPlayer;
 
 		// Rotate around screen
 		float fEyeX = cosf(fPlayerA);
@@ -865,7 +875,7 @@ void KablamGame3D::DisplayObjects()
 			// takes into account the players view tilt and jump height
 			float fObjectTop{ GetConsoleHeight()/2.0f - (fObjectHeight/2 * (fWallHUnit - fPlayerHDefault -  fPlayerH)*2) - fPlayerTilt};
 			// account for object z height off floor
-			float verticalAdjustment = (spriteHeight/2 - spriteHeight/2 * object.z) / fDistanceFromPlayer;
+			float verticalAdjustment = ((spriteHeight/2 - spriteHeight * object.z) * fWallHUnit) / fDistanceFromPlayer;
 			fObjectTop += verticalAdjustment;
 
 			float fObjectBottom{ fObjectTop + fObjectHeight };

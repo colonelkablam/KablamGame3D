@@ -65,6 +65,7 @@ private:
 		float x;
 		float y;
 		float z; // height off floor
+		float distFromPlayer;
 		int type;
 		bool dead;
 		bool illuminated;
@@ -78,7 +79,7 @@ private:
 		// default Constructor
 		sObject(float initX = 0.0f, float initY = 0.0f, float initZ = 0.0f, int initType = 0,
 			bool isDead = false, bool isIlluminated = false, Texture* initSprite1 = nullptr, Texture* initSprite2 = nullptr,
-			float initTimer = 0.0f, float initFrameTime = 1000.0f, int initAnimationIndex = 0)
+			float initTimer = 0.0f, float initFrameTime = 1000.0f, int initAnimationIndex = 0, float distFromPlayer = 1.000f)
 			: x(initX), y(initY), z(initZ), type(initType), dead(isDead),
 			illuminated(isIlluminated), sprite1(initSprite1), sprite2(initSprite2), timer(initTimer),
 			frameTime(initFrameTime), animationIndex(initAnimationIndex), sprite{ initSprite1 }
