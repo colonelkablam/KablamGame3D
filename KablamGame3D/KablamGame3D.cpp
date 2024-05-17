@@ -94,6 +94,9 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 
 	UpdateSkyView(); // keeps the calculations out of the screen columns loop, only needed per frame
 
+	// reset the depth buffers
+	std::fill(fDepthBuffers.begin(), fDepthBuffers.end(), 1000.0f);
+
 	// iterating through screen columns
 	for (int x{ 0 }; x < GetConsoleWidth(); x++)
 	{
@@ -839,15 +842,15 @@ void KablamGame3D::DisplayObjects()
 		float fEyeX = cosf(fPlayerA);
 		float fEyeY = sinf(fPlayerA);
 
-		// Calculate angle between object and players feet, and players looking direction
-		// to determine if in the players field of view
+		// Calculate angle between object and players view direction
+		// relative angle from player to object = (angle x-axis to object) - (angle x-axis to look dir)
 		float fObjectAngle = atan2f(fVecY, fVecX) - atan2f(fEyeY, fEyeX);
-		if (fObjectAngle < -PI)
-			fObjectAngle += 2.0f * PI;
-		if (fObjectAngle > PI)
-			fObjectAngle -= 2.0f * PI;
+		// keeps angle to between -PI and PI
+		if (fObjectAngle < -PI) fObjectAngle += 2.0f * PI;
+		if (fObjectAngle > PI) fObjectAngle -= 2.0f * PI;
 
-		bool bInPlayerFOV = fabs(fObjectAngle) < FOV / 1.0f;
+		// within field of view
+		bool bInPlayerFOV = fabs(fObjectAngle) < FOV / 2.0f;
 
 		if (bInPlayerFOV)
 		{
