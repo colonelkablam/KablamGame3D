@@ -62,7 +62,7 @@ bool KablamGame3D::OnGameCreate()
 	// Enviroment textures
 	skyTexture = new Texture(L"./Textures/Environments/sky_2.txr");
 
-	fDepthBuffers.resize(nScreenWidth, 1000.0f);
+	fDepthBuffers.resize(GetConsoleWidth(), 1000.0f);
 
 	SetPlayerStart(mapFloorTiles);
 	SetObjectsStart(mapObjects);
@@ -164,10 +164,13 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 			nWallType = nWallTypeX;
 		}
 
+		// add before fish-eye!! this gives 'true' distance
+		fDepthBuffers.at(x) = fDistanceToWall;
+
+
 		// correct for fish-eye effect
 		fDistanceToWall *= cosf(fRayAngle - fPlayerA);
 
-		fDepthBuffers.at(x) = fDistanceToWall;
 
 
 		// get ratios of wall to ceiling and floor
@@ -836,7 +839,7 @@ void KablamGame3D::DisplayObjects()
 		// realative position
 		float fVecX = object.x - fPlayerX;
 		float fVecY = object.y - fPlayerY;
-		float fDistanceFromPlayer = sqrtf(fVecX * fVecX + fVecY * fVecY);
+		float fDistanceFromPlayer = RayLength(fPlayerX, fPlayerY, object.x, object.y);
 
 		// Rotate around screen
 		float fEyeX = cosf(fPlayerA);
@@ -852,38 +855,64 @@ void KablamGame3D::DisplayObjects()
 		// within field of view
 		bool bInPlayerFOV = fabs(fObjectAngle) < FOV / 2.0f;
 
-		if (bInPlayerFOV && fDistanceFromPlayer >= 0.5f && fDistanceFromPlayer < 10.0f)
+		if (bInPlayerFOV && fDistanceFromPlayer >= 0.5f && fDistanceFromPlayer < 30.0f)
 		{
-			float fObjectCeiling = (float)(nScreenHeight / 2.0) - nScreenHeight / ((float)fDistanceFromPlayer);
-			float fObjectFloor = nScreenHeight - fObjectCeiling;
-			float fObjectHeight = fObjectFloor - fObjectCeiling;
-			float fObjectAspectRatio = (float)object.sprite->GetHeight() / (float)object.sprite->GetWidth();
-			float fObjectWidth = fObjectHeight / fObjectAspectRatio;
-			float fMiddleOfObject = (0.5f * (fObjectAngle / (FOV / 2.0f)) + 0.5f) * (float)nScreenWidth;
+			int spriteWidth = object.sprite->GetWidth();
+			int spriteHeight = object.sprite->GetHeight();
+
+			// calculate objects height, top, bottom, all with respect to the screen Y position (very similar to the wall height calculation)
+			float fObjectHeight = (GetConsoleHeight() / fDistanceFromPlayer) * fWallHUnit;
+			// takes into account the players view tilt and jump height
+			float fObjectTop{ GetConsoleHeight()/2.0f - (fObjectHeight/2 * (fWallHUnit - fPlayerHDefault -  fPlayerH)*2) - fPlayerTilt};
+			// account for object z height off floor
+			float verticalAdjustment = (spriteHeight/2 - spriteHeight/2 * object.z) / fDistanceFromPlayer;
+			fObjectTop += verticalAdjustment;
+
+			float fObjectBottom{ fObjectTop + fObjectHeight };
+			float fObjectAspectRatio = (float)spriteHeight / (float)spriteWidth;
+			float fObjectWidth = fObjectHeight / fObjectAspectRatio - 2;
+
+			// where is object on screen x-axis
+			float fMiddleOfObject = (0.5f * (fObjectAngle / (FOV / 2.0f)) + 0.5f) * (float)GetConsoleWidth();
 
 			// Draw object
-			for (float lx = 0; lx < fObjectWidth; lx++)
+			for (float lx = 0; lx < fObjectWidth; lx ++)
 			{
+				// Calculate the X position on the screen
+				int screenX = (int)(fMiddleOfObject + lx - fObjectWidth / 2.0f);
+
 				for (float ly = 0; ly < fObjectHeight; ly++)
 				{
-					float fSampleX = lx / fObjectWidth;
-					float fSampleY = ly / fObjectHeight;
-					short glyph = object.sprite->SampleGlyph(fSampleX, fSampleY);
+					// Calculate the Y position on the screen
+					int screenY = (int)(fObjectTop + ly);
 
-					if (/*glyph != L' ' &&*/ !object.illuminated)
-						glyph = GetGlyphShadeByDistance(fDistanceFromPlayer);
-
-					int nObjectColumn = (int)(fMiddleOfObject + lx - (fObjectWidth / 2.0f));
-					if (nObjectColumn >= 0 && nObjectColumn < nScreenWidth)
+					// Ensure screenX is within the bounds of the screen and depth buffer
+					if (screenX >= 0 && screenX < GetConsoleWidth())
 					{
-						if (glyph != L' ' && fDepthBuffers[nObjectColumn] >= fDistanceFromPlayer)
+						// Check if the object is closer than the wall previously drawn at this screenX
+						if (fDistanceFromPlayer <= fDepthBuffers[screenX])
 						{
-							// accounts for player jumping/view-tilt/object height off floor z
-							float verticalAdjustment = (fPlayerH - fPlayerHDefault) * GetConsoleWidth() / fDistanceFromPlayer + (32 - 32*object.z)/fDistanceFromPlayer;
-							int yPosition = (int)(fObjectCeiling + ly - fPlayerTilt + verticalAdjustment);
+							// Calculate the corresponding position in the sprite
+							int spriteX = (int)(lx * spriteWidth / fObjectWidth);
+							int spriteY = (int)(ly * spriteHeight / fObjectHeight);
 
-							DrawPoint(nObjectColumn, yPosition , object.sprite->SampleColour(fSampleX, fSampleY), glyph);
-							fDepthBuffers[nObjectColumn] = fDistanceFromPlayer;
+							// check if 'transparent'
+							short glyph = object.sprite->GetGlyph(spriteX, spriteY);
+
+							// Check if the pixel is not transparent (assuming some alpha value defines transparency)
+							if (glyph != L' ' && fDistanceFromPlayer <= fDepthBuffers[screenX])
+							{
+								// Get the color from the sprite at this position
+								short colour = object.sprite->GetColour(spriteX, spriteY);
+								// adjust glyph for shading
+								if (!object.illuminated)
+									glyph = GetGlyphShadeByDistance(fDistanceFromPlayer);
+
+								// Draw pixel at the calculated screen position
+
+								DrawPoint(screenX, screenY, colour, glyph);
+								fDepthBuffers[screenX] = fDistanceFromPlayer; // add to depth buffer
+							}
 						}
 					}
 				}
