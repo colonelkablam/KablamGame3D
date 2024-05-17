@@ -852,7 +852,7 @@ void KablamGame3D::DisplayObjects()
 		// within field of view
 		bool bInPlayerFOV = fabs(fObjectAngle) < FOV / 2.0f;
 
-		if (bInPlayerFOV)
+		if (bInPlayerFOV && fDistanceFromPlayer >= 0.5f && fDistanceFromPlayer < 10.0f)
 		{
 			float fObjectCeiling = (float)(nScreenHeight / 2.0) - nScreenHeight / ((float)fDistanceFromPlayer);
 			float fObjectFloor = nScreenHeight - fObjectCeiling;
