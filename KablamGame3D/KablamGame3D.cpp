@@ -69,7 +69,6 @@ bool KablamGame3D::OnGameCreate()
 
 	SetResizeWindowLock(true);
 	SetConsoleFocusPause(true);
-	SetWindowPosition(100, 100);
 
 	return true;
 }

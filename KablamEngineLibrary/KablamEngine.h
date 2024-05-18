@@ -152,7 +152,7 @@ public:
     ~KablamEngine();
 
     // member methods
-    int BuildConsole(int screenWidth, int screenHeight, int fontWidth, int fontHeight);
+    int BuildConsole(int screenWidth, int screenHeight, int pixelWidth, int pixelHeight, int winPosX, int winPosY);
 
     void Start(); // starts engine
 

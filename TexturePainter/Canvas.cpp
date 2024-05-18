@@ -25,8 +25,10 @@ Texture* Canvas::circleToolIcon = nullptr;
 Texture* Canvas::circleFillToolIcon = nullptr;
 Texture* Canvas::fillToolIcon = nullptr;
 Texture* Canvas::clipboardToolIcon = nullptr;
+Texture* Canvas::clipboardToolFlipIcon = nullptr;
+Texture* Canvas::clipboardToolFlipIcon2 = nullptr;
 Texture* Canvas::clipboardToolToggleIcon = nullptr;
-Texture* Canvas::clipboardToolToggle2Icon = nullptr;
+Texture* Canvas::clipboardToolToggleIcon2 = nullptr;
 Texture* Canvas::sharedClipboardSaveIcon = nullptr;
 Texture* Canvas::sharedClipboardDeleteIcon = nullptr;
 Texture* Canvas::sharedClipboardLoadIcon = nullptr;
@@ -132,8 +134,10 @@ void Canvas::CleanUpStaticPointers()
     delete circleFillToolIcon;
     delete fillToolIcon;
     delete clipboardToolIcon;
+    delete clipboardToolFlipIcon;
+    delete clipboardToolFlipIcon2;
     delete clipboardToolToggleIcon;
-    delete clipboardToolToggle2Icon;
+    delete clipboardToolToggleIcon2;
     delete sharedClipboardSaveIcon;
     delete sharedClipboardDeleteIcon;
     delete sharedClipboardLoadIcon;
@@ -151,8 +155,10 @@ void Canvas::CleanUpStaticPointers()
     circleFillToolIcon = nullptr;
     fillToolIcon = nullptr;
     clipboardToolIcon = nullptr;
+    clipboardToolFlipIcon = nullptr;
+    clipboardToolFlipIcon2 = nullptr;
     clipboardToolToggleIcon = nullptr;
-    clipboardToolToggle2Icon = nullptr;
+    clipboardToolToggleIcon2 = nullptr;
     sharedClipboardSaveIcon = nullptr;
     sharedClipboardDeleteIcon = nullptr;
     sharedClipboardLoadIcon = nullptr;
@@ -252,8 +258,12 @@ void Canvas::PopulateToolButtonsContainer()
     toolButtonsContainer->AddButton(true, circleFillToolIcon, [this]() { SwitchTool(ToolType::BRUSH_CIRCLE_FILLED); });
     toolButtonsContainer->AddButton(true, fillToolIcon, [this]() { SwitchTool(ToolType::BRUSH_FILL); });
     toolButtonsContainer->AddButton(true, clipboardToolIcon, [this]() { SwitchTool(ToolType::BRUSH_COPY); });
-    
-    toolButtonsContainer->AddButton(false, true, clipboardToolToggleIcon, clipboardToolToggle2Icon, [this]() { toolStates.at(ToolType::BRUSH_COPY)->ToggleToolState(); });
+
+    toolButtonsContainer->AddButton(false, true, clipboardToolFlipIcon, clipboardToolFlipIcon2, [this]() { toolStates.at(ToolType::BRUSH_COPY)->ToggleToolState(); });
+    // add the activating tool
+    toolButtonsContainer->AddNewToolToButtonActivateList(ToolType::BRUSH_COPY);
+
+    toolButtonsContainer->AddButton(false, true, clipboardToolToggleIcon, clipboardToolToggleIcon2, [this]() { toolStates.at(ToolType::BRUSH_COPY)->ToggleToolState(); });
     // add the activating tool
     toolButtonsContainer->AddNewToolToButtonActivateList(ToolType::BRUSH_COPY);
 
@@ -298,8 +308,10 @@ void Canvas::InitialiseTextures() {
     circleFillToolIcon = new Texture(L"./ToolIcons/circle_fill_tool_icon.txr");
     fillToolIcon = new Texture(L"./ToolIcons/fill_tool_icon.txr");
     clipboardToolIcon = new Texture(L"./ToolIcons/copy_tool_icon.txr");
+    clipboardToolFlipIcon = new Texture(L"./ToolIcons/copy_tool_flip_icon.txr");
+    clipboardToolFlipIcon2 = new Texture(L"./ToolIcons/copy_tool_flip2_icon.txr");
     clipboardToolToggleIcon = new Texture(L"./ToolIcons/copy_tool_toggle_icon.txr");
-    clipboardToolToggle2Icon = new Texture(L"./ToolIcons/copy_tool_toggle2_icon.txr");
+    clipboardToolToggleIcon2 = new Texture(L"./ToolIcons/copy_tool_toggle2_icon.txr");
     sharedClipboardSaveIcon = new Texture(L"./ToolIcons/shared_clipboard_save_icon.txr");
     sharedClipboardDeleteIcon = new Texture(L"./ToolIcons/shared_clipboard_delete_icon.txr");
     sharedClipboardLoadIcon = new Texture(L"./ToolIcons/shared_clipboard_load_icon.txr");

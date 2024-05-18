@@ -12,7 +12,7 @@ int main()
 
 	TexturePainter texturePainter(L"Texture Painter!");
 
-	// 4od res   180 x 90
+	// 4od res		180 x 90
 	// low res		240 x 135
 	// med res		320 x 180
 	// med-high	res	480 x 270
@@ -22,7 +22,7 @@ int main()
 
 	if (texturePainter.GetUserStartInput())
 	{
-		texturePainter.BuildConsole(TexturePainter::CANVAS_DISPLAY_WIDTH + 20, TexturePainter::CANVAS_DISPLAY_HEIGHT + 26, 8.5, 8.5);
+		texturePainter.BuildConsole(TexturePainter::CANVAS_DISPLAY_WIDTH + 20, TexturePainter::CANVAS_DISPLAY_HEIGHT + 26, 8.5, 8.5, 0, 0);
 		texturePainter.Start();
 	}
 

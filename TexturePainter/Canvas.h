@@ -112,6 +112,15 @@ private:
         {
             return new TextureSample(*this); // Utilises the copy constructor
         }
+
+        void HorizontalFlip()
+        {
+            for (PixelSample& pixel : pixels)
+            {
+                int newX{ width - pixel.x };
+                pixel.x = newX;
+            }
+        }
     };
 
     // stores cut texture sample
@@ -137,8 +146,10 @@ private:
     static Texture* circleFillToolIcon;
     static Texture* fillToolIcon;
     static Texture* clipboardToolIcon;
+    static Texture* clipboardToolFlipIcon;
+    static Texture* clipboardToolFlipIcon2;
     static Texture* clipboardToolToggleIcon;
-    static Texture* clipboardToolToggle2Icon;
+    static Texture* clipboardToolToggleIcon2;
     static Texture* sharedClipboardSaveIcon;
     static Texture* sharedClipboardDeleteIcon;
     static Texture* sharedClipboardLoadIcon;

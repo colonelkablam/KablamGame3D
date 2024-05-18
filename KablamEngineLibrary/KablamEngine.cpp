@@ -69,13 +69,13 @@ bool KablamEngine::OnGameUpdate(float elaspsedTime)
     return false;
 }
 
-int KablamEngine::BuildConsole(int screenWidth, int screenHeight, int fontWidth, int fontHeight)
+int KablamEngine::BuildConsole(int screenWidth, int screenHeight, int pixelWidth, int pixelHeight, int winPosX, int winPosY)
 {
     // set the users console size
     nScreenWidth = screenWidth;  // Console screen width
     nScreenHeight = screenHeight;  // Console screen height
-    nFontWidth = fontWidth;      // Font width in pixels
-    nFontHeight = fontHeight;    // Font height in pixels
+    nFontWidth = pixelWidth;      // Font width in pixels
+    nFontHeight = pixelHeight;    // Font height in pixels
 
     // right... this is painful - let's go!
 
@@ -179,6 +179,8 @@ int KablamEngine::BuildConsole(int screenWidth, int screenHeight, int fontWidth,
         CleanUp();
         return Error(L"Failed to SetConsoleMode 'ENABLE_EXTENDED_FLAGS | ENABLE_MOUSE_INPUT'");
     }
+
+    SetWindowPosition(winPosX, winPosY);
 
     AddToLog(L"BuildConsole() successful.");
 
