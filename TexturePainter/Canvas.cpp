@@ -238,9 +238,10 @@ void Canvas::PopulateColourButtonsContainer()
 void Canvas::PopulateToolButtonsContainer()
 {
     // container for tool bottons
-    toolButtonsContainer = new ButtonContainer(drawingClass, BRUSH_BUTTON_XPOS, BRUSH_BUTTON_YPOS, 13, 1);
+    toolButtonsContainer = new ButtonContainer(drawingClass, BRUSH_BUTTON_XPOS, BRUSH_BUTTON_YPOS, 14, 1);
 
     // populate tool button container
+
     toolButtonsContainer->AddButton(true, blockToolIcon, [this]() { SwitchTool(ToolType::BRUSH_BLOCK); });
     
     toolButtonsContainer->AddButton(false, increaseToolIcon, [this]() { ChangeBrushSize(1); });
@@ -259,7 +260,7 @@ void Canvas::PopulateToolButtonsContainer()
     toolButtonsContainer->AddButton(true, fillToolIcon, [this]() { SwitchTool(ToolType::BRUSH_FILL); });
     toolButtonsContainer->AddButton(true, clipboardToolIcon, [this]() { SwitchTool(ToolType::BRUSH_COPY); });
 
-    toolButtonsContainer->AddButton(false, true, clipboardToolFlipIcon, clipboardToolFlipIcon2, [this]() { toolStates.at(ToolType::BRUSH_COPY)->ToggleToolState(); });
+    toolButtonsContainer->AddButton(false, true, clipboardToolFlipIcon, clipboardToolFlipIcon2, [this]() { FlipClipboardTextureSample(); });
     // add the activating tool
     toolButtonsContainer->AddNewToolToButtonActivateList(ToolType::BRUSH_COPY);
 
@@ -575,6 +576,11 @@ void Canvas::AddTextureSampleToClipboard(COORD topLeft, COORD bottomRight) {
     // Replace the old clipboard texture with the new one
     delete clipboardTextureSample; // Safely delete the old texture
     clipboardTextureSample = sample; // Point to the new texture
+}
+
+void Canvas::FlipClipboardTextureSample()
+{
+    clipboardTextureSample->HorizontalFlip();
 }
 
 // Method to get the current texture sample from the active tool state

@@ -113,12 +113,12 @@ private:
             return new TextureSample(*this); // Utilises the copy constructor
         }
 
-        void HorizontalFlip()
+        void VerticalFlip()
         {
             for (PixelSample& pixel : pixels)
             {
-                int newX{ width - pixel.x };
-                pixel.x = newX;
+                int tempX{ pixel.x };
+                pixel.x = width - pixel.x;
             }
         }
     };
@@ -225,6 +225,7 @@ public:
     Brushstroke CaptureDifferential();
 
     void AddTextureSampleToClipboard(COORD topLeft, COORD bottomRight);
+    void FlipClipboardTextureSample();
     TextureSample* GetClipboardTextureSample() const;
     void SetClipboardTextureSample(TextureSample* newTextureSample);
     bool GetSharedClipboardTextureState();
