@@ -113,12 +113,11 @@ private:
             return new TextureSample(*this); // Utilises the copy constructor
         }
 
-        void VerticalFlip()
+        void HorizontalFlip()
         {
             for (PixelSample& pixel : pixels)
             {
-                int tempX{ pixel.x };
-                pixel.x = width - pixel.x;
+                pixel.x = height - 1 - pixel.x;
             }
         }
     };

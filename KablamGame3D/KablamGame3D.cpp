@@ -1,6 +1,10 @@
 #include "KablamGame3D.h"
 #include <cmath>
 
+const float KablamGame3D::PI{ 3.14159265f };
+const float KablamGame3D::P2{ PI / 2.0f };
+const float KablamGame3D::P3{ PI * (3.0f / 2.0f) };
+
 // constructors 
 KablamGame3D::KablamGame3D(std::wstring newTitle)
 	: sSaveFolderName{ L"Saves\\" }, sSaveFileName{ L"save_game" }, sSaveExtension{ L".kgs" } {
@@ -53,9 +57,7 @@ bool KablamGame3D::OnGameCreate()
 
 	// Sprite textures
 	spriteFloorLamp = new Texture(L"./Textures/Sprites/sprite_lamp_32.txr");
-	spriteOctoBaddy1 = new Texture(L"./Textures/Sprites/sprite_octo_32_1.txr");
-	spriteOctoBaddy2 = new Texture(L"./Textures/Sprites/sprite_octo_32_2.txr");
-
+	spriteOctoBaddy = new Texture(L"./Textures/Sprites/sprite_octo_rotate_32.txr");
 
 	AddToLog(L"Sprite textures added...");
 
@@ -81,7 +83,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 
 	for (auto& object : listObjects)
 	{
-		object.UpdateSprite(fElapsedTime);
+		object.UpdateSprite(fElapsedTime, fPlayerX, fPlayerY);
 	}
 
 	// get the display setting before rendering the screen
@@ -348,12 +350,12 @@ void KablamGame3D::SetObjectsStart(const std::vector<int>& floorMap)
 			int tile = floorMap[y * nMapWidth + x];
 			if (tile == 1)
 			{
-				listObjects.push_back({ x + 0.5f , y + 0.5f, 1.0f, 0, false, false, spriteOctoBaddy1, spriteOctoBaddy2
+				listObjects.push_back({ x - 0.5f , y - 0.5f, 1.0f, 0, false, false, spriteOctoBaddy
 					});
 			}
 			else if (tile == 2)
 			{
-				listObjects.push_back({x + 0.5f, y + 0.5f, 0.0f, 0, false, true, spriteFloorLamp });
+				listObjects.push_back({x - 0.5f, y - 0.5f, 0.0f, 0, false, false, spriteFloorLamp });
 			}
 			// else do nothing
 		}
@@ -842,7 +844,7 @@ void KablamGame3D::DisplayObjects()
 		return a.distFromPlayer > b.distFromPlayer;
 	});
 
-	for (const auto& object : listObjects)
+	for (auto& object : listObjects)
 	{
 		// Can object be seen?
 		// realative position
@@ -866,8 +868,11 @@ void KablamGame3D::DisplayObjects()
 
 		if (bInPlayerFOV && fDistanceFromPlayer >= 0.5f && fDistanceFromPlayer < 30.0f)
 		{
-			int spriteWidth = object.sprite->GetWidth();
-			int spriteHeight = object.sprite->GetHeight();
+			/*int spriteWidth = object.currentSprite->GetWidth();
+			int spriteHeight = object.currentSprite->GetHeight();*/
+
+			int spriteWidth = object.width;
+			int spriteHeight = object.height;
 
 			// calculate objects height, top, bottom, all with respect to the screen Y position (very similar to the wall height calculation)
 			float fObjectHeight = (GetConsoleHeight() / fDistanceFromPlayer) * fWallHUnit;
@@ -905,14 +910,20 @@ void KablamGame3D::DisplayObjects()
 							int spriteX = (int)(lx * spriteWidth / fObjectWidth);
 							int spriteY = (int)(ly * spriteHeight / fObjectHeight);
 
+							CHAR_INFO pixel{ object.GetPixel(spriteX, spriteY) };
+
 							// check if 'transparent'
-							short glyph = object.sprite->GetGlyph(spriteX, spriteY);
+					//short glyph = object.currentSprite->GetGlyph(spriteX, spriteY);
+							short glyph = pixel.Char.UnicodeChar;
+
 
 							// Check if the pixel is not transparent (assuming some alpha value defines transparency)
 							if (glyph != L' ' && fDistanceFromPlayer <= fDepthBuffers[screenX])
 							{
 								// Get the color from the sprite at this position
-								short colour = object.sprite->GetColour(spriteX, spriteY);
+					//short colour = object.currentSprite->GetColour(spriteX, spriteY);
+								short colour = pixel.Attributes;
+
 								// adjust glyph for shading
 								if (!object.illuminated)
 									glyph = GetGlyphShadeByDistance(fDistanceFromPlayer);

@@ -11,16 +11,16 @@
 // -> need user to define OnUserCreate and OnUserUpdate as virtual in KGEngine
 class KablamGame3D : public KablamEngine
 {
-
 	// member attributes for KablamEngine
+public:
+	static const float PI;
+	static const float P2;
+	static const float P3;
+
 private:
 	const int nMapWidth = 32;
 	const int nMapHeight = 32;
 	const float fWallHUnit = 1.75f;
-
-	const float PI = 3.14159f;
-	const float P2 = PI / 2.0f;
-	const float P3 = PI * (3.0f / 2.0f);
 
 	const std::wstring sSaveFolderName; // relative path to subDir 
 	const std::wstring sSaveExtension;  // Kablam Game Save '.kgs'
@@ -54,8 +54,7 @@ private:
 						 0, 0, 0, 0, 0, };
 
 	Texture* spriteFloorLamp;
-	Texture* spriteOctoBaddy1;
-	Texture* spriteOctoBaddy2;
+	Texture* spriteOctoBaddy;
 
 
 	std::vector <float> fDepthBuffers;
@@ -66,39 +65,66 @@ private:
 		float y;
 		float z; // height off floor
 		float distFromPlayer;
+		float angle;
+		float relativeAngle;
+		int width;
+		int height;
 		int type;
 		bool dead;
 		bool illuminated;
-		Texture* sprite;
-		Texture* sprite1;
-		Texture* sprite2;
-		float timer = 0.0f;
-		float frameTime = 1;
-		int animationIndex = 0;
+		Texture* currentSprite;
+		Texture* aliveSprite;
+		Texture* deadSprite;
 
 		// default Constructor
-		sObject(float initX = 0.0f, float initY = 0.0f, float initZ = 0.0f, int initType = 0,
-			bool isDead = false, bool isIlluminated = false, Texture* initSprite1 = nullptr, Texture* initSprite2 = nullptr,
-			float initTimer = 0.0f, float initFrameTime = 1000.0f, int initAnimationIndex = 0, float distFromPlayer = 1.000f)
-			: x(initX), y(initY), z(initZ), type(initType), dead(isDead),
-			illuminated(isIlluminated), sprite1(initSprite1), sprite2(initSprite2), timer(initTimer),
-			frameTime(initFrameTime), animationIndex(initAnimationIndex), sprite{ initSprite1 }
+		sObject(float initX = 0.0f, float initY = 0.0f, float initZ = 0.0f, int initType = 0, bool isDead = false,
+			bool isIlluminated = false, Texture* initSpriteAlive = nullptr, Texture* initSpriteDead = nullptr)
+			: x(initX), y(initY), z(initZ), type(initType), dead(isDead), illuminated(isIlluminated),
+			currentSprite{ initSpriteAlive }, aliveSprite(initSpriteAlive), deadSprite(initSpriteDead), distFromPlayer{ 1000.f }, angle{ 0.0f },
+			width{ currentSprite->GetWidth() / 4 }, height{ currentSprite->GetHeight() / 2 }, relativeAngle{ 0.0f }
 		{}
 
-		void UpdateSprite(float timePassed)
+		void UpdateSprite(float timePassed, float playerX, float playerY)
 		{
-			timer += timePassed;
+			float dx = x - playerX;
+			float dy = y - playerY;
 
-			if (timer >= frameTime)
+			// Calculate the angle from the player to the sprite
+			float angleToPlayer = atan2(dy, dx);
+
+			// Calculate the relative angle taking into account the sprite's angle
+			relativeAngle = angle - angleToPlayer;
+
+
+			if (relativeAngle < 0)
 			{
-				animationIndex = ++animationIndex % 2;
-				timer -= frameTime;
+				relativeAngle += 2 * PI;
 			}
 
-			if (animationIndex == 0)
-				sprite = sprite1;
-			else
-				sprite = sprite2;
+		}
+
+		CHAR_INFO GetPixel(int x, int y)
+		{
+			int xOffset = 0;
+			int yOffset = 0;
+
+			const float SEGMENT_ANGLE = (2*PI) / 8; // Each segment covers 45 degrees or PI/4 radians
+
+			// Normalize the relativeAngle to be within the range [0, 2*PI)
+			float normalizedAngle = relativeAngle;
+			if (normalizedAngle < 0)
+			{
+				normalizedAngle += 2*PI;
+			}
+
+			// Determine the view index
+			int viewIndex = static_cast<int>((relativeAngle + SEGMENT_ANGLE/2) / SEGMENT_ANGLE);
+
+			// Calculate offsets based on the view index
+			xOffset = (viewIndex % 4) * 32; // 4 views per row
+			yOffset = (viewIndex / 4) * 32; // Move to next row for views 4-7
+
+			return currentSprite->GetPixel(x + xOffset, y + yOffset);
 		}
 
 		~sObject()
