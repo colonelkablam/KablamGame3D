@@ -350,12 +350,11 @@ void KablamGame3D::SetObjectsStart(const std::vector<int>& floorMap)
 			int tile = floorMap[y * nMapWidth + x];
 			if (tile == 1)
 			{
-				listObjects.push_back({ x - 0.5f , y - 0.5f, 1.0f, 0, false, false, spriteOctoBaddy
-					});
+				listObjects.push_back({ x + 0.5f , y + 0.5f, 1.0f, 0, false, false, 32, 32, true, spriteOctoBaddy });
 			}
 			else if (tile == 2)
 			{
-				listObjects.push_back({x - 0.5f, y - 0.5f, 0.0f, 0, false, false, spriteFloorLamp });
+				listObjects.push_back({x + 0.5f, y + 0.5f, 0.0f, 0, false, false, 16, 32, false, spriteFloorLamp });
 			}
 			// else do nothing
 		}
