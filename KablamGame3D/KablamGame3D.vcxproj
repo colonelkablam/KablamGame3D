@@ -141,11 +141,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="GameConstants.h" />
     <ClInclude Include="KablamGame3D.h" />
+    <ClInclude Include="SpriteObject.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="KablamGame3D.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="SpriteObject.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="events_log.txt" />

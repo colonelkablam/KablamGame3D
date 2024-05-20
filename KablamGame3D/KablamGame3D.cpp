@@ -1,10 +1,6 @@
 #include "KablamGame3D.h"
 #include <cmath>
 
-const float KablamGame3D::PI{ 3.14159265f };
-const float KablamGame3D::P2{ PI / 2.0f };
-const float KablamGame3D::P3{ PI * (3.0f / 2.0f) };
-
 // constructors 
 KablamGame3D::KablamGame3D(std::wstring newTitle)
 	: sSaveFolderName{ L"Saves\\" }, sSaveFileName{ L"save_game" }, sSaveExtension{ L".kgs" } {
@@ -23,6 +19,10 @@ KablamGame3D::~KablamGame3D()
 		delete texture;
 	for (auto texture : ceilingTextures)
 		delete texture;
+
+	delete spriteFloorLamp;
+	delete spriteBarrel;
+	delete spriteOctoBaddy;
 }
 
 // virtual methods of KablamGraphicsEngine class (need defining)
@@ -57,6 +57,7 @@ bool KablamGame3D::OnGameCreate()
 
 	// Sprite textures
 	spriteFloorLamp = new Texture(L"./Textures/Sprites/sprite_lamp_32.txr");
+	spriteBarrel = new Texture(L"./Textures/Sprites/sprite_barrel_rotate_32.txr");
 	spriteOctoBaddy = new Texture(L"./Textures/Sprites/sprite_octo_rotate_32.txr");
 
 	AddToLog(L"Sprite textures added...");
@@ -350,11 +351,15 @@ void KablamGame3D::SetObjectsStart(const std::vector<int>& floorMap)
 			int tile = floorMap[y * nMapWidth + x];
 			if (tile == 1)
 			{
-				listObjects.push_back({ x + 0.5f , y + 0.5f, 1.0f, 0, false, false, 32, 32, true, spriteOctoBaddy });
+				listObjects.push_back({ x + 0.5f , y + 0.5f, 1.0f, 1, false, false, 32, 32, true, spriteOctoBaddy });
 			}
 			else if (tile == 2)
 			{
-				listObjects.push_back({x + 0.5f, y + 0.5f, 0.0f, 0, false, false, 16, 32, false, spriteFloorLamp });
+				listObjects.push_back({ x + 0.5f, y + 0.5f, 0.0f, 0, false, true, 16, 32, false, spriteFloorLamp });
+			}
+			else if (tile == 3)
+			{
+				listObjects.push_back({ x + 0.5f, y + 0.5f, 0.0f, 0, false, false, 32, 32, true, spriteBarrel });
 			}
 			// else do nothing
 		}
@@ -833,31 +838,26 @@ int KablamGame3D::GetMapValue(int x, int y, const std::vector<int>& map) const
 
 void KablamGame3D::DisplayObjects()
 {
-	// calculate all distances
-	for (auto& object : listObjects)
-		object.distFromPlayer = RayLength(fPlayerX, fPlayerY, object.x, object.y);
-
 	// Sort the list by distance from the player (furthest first)
-	listObjects.sort([this](const sObject& a, const sObject& b) {
+	listObjects.sort([this](const SpriteObject& a, const SpriteObject& b) {
 		// Directly compare precomputed distances
-		return a.distFromPlayer > b.distFromPlayer;
+		return a.GetDistanceFromPlayer() > b.GetDistanceFromPlayer();
 	});
 
 	for (auto& object : listObjects)
 	{
 		// Can object be seen?
 		// realative position
-		float fVecX = object.x - fPlayerX;
-		float fVecY = object.y - fPlayerY;
-		float fDistanceFromPlayer = object.distFromPlayer;
+		float fDistanceFromPlayer = object.GetDistanceFromPlayer();
 
 		// Rotate around screen
 		float fEyeX = cosf(fPlayerA);
 		float fEyeY = sinf(fPlayerA);
 
-		// Calculate angle between object and players view direction
+		// Get angle between object and players view direction
 		// relative angle from player to object = (angle x-axis to object) - (angle x-axis to look dir)
-		float fObjectAngle = atan2f(fVecY, fVecX) - atan2f(fEyeY, fEyeX);
+		float fObjectAngle = object.GetAngleToPlayer() - atan2f(fEyeY, fEyeX);
+
 		// keeps angle to between -PI and PI
 		if (fObjectAngle < -PI) fObjectAngle += 2.0f * PI;
 		if (fObjectAngle > PI) fObjectAngle -= 2.0f * PI;
@@ -870,15 +870,15 @@ void KablamGame3D::DisplayObjects()
 			/*int spriteWidth = object.currentSprite->GetWidth();
 			int spriteHeight = object.currentSprite->GetHeight();*/
 
-			int spriteWidth = object.width;
-			int spriteHeight = object.height;
+			int spriteWidth = object.GetSpriteWidth();
+			int spriteHeight = object.GetSpriteHeight();
 
 			// calculate objects height, top, bottom, all with respect to the screen Y position (very similar to the wall height calculation)
 			float fObjectHeight = (GetConsoleHeight() / fDistanceFromPlayer) * fWallHUnit;
 			// takes into account the players view tilt and jump height
 			float fObjectTop{ GetConsoleHeight()/2.0f - (fObjectHeight/2 * (fWallHUnit - fPlayerHDefault -  fPlayerH)*2) - fPlayerTilt};
-			// account for object z height off floor
-			float verticalAdjustment = ((spriteHeight/2 - spriteHeight * object.z) * fWallHUnit) / fDistanceFromPlayer;
+			// account for object z height off floor ( div by 3 seems to get most pleasing result for when z = 0, object rests on floor )
+			float verticalAdjustment = ((spriteHeight/3 - spriteHeight * object.GetZ()) * fWallHUnit) / fDistanceFromPlayer;
 			fObjectTop += verticalAdjustment;
 
 			float fObjectBottom{ fObjectTop + fObjectHeight };
@@ -924,7 +924,7 @@ void KablamGame3D::DisplayObjects()
 								short colour = pixel.Attributes;
 
 								// adjust glyph for shading
-								if (!object.illuminated)
+								if (!object.GetIlluminated())
 									glyph = GetGlyphShadeByDistance(fDistanceFromPlayer);
 
 								// Draw pixel at the calculated screen position

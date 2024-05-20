@@ -3,7 +3,9 @@
 #include <list>
 
 // my library
+#include "GameConstants.h"
 #include "KablamEngine.h"
+#include "SpriteObject.h"
 #include "TextDisplay.h"
 
 // this is the actual game class - inherits from Graphics Engine
@@ -11,11 +13,6 @@
 // -> need user to define OnUserCreate and OnUserUpdate as virtual in KGEngine
 class KablamGame3D : public KablamEngine
 {
-	// member attributes for KablamEngine
-public:
-	static const float PI;
-	static const float P2;
-	static const float P3;
 
 private:
 	const int nMapWidth = 32;
@@ -42,10 +39,6 @@ private:
 	int xSkyOffset = 0;
 	int ySkyOffset = 0;
 
-	// Adjust 'angleScale' to tune how sensitive the texture offset is to player rotation
-	// Example: Assuming you want the texture to span a 90-degree field of view
-	//const float fieldOfViewRadians = 90 * (PI / 180); // Convert degrees to radians
-
 	// crosshair
 	int aimArray[25] = { 0, 0, 0, 0, 0,
 						 1, 0, 0, 0, 1,
@@ -54,93 +47,14 @@ private:
 						 0, 0, 0, 0, 0, };
 
 	Texture* spriteFloorLamp;
+	Texture* spriteBarrel;
 	Texture* spriteOctoBaddy;
 
-
+	// store the depth of each column
 	std::vector <float> fDepthBuffers;
 
-	// simple object to represent a game object
-	struct sObject {
-		float x;
-		float y;
-		float z; // height off floor
-		float distFromPlayer;
-		float angle;
-		float relativeAngle;
-		int width;
-		int height;
-		bool rotatable;
-		int type;
-		bool dead;
-		bool illuminated;
-		Texture* currentSprite;
-		Texture* aliveSprite;
-		Texture* deadSprite;
-
-		// default Constructor
-		sObject(float initX = 0.0f, float initY = 0.0f, float initZ = 0.0f, int initType = 0, bool isDead = false,
-			bool isIlluminated = false, int spriteWidth = 32, int spriteHeight = 32, bool rotate = false, Texture* initSpriteAlive = nullptr, Texture* initSpriteDead = nullptr)
-			: x(initX), y(initY), z(initZ), type(initType), dead(isDead), illuminated(isIlluminated), width {spriteWidth}, height {spriteHeight}, rotatable {rotate},
-			currentSprite{ initSpriteAlive }, aliveSprite(initSpriteAlive), deadSprite(initSpriteDead), distFromPlayer{ 1000.f }, angle{ 0.0f }, relativeAngle{ 0.0f }
-		{}
-
-		void UpdateSprite(float timePassed, float playerX, float playerY)
-		{
-			// update sprite view
-			if (rotatable)
-			{
-				float dx = x - playerX;
-				float dy = y - playerY;
-
-				// Calculate the angle from the player to the sprite
-				float angleToPlayer = atan2(dy, dx);
-
-				// Calculate the relative angle taking into account the sprite's angle
-				relativeAngle = angle - angleToPlayer;
-
-
-				if (relativeAngle < 0)
-				{
-					relativeAngle += 2 * PI;
-				}
-			}
-		}
-
-		CHAR_INFO GetPixel(int x, int y)
-		{
-			int xOffset = 0;
-			int yOffset = 0;
-
-			if (rotatable) // if rotatable
-			{
-				const float SEGMENT_ANGLE = (2 * PI) / 8; // Each segment covers 45 degrees or PI/4 radians
-
-				// Normalize the relativeAngle to be within the range [0, 2*PI)
-				float normalizedAngle = relativeAngle;
-				if (normalizedAngle < 0)
-				{
-					normalizedAngle += 2 * PI;
-				}
-
-				// Determine the view index
-				int viewIndex = static_cast<int>((relativeAngle + SEGMENT_ANGLE / 2) / SEGMENT_ANGLE);
-
-				// Calculate offsets based on the view index
-				xOffset = (viewIndex % 4) * width; // 4 views per row
-				yOffset = (viewIndex / 4) * height; // Move to next row for views 4-7
-			}
-			return currentSprite->GetPixel(x + xOffset, y + yOffset);
-		}
-
-		~sObject()
-		{
-			//delete sprite handled by KablamGame3D;
-		}
-
-	};
-
-	// list of objects as will be deleting items within
-	std::list<sObject> listObjects;
+	// list data structure used -> will be deleting/adding items regularly
+	std::list<SpriteObject> listObjects;
 
 	const float FOV = PI / 4.0f;
 	const int MAX_DEPTH_OF_VIEW = 32;
