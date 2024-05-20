@@ -49,6 +49,9 @@ private:
 	Texture* spriteFloorLamp;
 	Texture* spriteBarrel;
 	Texture* spriteOctoBaddy;
+	Texture* spriteOctoBaddyHit;
+	Texture* spriteFireball;
+
 
 	// store the depth of each column
 	std::vector <float> fDepthBuffers;
@@ -76,13 +79,13 @@ private:
 		bool backward = false;
 		bool left = false;
 		bool right = false;
+		bool fire = false;
 		bool use = false;
 		bool jump = false;
 		bool pause = false;
 		bool toggleMap = false;
 		bool toggleNextDisplay = false;
 		bool togglePrevDisplay = false;
-
 	};
 
 	ActionStates actionStates;

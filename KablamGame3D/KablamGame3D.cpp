@@ -23,6 +23,9 @@ KablamGame3D::~KablamGame3D()
 	delete spriteFloorLamp;
 	delete spriteBarrel;
 	delete spriteOctoBaddy;
+	delete spriteOctoBaddyHit;
+	delete spriteFireball;
+
 }
 
 // virtual methods of KablamGraphicsEngine class (need defining)
@@ -59,6 +62,8 @@ bool KablamGame3D::OnGameCreate()
 	spriteFloorLamp = new Texture(L"./Textures/Sprites/sprite_lamp_32.txr");
 	spriteBarrel = new Texture(L"./Textures/Sprites/sprite_barrel_rotate_32.txr");
 	spriteOctoBaddy = new Texture(L"./Textures/Sprites/sprite_octo_rotate_32.txr");
+	spriteOctoBaddyHit = new Texture(L"./Textures/Sprites/sprite_octo_hit_32.txr");
+	spriteFireball = new Texture(L"./Textures/Sprites/sprite_player_fireball_32.txr");
 
 	AddToLog(L"Sprite textures added...");
 
@@ -84,7 +89,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 
 	for (auto& object : listObjects)
 	{
-		object.UpdateSprite(fElapsedTime, fPlayerX, fPlayerY);
+		object.UpdateSprite(fElapsedTime, fPlayerX, fPlayerY, listObjects, mapWalls);
 	}
 
 	// get the display setting before rendering the screen
@@ -351,7 +356,7 @@ void KablamGame3D::SetObjectsStart(const std::vector<int>& floorMap)
 			int tile = floorMap[y * nMapWidth + x];
 			if (tile == 1)
 			{
-				listObjects.push_back({ x + 0.5f , y + 0.5f, 1.0f, 1, false, false, 32, 32, true, spriteOctoBaddy });
+				listObjects.push_back({ x + 0.5f , y + 0.5f, 1.0f, 1, false, false, 32, 32, true, spriteOctoBaddy, nullptr, spriteOctoBaddyHit });
 			}
 			else if (tile == 2)
 			{
@@ -381,6 +386,7 @@ void KablamGame3D::HandleKeyPress()
 
 
 	// Set action flags
+	actionStates.fire = GetKeyState(VK_RCONTROL).bPressed;
 	actionStates.use = GetKeyState(L'E').bPressed;
 	actionStates.jump = GetKeyState(VK_SPACE).bHeld;
 	actionStates.pause = GetKeyState(L'P').bPressed;
@@ -460,6 +466,11 @@ bool KablamGame3D::ApplyMovementAndActions(const float fElapsedTime)
 	}
 
 	// handle ACTION keys
+	if (actionStates.fire)
+	{
+		listObjects.push_back({ fPlayerX, fPlayerY, 0.0f, 4, false, true, 32, 32, false, spriteFireball, nullptr, nullptr, fPlayerA });
+	}
+
 	if (actionStates.jump && !bPlayerJumping)
 	{
 		fPlayerUpVelocity = fPlayerJumpPower;
