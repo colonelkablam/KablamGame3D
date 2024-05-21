@@ -2,7 +2,7 @@
 
 #include "SpriteObject.h"
 
-SpriteObject::SpriteObject(float initX, float initY, float initZ, int initType, bool isDead, bool isIlluminated, int spriteWidth, int spriteHeight, bool rotate, 
+SpriteObject::SpriteObject(float initX, float initY, float initZ, SpriteType initType, bool isDead, bool isIlluminated, int spriteWidth, int spriteHeight, bool rotate,
 							Texture* initSpriteAlive, Texture* initSpriteDead, Texture* initSpriteHit, float direction)
 		: x(initX), y(initY), z(initZ), type(initType), dead(isDead), illuminated(isIlluminated), width{ spriteWidth }, height{ spriteHeight }, rotatable{ rotate },
 			currentSprite{ initSpriteAlive }, aliveSprite(initSpriteAlive), deadSprite(initSpriteDead), hitSprite{ initSpriteHit }, distFromPlayer { 1000.f }, angleToPlayer{ 0.0f },
@@ -14,7 +14,7 @@ SpriteObject::~SpriteObject()
 	//delete sprite handled by KablamGame3D;
 }
 
-void SpriteObject::UpdateSprite(const float timeStep, const float playerX, const float playerY, const std::list<SpriteObject>& allSprites, const std::vector<int>)
+void SpriteObject::UpdateSprite(const float timeStep, const float playerX, const float playerY, std::list<SpriteObject>& allSprites, const std::vector<int>)
 {
 	// add elapsed time
 	timeElapsed += timeStep;
@@ -40,12 +40,12 @@ void SpriteObject::UpdateSprite(const float timeStep, const float playerX, const
 		if (relativeAngle > 2 * PI)
 			relativeAngle -= 2 * PI;
 
-		if (type != 0)
+		if (type == SpriteType::OCTO_TYPE)
 		{
 			if (relativeAngle > PI)
-				facingAngle += 0.02;
+				facingAngle += 0.007;
 			else
-				facingAngle -= 0.02;
+				facingAngle -= 0.007;
 
 			// normalise between 0 - 2*PI
 			if (facingAngle < 0)
@@ -56,27 +56,27 @@ void SpriteObject::UpdateSprite(const float timeStep, const float playerX, const
 			// bob the sprite
 			Bobbing();
 
-			if (GetSpriteObjectHitType(allSprites) == 3)
-			{
-
-			}
-
 			if (hit)
 			{
 				currentSprite = hitSprite;
+				if (timeElapsed - eventTimer > hitDisplayTime)
+				{
+					currentSprite = aliveSprite;
+				}
+
 			}
-
-
 		}
 	}
 
-	if (type == 4)
+	if (type == SpriteType::BULLET_TYPE)
 	{
 		x += cosf(facingAngle) * timeStep * 50;
 		y += sinf(facingAngle) * timeStep * 50;
 
 
 	}
+
+	CheckCollisionWithOtherSprites(allSprites);
 }
 
 CHAR_INFO SpriteObject::GetPixel(int x, int y) const
@@ -134,7 +134,12 @@ bool SpriteObject::GetIlluminated() const
 	return illuminated;
 }
 
-int  SpriteObject::GetSpriteType() const
+void SpriteObject::MakeDead()
+{
+	dead = true;
+}
+
+SpriteType  SpriteObject::GetSpriteType() const
 {
 	return type;
 }
@@ -145,23 +150,20 @@ void SpriteObject::Bobbing()
 	z = baseZ + sinf(timeElapsed * BOBBING_SPEED) * BOBBING_HEIGHT;
 }
 
-int SpriteObject::GetSpriteObjectHitType(const std::list<SpriteObject>& allSprites)
+void SpriteObject::CheckCollisionWithOtherSprites(std::list<SpriteObject>& allSprites)
 {
-	bool anyHit{ false };
-
-	for (const SpriteObject& other : allSprites)
+	for (SpriteObject& other : allSprites)
 	{
-		if (other.GetSpriteType() == 4) // 4 = playerFireball
+		if (other.GetSpriteType() == SpriteType::BULLET_TYPE) // playerFireball
 		{
-			if (GetDistanceFromOther(other.x, other.y) < 0.5f)
+			if (GetDistanceFromOther(other.x, other.y) < 0.7f)
 			{
 				hit = true;
 				eventTimer = timeElapsed;
-				return 1;
+				other.MakeDead();
 			}
 		}
 	}
-	return 0;
 }
 
 bool SpriteObject::CheckCollisionWithWall(const std::vector<int> wallMap)

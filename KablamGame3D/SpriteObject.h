@@ -7,6 +7,8 @@
 #include "GameConstants.h"
 #include "Texture.h"
 
+#include "SpriteEnums.h"
+
 
 class SpriteObject {
 
@@ -27,7 +29,7 @@ private:
 	int width;
 	int height;
 	bool rotatable;
-	int type;
+	SpriteType type;
 	bool dead;
 	bool hit;
 	bool illuminated;
@@ -38,14 +40,17 @@ private:
 	Texture* hitSprite;
 	Texture* deadSprite;
 
+	float hitDisplayTime = 1.0f;
+
+
 public:
 	// default Constructor
-	SpriteObject(float initX = 0.0f, float initY = 0.0f, float initZ = 0.0f, int initType = 0, bool isDead = false, bool isIlluminated = false, int spriteWidth = 32, int spriteHeight = 32,
+	SpriteObject(float initX = 0.0f, float initY = 0.0f, float initZ = 0.0f, SpriteType initType = SpriteType::NO_TYPE, bool isDead = false, bool isIlluminated = false, int spriteWidth = 32, int spriteHeight = 32,
 					bool rotate = false, Texture* initSpriteAlive = nullptr, Texture* initSpriteDead = nullptr, Texture* initSpriteHit = nullptr, float facingAngle = 0.0f);
 
 	~SpriteObject();
 
-	void UpdateSprite(const float timeStep, const float playerX, const float playerY, const std::list<SpriteObject>& allSprites, const std::vector<int>);
+	void UpdateSprite(const float timeStep, const float playerX, const float playerY, std::list<SpriteObject>& allSprites, const std::vector<int>);
 
 	CHAR_INFO GetPixel(int x, int y) const;
 
@@ -62,13 +67,15 @@ public:
 	float GetZ() const;
 
 	bool GetIlluminated() const;
+	
+	void MakeDead();
 
-	int  GetSpriteType() const;
+	SpriteType  GetSpriteType() const;
 
 private:
 	void Bobbing();
 
-	int GetSpriteObjectHitType(const std::list<SpriteObject>& allSprites);
+	void CheckCollisionWithOtherSprites(std::list<SpriteObject>& allSprites);
 
 	bool CheckCollisionWithWall(const std::vector<int> wallMap);
 

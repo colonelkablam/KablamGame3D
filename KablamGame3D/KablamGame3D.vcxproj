@@ -143,6 +143,7 @@
   <ItemGroup>
     <ClInclude Include="GameConstants.h" />
     <ClInclude Include="KablamGame3D.h" />
+    <ClInclude Include="SpriteEnums.h" />
     <ClInclude Include="SpriteObject.h" />
   </ItemGroup>
   <ItemGroup>

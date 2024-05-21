@@ -356,15 +356,15 @@ void KablamGame3D::SetObjectsStart(const std::vector<int>& floorMap)
 			int tile = floorMap[y * nMapWidth + x];
 			if (tile == 1)
 			{
-				listObjects.push_back({ x + 0.5f , y + 0.5f, 1.0f, 1, false, false, 32, 32, true, spriteOctoBaddy, nullptr, spriteOctoBaddyHit });
+				listObjects.push_back({ x + 0.5f , y + 0.5f, 1.0f, SpriteType::OCTO_TYPE, false, false, 32, 32, true, spriteOctoBaddy, nullptr, spriteOctoBaddyHit });
 			}
 			else if (tile == 2)
 			{
-				listObjects.push_back({ x + 0.5f, y + 0.5f, 0.0f, 0, false, true, 16, 32, false, spriteFloorLamp });
+				listObjects.push_back({ x + 0.5f, y + 0.5f, 0.0f, SpriteType::FLOORLAMP_TYPE, false, true, 16, 32, false, spriteFloorLamp });
 			}
 			else if (tile == 3)
 			{
-				listObjects.push_back({ x + 0.5f, y + 0.5f, 0.0f, 0, false, false, 32, 32, true, spriteBarrel });
+				listObjects.push_back({ x + 0.5f, y + 0.5f, 0.0f, SpriteType::BARREL_TYPE, false, false, 32, 32, true, spriteBarrel });
 			}
 			// else do nothing
 		}
@@ -468,7 +468,7 @@ bool KablamGame3D::ApplyMovementAndActions(const float fElapsedTime)
 	// handle ACTION keys
 	if (actionStates.fire)
 	{
-		listObjects.push_back({ fPlayerX, fPlayerY, 0.0f, 4, false, true, 32, 32, false, spriteFireball, nullptr, nullptr, fPlayerA });
+		listObjects.push_back({ fPlayerX, fPlayerY, 0.0f, SpriteType::BULLET_TYPE, false, true, 32, 32, false, spriteFireball, nullptr, nullptr, fPlayerA });
 	}
 
 	if (actionStates.jump && !bPlayerJumping)
