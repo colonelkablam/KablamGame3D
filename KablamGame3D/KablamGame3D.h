@@ -1,11 +1,13 @@
 #pragma once
 
 #include <list>
+#include <unordered_map>
 
 // my library
 #include "GameConstants.h"
 #include "KablamEngine.h"
 #include "SpriteObject.h"
+#include "SpriteFactory.h"
 #include "TextDisplay.h"
 
 // this is the actual game class - inherits from Graphics Engine
@@ -15,8 +17,6 @@ class KablamGame3D : public KablamEngine
 {
 
 private:
-	const int nMapWidth = 32;
-	const int nMapHeight = 32;
 	const float fWallHUnit = 1.75f;
 
 	const std::wstring sSaveFolderName; // relative path to subDir 
@@ -51,13 +51,16 @@ private:
 	Texture* spriteOctoBaddy;
 	Texture* spriteOctoBaddyHit;
 	Texture* spriteFireball;
+	Texture* spriteFireballHit;
 
+
+	std::unordered_map<int, SpriteFactory*> spriteFactories;
+
+	// list data structure used -> will be deleting/adding items regularly
+	std::list<SpriteObject*> listSpriteObjects;
 
 	// store the depth of each column
 	std::vector <float> fDepthBuffers;
-
-	// list data structure used -> will be deleting/adding items regularly
-	std::list<SpriteObject> listObjects;
 
 	const float FOV = PI / 4.0f;
 	const int MAX_DEPTH_OF_VIEW = 32;
@@ -183,6 +186,10 @@ public:
 	bool OnGameUpdate(float fElapsedTime);
 
 private:
+
+	// Method to initialize factories
+	void InitialiseFactories();
+
 	void SetPlayerStart(const std::vector<int>& floorPlan);
 
 	void SetObjectsStart(const std::vector<int>& floorMap);

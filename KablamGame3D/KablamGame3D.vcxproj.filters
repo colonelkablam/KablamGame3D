@@ -27,6 +27,15 @@
     <ClInclude Include="SpriteEnums.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="IntermediateSpriteClasses.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SpecificSpriteClasses.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SpriteFactory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="KablamGame3D.cpp">

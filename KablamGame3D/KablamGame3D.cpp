@@ -25,6 +25,14 @@ KablamGame3D::~KablamGame3D()
 	delete spriteOctoBaddy;
 	delete spriteOctoBaddyHit;
 	delete spriteFireball;
+	delete spriteFireballHit;
+
+
+	for (auto factory : spriteFactories)
+		delete factory.second;
+
+	for (auto sprite : listSpriteObjects)
+		delete sprite;
 
 }
 
@@ -64,6 +72,8 @@ bool KablamGame3D::OnGameCreate()
 	spriteOctoBaddy = new Texture(L"./Textures/Sprites/sprite_octo_rotate_32.txr");
 	spriteOctoBaddyHit = new Texture(L"./Textures/Sprites/sprite_octo_hit_32.txr");
 	spriteFireball = new Texture(L"./Textures/Sprites/sprite_player_fireball_32.txr");
+	spriteFireballHit = new Texture(L"./Textures/Sprites/sprite_player_fireball_hit32.txr");
+
 
 	AddToLog(L"Sprite textures added...");
 
@@ -72,6 +82,7 @@ bool KablamGame3D::OnGameCreate()
 
 	fDepthBuffers.resize(GetConsoleWidth(), 1000.0f);
 
+	InitialiseFactories();
 	SetPlayerStart(mapFloorTiles);
 	SetObjectsStart(mapObjects);
 
@@ -87,9 +98,9 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 
 	ApplyMovementAndActions(fElapsedTime);
 
-	for (auto& object : listObjects)
+	for (auto& object : listSpriteObjects)
 	{
-		object.UpdateSprite(fElapsedTime, fPlayerX, fPlayerY, listObjects, mapWalls);
+		object->UpdateSprite(fElapsedTime, fPlayerX, fPlayerY, fPlayerTilt, listSpriteObjects, mapWalls);
 	}
 
 	// get the display setting before rendering the screen
@@ -124,7 +135,6 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 		// looking at HORIZONTAL Y line collision
 		SetHorizontalWallCollisionValues(fRayAngle, fYDistanceToWall, fYTileHit, nWallTypeY);
 
-
 		// decalare and initialise variables to store VERTICAL distances
 		float fXDistanceToWall{ 1000.0f };
 		float fXTileHit{ -1.0f };
@@ -132,22 +142,6 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 
 		// looking at VERTICAL X line collision
 		SetVerticalWallCollisionValues(fRayAngle, fXDistanceToWall, fXTileHit, nWallTypeX);
-
-
-		// threading experiment - doesn't seem to add value
-		// 
-		//std::thread horizontalThread([this, fRayAngle, &fYDistanceToWall, &fYTileHit, &nWallTypeY]() {
-		//	this->SetHorizontalWallCollisionValues(fRayAngle, fYDistanceToWall, fYTileHit, nWallTypeY);
-		//	});
-
-		//std::thread verticalThread([this, fRayAngle, &fXDistanceToWall, &fXTileHit, &nWallTypeX]() {
-		//	this->SetVerticalWallCollisionValues(fRayAngle, fXDistanceToWall, fXTileHit, nWallTypeX);
-		//	});
-
-		//// Wait for both threads to complete their execution
-		//horizontalThread.join();
-		//verticalThread.join();
-
 
 		// decalare variables to store final results
 		float fDistanceToWall{ 1000.0f };
@@ -178,10 +172,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 		// correct for fish-eye effect
 		fDistanceToWall *= cosf(fRayAngle - fPlayerA);
 
-
-
-		// get ratios of wall to ceiling and floor
-		// - how much of the column to draw as ceiling/wall/floor
+		// get ratios of wall to ceiling and floor  ->  how much of the column to draw as ceiling/wall/floor  //
 
 		// height of wall calculated as a ratio of ScreenHeight() / distance, * fWallUnit means height of top of wall
 		float fWall{ (GetConsoleHeight() / fDistanceToWall) * fWallHUnit };
@@ -301,7 +292,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 
 	DisplayObjects();
 	DisplayAim();
-	DisplayMap(5, 5, 5);
+	DisplayMap(5, 5, 2);
 	DisplayScore();
 
 	return true;
@@ -309,8 +300,6 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 
 
 // member methods of derived KablamGame class
-
-
 
 // key press actions
 
@@ -321,12 +310,12 @@ void KablamGame3D::SetPlayerStart(const std::vector<int>& floorMap)
 	size_t xPosFinish{ 0 };
 	size_t yPosFinish{ 0 };
 
-	for (size_t x{ 0 }; x < nMapWidth; ++x)
+	for (size_t x{ 0 }; x < MAP_WIDTH; ++x)
 	{
-		for (size_t y{ 0 }; y < nMapWidth; ++y)
+		for (size_t y{ 0 }; y < MAP_WIDTH; ++y)
 		{
 			// Determine the index based on the 2D coordinates
-			int tile = floorMap[y * nMapWidth + x];
+			int tile = floorMap[y * MAP_WIDTH + x];
 			if (tile == 8)
 			{
 				xPosStart = x;
@@ -346,26 +335,38 @@ void KablamGame3D::SetPlayerStart(const std::vector<int>& floorMap)
 	fPlayerY = static_cast<float>(yPosStart + 0.5f);
 }
 
+// Method to initialize factories
+	// Method to initialize factories
+void KablamGame3D::InitialiseFactories() {
+	spriteFactories[1] = new OctoFactory(spriteOctoBaddy, spriteOctoBaddy, spriteOctoBaddyHit);
+	spriteFactories[2] = new FloorlampFactory(spriteFloorLamp);
+	//spriteFactories[3] = new BarrelFactory(spriteBarrel);
+
+
+	spriteFactories[99] = new BulletFactory(spriteFireball, spriteFireballHit);
+
+
+}
+
 void KablamGame3D::SetObjectsStart(const std::vector<int>& floorMap)
 {
-	for (size_t x{ 0 }; x < nMapWidth; ++x)
+	for (size_t x{ 0 }; x < MAP_WIDTH; ++x)
 	{
-		for (size_t y{ 0 }; y < nMapWidth; ++y)
+		for (size_t y{ 0 }; y < MAP_WIDTH; ++y)
 		{
 			// Determine the index based on the 2D coordinates
-			int tile = floorMap[y * nMapWidth + x];
-			if (tile == 1)
-			{
-				listObjects.push_back({ x + 0.5f , y + 0.5f, 1.0f, SpriteType::OCTO_TYPE, false, false, 32, 32, true, spriteOctoBaddy, nullptr, spriteOctoBaddyHit });
+			int tile = floorMap[y * MAP_WIDTH + x];
+			if (spriteFactories.find(tile) != spriteFactories.end()) {
+				listSpriteObjects.push_back(spriteFactories[tile]->CreateSprite(x + 0.5f, y + 0.5f, 0.0f)); // Adjust Z value as needed
 			}
-			else if (tile == 2)
-			{
-				listObjects.push_back({ x + 0.5f, y + 0.5f, 0.0f, SpriteType::FLOORLAMP_TYPE, false, true, 16, 32, false, spriteFloorLamp });
-			}
-			else if (tile == 3)
-			{
-				listObjects.push_back({ x + 0.5f, y + 0.5f, 0.0f, SpriteType::BARREL_TYPE, false, false, 32, 32, true, spriteBarrel });
-			}
+			//else if (tile == 2)
+			//{
+			//	listObjects.push_back({ x + 0.5f, y + 0.5f, 0.0f, SpriteType::FLOORLAMP_TYPE, false, true, 16, 32, false, spriteFloorLamp });
+			//}
+			//else if (tile == 3)
+			//{
+			//	listObjects.push_back({ x + 0.5f, y + 0.5f, 0.0f, SpriteType::BARREL_TYPE, false, false, 32, 32, true, spriteBarrel });
+			//}
 			// else do nothing
 		}
 	}
@@ -468,7 +469,7 @@ bool KablamGame3D::ApplyMovementAndActions(const float fElapsedTime)
 	// handle ACTION keys
 	if (actionStates.fire)
 	{
-		listObjects.push_back({ fPlayerX, fPlayerY, 0.0f, SpriteType::BULLET_TYPE, false, true, 32, 32, false, spriteFireball, nullptr, nullptr, fPlayerA });
+		listSpriteObjects.push_back(spriteFactories[99]->CreateSprite( fPlayerX, fPlayerY, 0.4f, fPlayerA));
 	}
 
 	if (actionStates.jump && !bPlayerJumping)
@@ -833,7 +834,7 @@ float KablamGame3D::RayLength(float px, float py, float rx, float ry) const
 // check if within map bounds
 bool KablamGame3D::WithinMapBounds(int x, int y) const
 {
-	return (x >= 0 && x < nMapWidth) && (y >= 0 && y < nMapHeight);
+	return (x >= 0 && x < MAP_WIDTH) && (y >= 0 && y < MAP_HEIGHT);
 }
 
 // get map value at coord x,y
@@ -841,7 +842,7 @@ int KablamGame3D::GetMapValue(int x, int y, const std::vector<int>& map) const
 {
 	if (WithinMapBounds(x, y))
 	{
-		return map[y * nMapWidth + x];
+		return map[y * MAP_WIDTH + x];
 	}
 	else
 		return 0;
@@ -850,98 +851,115 @@ int KablamGame3D::GetMapValue(int x, int y, const std::vector<int>& map) const
 void KablamGame3D::DisplayObjects()
 {
 	// Sort the list by distance from the player (furthest first)
-	listObjects.sort([this](const SpriteObject& a, const SpriteObject& b) {
+	listSpriteObjects.sort([this](const SpriteObject* a, const SpriteObject* b) {
 		// Directly compare precomputed distances
-		return a.GetDistanceFromPlayer() > b.GetDistanceFromPlayer();
+		return a->GetDistanceFromPlayer() > b->GetDistanceFromPlayer();
 	});
 
-	for (auto& object : listObjects)
+	for (auto it = listSpriteObjects.begin(); it != listSpriteObjects.end(); /* no increment here */)
+	
 	{
-		// Can object be seen?
-		// realative position
-		float fDistanceFromPlayer = object.GetDistanceFromPlayer();
+		SpriteObject* object = *it; // iterator based loop as will safely remove objects from the list
 
-		// Rotate around screen
-		float fEyeX = cosf(fPlayerA);
-		float fEyeY = sinf(fPlayerA);
+		// Remove dead objects if they are of type DestroyableSprite
+		DestroyableSprite* destroyable = dynamic_cast<DestroyableSprite*>(object);
+		if (destroyable && destroyable->IsSpriteDead()) {
+			it = listSpriteObjects.erase(it); // Erase returns the next iterator
+			delete object; // Free the memory
+			continue;
+		}
+		else {
+			++it; // Increment the iterator only if not erasing
+		}
 
-		// Get angle between object and players view direction
-		// relative angle from player to object = (angle x-axis to object) - (angle x-axis to look dir)
-		float fObjectAngle = object.GetAngleToPlayer() - atan2f(fEyeY, fEyeX);
+		// Ensure object is not null before using it
+		if (object) {
+			// Can object be seen?
+			// realative position
+			float fDistanceFromPlayer = object->GetDistanceFromPlayer();
 
-		// keeps angle to between -PI and PI
-		if (fObjectAngle < -PI) fObjectAngle += 2.0f * PI;
-		if (fObjectAngle > PI) fObjectAngle -= 2.0f * PI;
+			// Rotate around screen
+			float fEyeX = cosf(fPlayerA);
+			float fEyeY = sinf(fPlayerA);
 
-		// within field of view
-		bool bInPlayerFOV = fabs(fObjectAngle) < FOV / 2.0f;
+			// Get angle between object and players view direction
+			// relative angle from player to object = (angle x-axis to object) - (angle x-axis to look dir)
+			float fObjectAngle = object->GetAngleToPlayer() - atan2f(fEyeY, fEyeX);
 
-		if (bInPlayerFOV && fDistanceFromPlayer >= 0.5f && fDistanceFromPlayer < 30.0f)
-		{
-			/*int spriteWidth = object.currentSprite->GetWidth();
-			int spriteHeight = object.currentSprite->GetHeight();*/
+			// keeps angle to between -PI and PI
+			if (fObjectAngle < -PI) fObjectAngle += 2.0f * PI;
+			if (fObjectAngle > PI) fObjectAngle -= 2.0f * PI;
 
-			int spriteWidth = object.GetSpriteWidth();
-			int spriteHeight = object.GetSpriteHeight();
+			// within field of view
+			bool bInPlayerFOV = fabs(fObjectAngle) < FOV / 2.0f;
 
-			// calculate objects height, top, bottom, all with respect to the screen Y position (very similar to the wall height calculation)
-			float fObjectHeight = (GetConsoleHeight() / fDistanceFromPlayer) * fWallHUnit;
-			// takes into account the players view tilt and jump height
-			float fObjectTop{ GetConsoleHeight()/2.0f - (fObjectHeight/2 * (fWallHUnit - fPlayerHDefault -  fPlayerH)*2) - fPlayerTilt};
-			// account for object z height off floor ( div by 3 seems to get most pleasing result for when z = 0, object rests on floor )
-			float verticalAdjustment = ((spriteHeight/3 - spriteHeight * object.GetZ()) * fWallHUnit) / fDistanceFromPlayer;
-			fObjectTop += verticalAdjustment;
-
-			float fObjectBottom{ fObjectTop + fObjectHeight };
-			float fObjectAspectRatio = (float)spriteHeight / (float)spriteWidth;
-			float fObjectWidth = fObjectHeight / fObjectAspectRatio - 2;
-
-			// where is object on screen x-axis
-			float fMiddleOfObject = (0.5f * (fObjectAngle / (FOV / 2.0f)) + 0.5f) * (float)GetConsoleWidth();
-
-			// Draw object
-			for (float lx = 0; lx < fObjectWidth; lx ++)
+			if (bInPlayerFOV && fDistanceFromPlayer >= 0.5f && fDistanceFromPlayer < 30.0f)
 			{
-				// Calculate the X position on the screen
-				int screenX = (int)(fMiddleOfObject + lx - fObjectWidth / 2.0f);
+				/*int spriteWidth = object.currentSprite->GetWidth();
+				int spriteHeight = object.currentSprite->GetHeight();*/
 
-				for (float ly = 0; ly < fObjectHeight; ly++)
+				int spriteWidth = object->GetSpriteWidth();
+				int spriteHeight = object->GetSpriteHeight();
+
+				// calculate objects height, top, bottom, all with respect to the screen Y position (very similar to the wall height calculation)
+				float fObjectHeight = (GetConsoleHeight() / fDistanceFromPlayer) * fWallHUnit;
+				// takes into account the players view tilt and jump height
+				float fObjectTop{ GetConsoleHeight() / 2.0f - (fObjectHeight / 2 * (fWallHUnit - fPlayerHDefault - fPlayerH) * 2) - fPlayerTilt };
+				// account for object z height off floor ( div by 3 seems to get most pleasing result for when z = 0, object rests on floor )
+				float verticalAdjustment = ((spriteHeight / 3 - spriteHeight * object->GetZ()) * fWallHUnit) / fDistanceFromPlayer;
+				fObjectTop += verticalAdjustment;
+
+				float fObjectBottom{ fObjectTop + fObjectHeight };
+				float fObjectAspectRatio = (float)spriteHeight / (float)spriteWidth;
+				float fObjectWidth = fObjectHeight / fObjectAspectRatio - 2;
+
+				// where is object on screen x-axis
+				float fMiddleOfObject = (0.5f * (fObjectAngle / (FOV / 2.0f)) + 0.5f) * (float)GetConsoleWidth();
+
+				// Draw object
+				for (float lx = 0; lx < fObjectWidth; lx++)
 				{
-					// Calculate the Y position on the screen
-					int screenY = (int)(fObjectTop + ly);
+					// Calculate the X position on the screen
+					int screenX = (int)(fMiddleOfObject + lx - fObjectWidth / 2.0f);
 
-					// Ensure screenX is within the bounds of the screen and depth buffer
-					if (screenX >= 0 && screenX < GetConsoleWidth())
+					for (float ly = 0; ly < fObjectHeight; ly++)
 					{
-						// Check if the object is closer than the wall previously drawn at this screenX
-						if (fDistanceFromPlayer <= fDepthBuffers[screenX])
+						// Calculate the Y position on the screen
+						int screenY = (int)(fObjectTop + ly);
+
+						// Ensure screenX is within the bounds of the screen and depth buffer
+						if (screenX >= 0 && screenX < GetConsoleWidth())
 						{
-							// Calculate the corresponding position in the sprite
-							int spriteX = (int)(lx * spriteWidth / fObjectWidth);
-							int spriteY = (int)(ly * spriteHeight / fObjectHeight);
-
-							CHAR_INFO pixel{ object.GetPixel(spriteX, spriteY) };
-
-							// check if 'transparent'
-					//short glyph = object.currentSprite->GetGlyph(spriteX, spriteY);
-							short glyph = pixel.Char.UnicodeChar;
-
-
-							// Check if the pixel is not transparent (assuming some alpha value defines transparency)
-							if (glyph != L' ' && fDistanceFromPlayer <= fDepthBuffers[screenX])
+							// Check if the object is closer than the wall previously drawn at this screenX
+							if (fDistanceFromPlayer <= fDepthBuffers[screenX])
 							{
-								// Get the color from the sprite at this position
-					//short colour = object.currentSprite->GetColour(spriteX, spriteY);
-								short colour = pixel.Attributes;
+								// Calculate the corresponding position in the sprite
+								int spriteX = (int)(lx * spriteWidth / fObjectWidth);
+								int spriteY = (int)(ly * spriteHeight / fObjectHeight);
 
-								// adjust glyph for shading
-								if (!object.GetIlluminated())
-									glyph = GetGlyphShadeByDistance(fDistanceFromPlayer);
+								CHAR_INFO pixel{ object->GetPixel(spriteX, spriteY) };
 
-								// Draw pixel at the calculated screen position
+								// check if 'transparent'
+						//short glyph = object.currentSprite->GetGlyph(spriteX, spriteY);
+								short glyph = pixel.Char.UnicodeChar;
 
-								DrawPoint(screenX, screenY, colour, glyph);
-								fDepthBuffers[screenX] = fDistanceFromPlayer; // add to depth buffer
+
+								// Check if the pixel is not transparent (assuming some alpha value defines transparency)
+								if (glyph != L' ' && fDistanceFromPlayer <= fDepthBuffers[screenX])
+								{
+									// Get the color from the sprite at this position
+						//short colour = object.currentSprite->GetColour(spriteX, spriteY);
+									short colour = pixel.Attributes;
+
+									// adjust glyph for shading
+									if (!object->GetIlluminated())
+										glyph = GetGlyphShadeByDistance(fDistanceFromPlayer);
+
+									// Draw pixel at the calculated screen position
+
+									DrawPoint(screenX, screenY, colour, glyph);
+									fDepthBuffers[screenX] = fDistanceFromPlayer; // add to depth buffer
+								}
 							}
 						}
 					}
@@ -987,10 +1005,10 @@ void KablamGame3D::DisplayAim(short colour, short glyph)
 // display map and player
 void KablamGame3D::DisplayMap(int xPos, int yPos, int scale) {
 	if (nMapDisplayStatus != 0) {
-		for (int x{ 0 }; x < nMapWidth; x++) {
-			for (int y{ 0 }; y < nMapHeight; y++) {
+		for (int x{ 0 }; x < MAP_WIDTH; x++) {
+			for (int y{ 0 }; y < MAP_HEIGHT; y++) {
 				short wcMapPixelColour = FG_BLACK;
-				if (mapWalls[y * nMapWidth + x] == 1) {
+				if (mapWalls[y * MAP_WIDTH + x] == 1) {
 					wcMapPixelColour = FG_YELLOW;
 				}
 

@@ -864,24 +864,29 @@ int KablamEngine::SetFullScreen(bool state)
 {
     int newFontWidth;
     int newFontHeight;
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
     if (state)
     {
-        // Get the screen width in pixels
-        newFontWidth = GetSystemMetrics(SM_CXSCREEN) / GetConsoleWidth();
-        // Get the screen height in pixels
-        newFontHeight = GetSystemMetrics(SM_CYSCREEN) / GetConsoleHeight();
+        // Calculate the new font size to fit the screen width
+        newFontWidth = screenWidth / GetConsoleWidth();
+        newFontHeight = newFontWidth; // Maintain the same aspect ratio by setting height equal to width
+
+        // Adjust the console height accordingly
+        int consoleHeight = screenHeight / newFontHeight;
+
         if (!SetWindowPos(hConsoleWindow, NULL, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOSIZE))
             return Error(L"Failed to set fullscreen mode: Unable to set console window position.");
     }
     else
     {
         newFontWidth = nFontWidth;
-        newFontHeight = nFontWidth;
-        if (!SetWindowPos(hConsoleWindow, NULL, 100, 100, 0, 0, SWP_NOZORDER | SWP_NOSIZE))
-            return Error(L"Failed to set fullscreen mode: Unable to set console window position.");
-    }
+        newFontHeight = nFontHeight;
 
+        if (!SetWindowPos(hConsoleWindow, NULL, 100, 100, 0, 0, SWP_NOZORDER | SWP_NOSIZE))
+            return Error(L"Failed to set windowed mode: Unable to set console window position.");
+    }
 
     // Initialize the CONSOLE_FONT_INFOEX structure
     CONSOLE_FONT_INFOEX cfi{};
@@ -891,9 +896,9 @@ int KablamEngine::SetFullScreen(bool state)
     cfi.dwFontSize.Y = newFontHeight; // Height
     cfi.FontFamily = FF_DONTCARE;
     cfi.FontWeight = FW_NORMAL;
-
     wcscpy_s(cfi.FaceName, L"Lucida Console");
-    // set size
+
+    // Set the font size
     if (!SetCurrentConsoleFontEx(hNewBuffer, FALSE, &cfi)) {
         CleanUp();
         return Error(L"Failed to set fullscreen mode: Unable to SetCurrentConsoleFontEx.");

@@ -1,83 +1,58 @@
 # pragma once
 
-#include<Windows.h>
+#include <Windows.h>
 #include <list>
 #include <vector>
-
 #include "GameConstants.h"
 #include "Texture.h"
-
 #include "SpriteEnums.h"
 
-
 class SpriteObject {
-
-private:
-
-	const float SEGMENT_ANGLE = (2 * PI) / 8; // Each segment covers 45 degrees or PI/4 radians
-	const float BOBBING_SPEED = 4.5f; // Speed of the bobbing motion
-	const float BOBBING_HEIGHT = 0.15f; // Amplitude of the bobbing motion
-
-	float x;
-	float y;
-	float z; // height off floor
-	float baseZ; // starting height
-	float distFromPlayer;
-	float angleToPlayer;
-	float facingAngle;
-	float relativeAngle;
-	int width;
-	int height;
-	bool rotatable;
-	SpriteType type;
-	bool dead;
-	bool hit;
-	bool illuminated;
-	float timeElapsed;
-	float eventTimer;
-	Texture* currentSprite;
-	Texture* aliveSprite;
-	Texture* hitSprite;
-	Texture* deadSprite;
-
-	float hitDisplayTime = 1.0f;
+protected:
+    float x;
+    float y;
+    float z; // height off floor
+    float baseZ; // starting height
+    float distToPlayer;
+    float angleToPlayer;
+    float facingAngle;
+    int width;
+    int height;
+    SpriteType type;
+    bool illuminated;
+    Texture* currentSprite;
+    float timeElapsed;
+    float collisionBuffer; // effective physical size in game from center-line
 
 
 public:
-	// default Constructor
-	SpriteObject(float initX = 0.0f, float initY = 0.0f, float initZ = 0.0f, SpriteType initType = SpriteType::NO_TYPE, bool isDead = false, bool isIlluminated = false, int spriteWidth = 32, int spriteHeight = 32,
-					bool rotate = false, Texture* initSpriteAlive = nullptr, Texture* initSpriteDead = nullptr, Texture* initSpriteHit = nullptr, float facingAngle = 0.0f);
+    SpriteObject(float initX = 0.0f, float initY = 0.0f, float initZ = 0.0f, SpriteType initType = SpriteType::NO_TYPE, bool isIlluminated = false,
+        int spriteWidth = 32, int spriteHeight = 32, Texture* initSprite = nullptr, float initAngle = 0.0f);
 
-	~SpriteObject();
+    virtual ~SpriteObject() = default;
 
-	void UpdateSprite(const float timeStep, const float playerX, const float playerY, std::list<SpriteObject>& allSprites, const std::vector<int>);
+    // UpdateSprite has to be overridden by specific class definition
+    virtual void UpdateSprite(float timeStep, float playerX, float playerY, float playerTilt,
+        std::list<SpriteObject*>& allSprites, const std::vector<int>& floorMap) = 0;    
+    
+    // effectively RENDER - GetPixel can be overridden by specific class definition depending of attributes
+    virtual CHAR_INFO GetPixel(int x, int y) const;
+    
+    float GetDistanceFromPlayer() const;
+    float GetDistanceFromOther(float otherX, float otherY) const;
+    float GetAngleToPlayer() const;
+    int GetSpriteWidth() const;
+    int GetSpriteHeight() const;
+    float GetX() const;
+    float GetY() const;
+    float GetZ() const;
+    bool GetIlluminated() const;
+    SpriteType GetSpriteType() const;
+    float GetCollisionBuffer() const;
 
-	CHAR_INFO GetPixel(int x, int y) const;
-
-	float GetDistanceFromPlayer() const;
-
-	float GetDistanceFromOther(float otherX, float otherY) const;
-
-	float GetAngleToPlayer() const;
-
-	int GetSpriteWidth() const;
-
-	int GetSpriteHeight() const;
-
-	float GetZ() const;
-
-	bool GetIlluminated() const;
-	
-	void MakeDead();
-
-	SpriteType  GetSpriteType() const;
-
-private:
-	void Bobbing();
-
-	void CheckCollisionWithOtherSprites(std::list<SpriteObject>& allSprites);
-
-	bool CheckCollisionWithWall(const std::vector<int> wallMap);
-
-
+protected:
+    void UpdateTimeAndDistanceToPlayer(float timeStep, float playerX, float playerY);
+    //void CheckCollisionWithOtherSprites(std::list<SpriteObject*>& allSprites);
+    //bool RayIntersectsCircle(float oldX, float oldY, float newX, float newY, float cx, float cy, float radius);
+    bool CheckCollisionWithWall(const std::vector<int>& wallMap);
 };

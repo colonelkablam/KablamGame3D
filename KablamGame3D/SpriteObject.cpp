@@ -1,106 +1,40 @@
 # pragma once
 
+#include <cmath>
+
 #include "SpriteObject.h"
 
-SpriteObject::SpriteObject(float initX, float initY, float initZ, SpriteType initType, bool isDead, bool isIlluminated, int spriteWidth, int spriteHeight, bool rotate,
-							Texture* initSpriteAlive, Texture* initSpriteDead, Texture* initSpriteHit, float direction)
-		: x(initX), y(initY), z(initZ), type(initType), dead(isDead), illuminated(isIlluminated), width{ spriteWidth }, height{ spriteHeight }, rotatable{ rotate },
-			currentSprite{ initSpriteAlive }, aliveSprite(initSpriteAlive), deadSprite(initSpriteDead), hitSprite{ initSpriteHit }, distFromPlayer { 1000.f }, angleToPlayer{ 0.0f },
-				facingAngle{ direction }, relativeAngle{ 0.0f }, baseZ{ initZ }, timeElapsed{ 0.0f }, eventTimer{ 0.0f }, hit {false}
-{}
+SpriteObject::SpriteObject(float initX, float initY, float initZ, SpriteType initType, bool isIlluminated, int spriteWidth, int spriteHeight, Texture* initSprite, float initAngle)
+	: x(initX), y(initY), z(initZ), baseZ(initZ), distToPlayer(1000.f), angleToPlayer(0.0f), width(spriteWidth), height(spriteHeight), type(initType), 
+		illuminated(isIlluminated), currentSprite(initSprite), timeElapsed(0.0f), facingAngle(initAngle), collisionBuffer(0.0f) {}
 
-SpriteObject::~SpriteObject()
+
+// base pixel fetching method
+CHAR_INFO SpriteObject::GetPixel(int x, int y) const
 {
-	//delete sprite handled by KablamGame3D;
+	return currentSprite->GetPixel(x, y);
 }
 
-void SpriteObject::UpdateSprite(const float timeStep, const float playerX, const float playerY, std::list<SpriteObject>& allSprites, const std::vector<int>)
+// all sprites need this to be drawn appropriately
+void SpriteObject::UpdateTimeAndDistanceToPlayer(float timeStep, float playerX, float playerY)
 {
 	// add elapsed time
 	timeElapsed += timeStep;
 
 	// calculate distance from player
-	distFromPlayer = GetDistanceFromOther(playerX, playerY);;
+	distToPlayer = GetDistanceFromOther(playerX, playerY);;
 
 	// Calculate the angle from the player to the sprite
 	// angle from player feet
 	float dx = x - playerX;
 	float dy = y - playerY;
 	angleToPlayer = atan2(dy, dx);
-
-	// update sprite view
-	if (rotatable)
-	{
-		// Calculate the relative angle (where it is looking rel. to player)
-		relativeAngle = facingAngle - angleToPlayer + PI;
-
-		// normalise between 0 - 2*PI
-		if (relativeAngle < 0)
-			relativeAngle += 2 * PI;
-		if (relativeAngle > 2 * PI)
-			relativeAngle -= 2 * PI;
-
-		if (type == SpriteType::OCTO_TYPE)
-		{
-			if (relativeAngle > PI)
-				facingAngle += 0.007;
-			else
-				facingAngle -= 0.007;
-
-			// normalise between 0 - 2*PI
-			if (facingAngle < 0)
-				facingAngle += 2 * PI;
-			if (facingAngle > 2 * PI)
-				facingAngle -= 2 * PI;
-
-			// bob the sprite
-			Bobbing();
-
-			if (hit)
-			{
-				currentSprite = hitSprite;
-				if (timeElapsed - eventTimer > hitDisplayTime)
-				{
-					currentSprite = aliveSprite;
-				}
-
-			}
-		}
-	}
-
-	if (type == SpriteType::BULLET_TYPE)
-	{
-		x += cosf(facingAngle) * timeStep * 50;
-		y += sinf(facingAngle) * timeStep * 50;
-
-
-	}
-
-	CheckCollisionWithOtherSprites(allSprites);
-}
-
-CHAR_INFO SpriteObject::GetPixel(int x, int y) const
-{
-	int xOffset = 0;
-	int yOffset = 0;
-
-	if (rotatable) // if rotatable
-	{
-		// Determine the view index
-		int viewIndex = static_cast<int>((relativeAngle + SEGMENT_ANGLE / 2) / SEGMENT_ANGLE) % 8;
-
-		// Calculate offsets based on the view index
-		xOffset = (viewIndex % 4) * width; // 4 views per row
-		yOffset = (viewIndex / 4) * height; // Move to next row for views 4-7
-	}
-	return currentSprite->GetPixel(x + xOffset, y + yOffset);
 }
 
 float SpriteObject::GetDistanceFromPlayer() const
 {
-	return distFromPlayer;
+	return distToPlayer;
 }
-
 
 float SpriteObject::GetDistanceFromOther(float otherX, float otherY) const
 {
@@ -124,6 +58,15 @@ int SpriteObject::GetSpriteHeight() const
 	return height;
 }
 
+float SpriteObject::GetX() const
+{
+	return x;
+}
+float SpriteObject::GetY() const
+{
+	return y;
+}
+
 float SpriteObject::GetZ() const
 {
 	return z;
@@ -134,40 +77,12 @@ bool SpriteObject::GetIlluminated() const
 	return illuminated;
 }
 
-void SpriteObject::MakeDead()
-{
-	dead = true;
-}
-
-SpriteType  SpriteObject::GetSpriteType() const
+SpriteType SpriteObject::GetSpriteType() const
 {
 	return type;
 }
 
-
-void SpriteObject::Bobbing()
+float SpriteObject::GetCollisionBuffer() const
 {
-	z = baseZ + sinf(timeElapsed * BOBBING_SPEED) * BOBBING_HEIGHT;
+	return collisionBuffer;
 }
-
-void SpriteObject::CheckCollisionWithOtherSprites(std::list<SpriteObject>& allSprites)
-{
-	for (SpriteObject& other : allSprites)
-	{
-		if (other.GetSpriteType() == SpriteType::BULLET_TYPE) // playerFireball
-		{
-			if (GetDistanceFromOther(other.x, other.y) < 0.7f)
-			{
-				hit = true;
-				eventTimer = timeElapsed;
-				other.MakeDead();
-			}
-		}
-	}
-}
-
-bool SpriteObject::CheckCollisionWithWall(const std::vector<int> wallMap)
-{
-	return false;
-}
-
