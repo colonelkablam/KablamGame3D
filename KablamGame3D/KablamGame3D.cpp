@@ -1,6 +1,9 @@
 #include "KablamGame3D.h"
 #include <cmath>
 
+#include <iomanip>
+#include <sstream>
+
 // constructors 
 KablamGame3D::KablamGame3D(std::wstring newTitle)
 	: sSaveFolderName{ L"Saves\\" }, sSaveFileName{ L"save_game" }, sSaveExtension{ L".kgs" } {
@@ -357,7 +360,7 @@ void KablamGame3D::SetObjectsStart(const std::vector<int>& floorMap)
 			// Determine the index based on the 2D coordinates
 			int tile = floorMap[y * MAP_WIDTH + x];
 			if (spriteFactories.find(tile) != spriteFactories.end()) {
-				listSpriteObjects.push_back(spriteFactories[tile]->CreateSprite(x + 0.5f, y + 0.5f, 0.0f)); // Adjust Z value as needed
+				listSpriteObjects.push_back(spriteFactories[tile]->CreateSprite(x + 0.5f, y + 0.5f, 1.0f)); // Adjust Z value as needed
 			}
 			//else if (tile == 2)
 			//{
@@ -864,6 +867,10 @@ void KablamGame3D::DisplayObjects()
 		// Remove dead objects if they are of type DestroyableSprite
 		DestroyableSprite* destroyable = dynamic_cast<DestroyableSprite*>(object);
 		if (destroyable && destroyable->IsSpriteDead()) {
+			// Increment player score if the dead object is an OctoSprite
+			if (destroyable->GetSpriteType() == SpriteType::OCTO_TYPE) {
+				playerScore++;
+			}
 			it = listSpriteObjects.erase(it); // Erase returns the next iterator
 			delete object; // Free the memory
 			continue;
@@ -1036,8 +1043,26 @@ void KablamGame3D::DisplayMap(int xPos, int yPos, int scale) {
 
 void KablamGame3D::DisplayScore()
 {
-	std::wstring text{ L"KamblamEngine3D @ . ?" };
-	textDisplay.DisplayString(*this, 10, nScreenHeight - 10, text, FG_DARK_BLUE, PIXEL_SOLID);
+	textDisplay.DisplayString(*this, 5, 5, headerText, FG_DARK_BLUE, PIXEL_SOLID, 1);
+	textDisplay.DisplayString(*this, 5, nScreenHeight - 35, L"score", FG_DARK_BLUE, PIXEL_SOLID, 1);
+	textDisplay.DisplayString(*this, nScreenWidth - 45, nScreenHeight - 35, L"health", FG_DARK_BLUE, PIXEL_SOLID, 1);
+
+	std::wstring scoreText{ std::to_wstring(playerScore)};
+
+	// Convert playerHealth to a string with one decimal place and right-justify
+	std::wstringstream ss;
+	ss << std::fixed << std::setprecision(0) << playerHealth;
+	std::wstring healthText = ss.str();
+
+	// Pad with spaces to ensure right justification within a field width of 4 (e.g., "__0.0")
+	if (healthText.length() < 4)
+	{
+		healthText = std::wstring(4 - healthText.length(), L' ') + healthText;
+	}
+
+	textDisplay.DisplayString(*this, 5, nScreenHeight - 25, scoreText, FG_DARK_GREEN, PIXEL_SOLID, 2, true);
+	textDisplay.DisplayString(*this, nScreenWidth - 95, nScreenHeight - 25, healthText, FG_DARK_CYAN, PIXEL_SOLID, 2, true);
+
 }
 
 short KablamGame3D::GetGlyphShadeByDistance(float distance)

@@ -71,6 +71,8 @@ private:
 	float fPlayerTiltSpeed = 170.0f;
 	const int TILT_MAX = 45;
 	const float playerCollisionBuffer = 0.2f;
+	int playerScore = 0;
+	float playerHealth = 100.0f;
 
 	struct ActionStates
 	{
@@ -114,6 +116,8 @@ private:
 	bool bPlayerJumping = false;
 
 	int nMapDisplayStatus = 0;
+
+	std::wstring headerText{ L"KamblamEngine3D" };
 
 	enum DisplayState {
 		NORMAL,
@@ -160,7 +164,6 @@ private:
 			default: return L"UNKNOWN";
 			}
 		}
-
 	};
 
 	// manage the rendering state

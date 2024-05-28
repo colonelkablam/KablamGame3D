@@ -52,7 +52,4 @@ public:
 
 protected:
     void UpdateTimeAndDistanceToPlayer(float timeStep, float playerX, float playerY);
-    //void CheckCollisionWithOtherSprites(std::list<SpriteObject*>& allSprites);
-    //bool RayIntersectsCircle(float oldX, float oldY, float newX, float newY, float cx, float cy, float radius);
-    bool CheckCollisionWithWall(const std::vector<int>& wallMap);
 };

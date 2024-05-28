@@ -52,14 +52,19 @@ public:
 	virtual ~BulletSprite() = default;
 
 	void UpdateSprite(float timeStep, float playerX, float playerY, float playerTilt, std::list<SpriteObject*>& allSprites, const std::vector<int>& floorMap) override {
-		UpdateTimeAndDistanceToPlayer(timeStep, playerX, playerY);
-		UpdateIfHit(timeStep);
-		if (!IsSpriteDying()) {
-			UpdateMovement(timeStep, floorMap); // collision with walls and movement
-			if (hitWall) {
-				MakeDying();
+		SpriteObject::UpdateTimeAndDistanceToPlayer(timeStep, playerX, playerY);
+		
+		// see if dying
+		if (DestroyableSprite::IsSpriteDying()) {
+			DestroyableSprite::UpdateIfHit(timeStep); // update dying texture and time
+		}
+		else // else continue to update movement and state
+		{
+			if (MovableSprite::hitWall) {
+				DestroyableSprite::MakeDying();
 			}
 			else {
+				MovableSprite::UpdateMovement(timeStep, floorMap); // collision with walls and movement
 				CheckCollisions(allSprites);
 			}
 		}
