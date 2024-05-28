@@ -70,7 +70,7 @@ bool KablamGame3D::OnGameCreate()
 	AddToLog(L"Map textures added...");
 
 	// Sprite textures
-	spriteFloorLamp = new Texture(L"./Textures/Sprites/sprite_lamp_32.txr");
+	spriteFloorLamp = new Texture(L"./Textures/Sprites/sprite_lamp_32_3.txr");
 	spriteBarrel = new Texture(L"./Textures/Sprites/sprite_barrel_rotate_32.txr");
 	spriteOctoBaddy = new Texture(L"./Textures/Sprites/sprite_octo_rotate_32.txr");
 	spriteOctoBaddyHit = new Texture(L"./Textures/Sprites/sprite_octo_hit_32.txr");
@@ -351,29 +351,38 @@ void KablamGame3D::InitialiseFactories() {
 
 }
 
-void KablamGame3D::SetObjectsStart(const std::vector<int>& floorMap)
-{
-	for (size_t x{ 0 }; x < MAP_WIDTH; ++x)
-	{
-		for (size_t y{ 0 }; y < MAP_WIDTH; ++y)
-		{
+void KablamGame3D::SetObjectsStart(const std::vector<int>& floorMap) {
+	for (size_t x{ 0 }; x < MAP_WIDTH; ++x) {
+		for (size_t y{ 0 }; y < MAP_WIDTH; ++y) {
 			// Determine the index based on the 2D coordinates
 			int tile = floorMap[y * MAP_WIDTH + x];
 			if (spriteFactories.find(tile) != spriteFactories.end()) {
-				listSpriteObjects.push_back(spriteFactories[tile]->CreateSprite(x + 0.5f, y + 0.5f, 1.0f)); // Adjust Z value as needed
+				// Default values
+				float posX = x + 0.5f;
+				float posY = y + 0.5f;
+				float posZ = 1.0f; // Default Z value
+
+				// Adjust Z value or other parameters based on the tile
+				switch (tile) {
+				case 1: // Example case for tile 1
+					posZ = 1.0f; // Adjust Z value for tile 1
+					break;
+				case 2: // Example case for tile 2
+					posZ = 0.0f; // Adjust Z value for tile 2
+					break;
+				case 3: // Example case for tile 3
+					posZ = 0.0f; // Adjust Z value for tile 3
+					break;
+					// Add more cases as needed
+				default:
+					break;
+				}
+
+				// Create sprite with adjusted values
+				listSpriteObjects.push_back(spriteFactories[tile]->CreateSprite(posX, posY, posZ));
 			}
-			//else if (tile == 2)
-			//{
-			//	listObjects.push_back({ x + 0.5f, y + 0.5f, 0.0f, SpriteType::FLOORLAMP_TYPE, false, true, 16, 32, false, spriteFloorLamp });
-			//}
-			//else if (tile == 3)
-			//{
-			//	listObjects.push_back({ x + 0.5f, y + 0.5f, 0.0f, SpriteType::BARREL_TYPE, false, false, 32, 32, true, spriteBarrel });
-			//}
-			// else do nothing
 		}
 	}
-
 }
 
 void KablamGame3D::HandleKeyPress()
