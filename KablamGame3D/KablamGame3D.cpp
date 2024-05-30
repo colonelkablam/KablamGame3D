@@ -295,7 +295,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 
 	DisplayObjects();
 	DisplayAim();
-	DisplayMap(5, 5, 2);
+	DisplayMap(nScreenWidth - 2*32 - 5, 5, 2);
 	DisplayScore();
 
 	return true;
@@ -783,7 +783,8 @@ void KablamGame3D::SetRenderPixel(CHAR_INFO& pixel, const Texture* textureToRend
 		// Modify the glyph further based on whether it hit an X or Y wall
 		if (hitXWall)
 		{
-			if (glyph == PIXEL_QUARTER) glyph = PIXEL_HALF;
+			if (glyph == L'-') glyph = PIXEL_QUARTER;
+			else if (glyph == PIXEL_QUARTER) glyph = PIXEL_HALF;
 			else if (glyph == PIXEL_HALF) glyph = PIXEL_THREEQUARTERS;
 			else if (glyph == PIXEL_THREEQUARTERS) glyph = PIXEL_SOLID;
 
@@ -1027,6 +1028,15 @@ void KablamGame3D::DisplayMap(int xPos, int yPos, int scale) {
 				if (mapWalls[y * MAP_WIDTH + x] == 1) {
 					wcMapPixelColour = FG_YELLOW;
 				}
+				else if (mapWalls[y * MAP_WIDTH + x] == 2) {
+					wcMapPixelColour = FG_DARK_GREY;
+				} else if (mapFloorTiles[y * MAP_WIDTH + x] == 8) {
+					wcMapPixelColour = FG_DARK_GREEN;
+				} else if (mapFloorTiles[y * MAP_WIDTH + x] == 9) {
+					wcMapPixelColour = FG_DARK_RED;
+				} else if (mapFloorTiles[y * MAP_WIDTH + x] == 2) {
+					wcMapPixelColour = FG_DARK_YELLOW;
+				}
 
 				// Calculate the actual screen position based on the starting point (xPos, yPos)
 				int screenX = xPos + (x * scale);
@@ -1077,6 +1087,9 @@ void KablamGame3D::DisplayScore()
 short KablamGame3D::GetGlyphShadeByDistance(float distance)
 {
 	if (distance > 18) {
+		return L'-';
+	}
+	else if (distance > 12) {
 		return PIXEL_QUARTER;
 	}
 	else if (distance > 8) {
