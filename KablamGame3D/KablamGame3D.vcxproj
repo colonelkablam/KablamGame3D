@@ -141,7 +141,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Enemy.h" />
+    <ClInclude Include="FloorLampSprite.h" />
     <ClInclude Include="GameConstants.h" />
+    <ClInclude Include="Projectile.h" />
     <ClInclude Include="SpriteFactory.h" />
     <ClInclude Include="IntermediateSpriteClasses.h" />
     <ClInclude Include="KablamGame3D.h" />
@@ -150,8 +153,11 @@
     <ClInclude Include="SpriteObject.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Enemy.cpp" />
+    <ClCompile Include="FloorLampSprite.cpp" />
     <ClCompile Include="KablamGame3D.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Projectile.cpp" />
     <ClCompile Include="SpriteObject.cpp" />
   </ItemGroup>
   <ItemGroup>

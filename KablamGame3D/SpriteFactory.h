@@ -1,9 +1,8 @@
 #pragma once
 
-#include "KablamGame3D.h"
-
-#include "SpriteObject.h"
-#include "SpecificSpriteClasses.h"
+#include "Enemy.h"
+#include "Projectile.h"
+#include "FloorLampSprite.h"
 
 class SpriteFactory {
 public:
@@ -23,7 +22,7 @@ public:
 
     SpriteObject* CreateSprite(float x, float y, float z, float initAngle) const override {
 
-        return new OctoSprite{ x, y, z, aliveTexture, deadTexture, hitTexture, 2, 2, false };
+        return new Enemy{ x, y, z, aliveTexture, deadTexture, hitTexture, 2, 2, false };
     }
 };
 
@@ -31,14 +30,14 @@ public:
 class BulletFactory : public SpriteFactory {
 private:
     Texture* aliveTexture;
-    Texture* hitTexture;
+    Texture* dyingTexture;
 
 public:
-    BulletFactory(Texture* alive, Texture* hit)
-        : aliveTexture(alive), hitTexture(hit) {}
+    BulletFactory(Texture* alive, Texture* dying)
+        : aliveTexture(alive), dyingTexture(dying) {}
 
     SpriteObject* CreateSprite(float x, float y, float z, float angle) const override {
-        return new BulletSprite{ x, y, z, aliveTexture, hitTexture, angle };
+        return new Projectile{ x, y, z, aliveTexture, dyingTexture, angle };
     }
 };
 
@@ -51,6 +50,6 @@ public:
         : aliveTexture(alive) {}
 
     SpriteObject* CreateSprite(float x, float y, float z, float angle) const override {
-        return new FloorlampSprite{ x, y, z, aliveTexture };
+        return new FloorLampSprite{ x, y, z, aliveTexture };
     }
 };

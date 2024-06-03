@@ -73,7 +73,7 @@ bool KablamGame3D::OnGameCreate()
 	spriteFloorLamp = new Texture(L"./Textures/Sprites/sprite_lamp_32_3.txr");
 	spriteBarrel = new Texture(L"./Textures/Sprites/sprite_barrel_rotate_32.txr");
 	spriteOctoBaddy = new Texture(L"./Textures/Sprites/sprite_octo_rotate_32.txr");
-	spriteOctoBaddyHit = new Texture(L"./Textures/Sprites/sprite_octo_hit_32.txr");
+	spriteOctoBaddyHit = new Texture(L"./Textures/Sprites/sprite_octo_rotate_hit_32.txr");
 	spriteFireball = new Texture(L"./Textures/Sprites/sprite_player_fireball_32.txr");
 	spriteFireballHit = new Texture(L"./Textures/Sprites/sprite_player_fireball_hit32.txr");
 
@@ -103,7 +103,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 
 	for (auto& object : listSpriteObjects)
 	{
-		object->UpdateSprite(fElapsedTime, fPlayerX, fPlayerY, fPlayerTilt, listSpriteObjects, mapWalls);
+		object->UpdateSprite(fElapsedTime, fPlayerX, fPlayerY, fPlayerTilt, mapWalls, listSpriteObjects );
 	}
 
 	// get the display setting before rendering the screen

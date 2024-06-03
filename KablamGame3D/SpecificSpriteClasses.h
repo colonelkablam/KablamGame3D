@@ -5,49 +5,57 @@
 #include "KablamGame3D.h"
 #include "IntermediateSpriteClasses.h"
 
-class OctoSprite : public MovableSprite, public RotatableSprite, public DestroyableSprite, public AISprite, public Bobbable {
+class Enemy : public Collidable, public MovableSprite, public RotatableSprite, public DestroyableSprite, public AISprite, public Bobbable {
 
 public:
-    OctoSprite(float initX, float initY, float initZ, Texture* initAliveSprite, Texture* initDeadSprite, Texture* initHitSprite, int initAggression, int initFireRate, bool initIsDead = false )
+    Enemy(float initX, float initY, float initZ, Texture* initAliveSprite, Texture* initDeadSprite, Texture* initHitSprite, int initAggression, int initFireRate, bool initIsDead = false )
         : SpriteObject(initX, initY, initZ, SpriteType::OCTO_TYPE, false, SPRITE_TEXTURE_WIDTH, SPRITE_TEXTURE_HEIGHT, initAliveSprite),
         
         // built sprite inheritable behaviours
-        MovableSprite(1.5f, 10.0f, 0.0f, 0.01f, 0.2f),
+        MovableSprite(1.5f, 10.0f, 0.0f, 0.03f),
+		Collidable(0.3f),
         RotatableSprite(),
         DestroyableSprite(100.0f, initDeadSprite, initHitSprite, initIsDead), 
         AISprite(initAggression, initFireRate),
 		Bobbable(2.0f, 1.15f) {}
 
-	virtual ~OctoSprite() = default;
+	virtual ~Enemy() = default;
 
 
-	void UpdateSprite(float timeStep, float playerX, float playerY, float playerTilt, std::list<SpriteObject*>& allSprites, const std::vector<int>& floorMap) override
+	void UpdateSprite(float timeStep, float playerX, float playerY, float playerTilt, const std::vector<int>& floorMap, std::list<SpriteObject*>& allSprites) override
 	{
 		
-		UpdateTimeAndDistanceToPlayer(timeStep, playerX, playerY);
-		UpdateRelativeAngleToPlayer();
-		UpdateAI(timeStep);
-		UpdateMovement(timeStep, floorMap, allSprites);
-		UpdateIfHit(timeStep);
-
-		//// see if dying
-		//if (DestroyableSprite::IsSpriteDying()) {
-		//	DestroyableSprite::UpdateIfHit(timeStep); // update dying texture and time
-		//}
-		//else // else continue to update movement and state
-		//{
-		//	if (MovableSprite::hitWall) {
-		//		DestroyableSprite::MakeDying();
-		//	}
-		//	else {
-		//		MovableSprite::UpdateMovement(timeStep, floorMap, allSprites); // collision with walls and movement
-		//		CheckCollisions(allSprites);
-		//	}
-		//}
-		Bobbing();
+		SpriteObject::UpdateTimeAndDistanceToPlayer(timeStep, playerX, playerY);
+		RotatableSprite::UpdateRelativeAngleToPlayer();
+		AISprite::UpdateAI(timeStep);
+		MovableSprite::UpdateMovement(timeStep, floorMap, allSprites);
+		DestroyableSprite::UpdateIfHit(timeStep);
+		Bobbable::Bobbing();
 	}
 
-    void UpdateAI(const float timeStep) override {
+	// MovableSprite virtual function that needs overriding
+	void UpdateMovement(float timeStep, const std::vector<int>& floorMap, std::list<SpriteObject*>& allSprites) override
+	{
+		MovableSprite::UpdateVelocity(timeStep); // update the velocity of sprite
+
+		// update the hit flags
+		Collidable::UpdateHitFlags(velocityX, velocityY, floorMap, allSprites);
+
+		// if hitting another sprite no movement - just rotation from 'AI'
+		if (hitOther) {
+			return;
+		}
+		else // if hitting a wall add x or y movement accordingly - allows for wall 'sliding'
+		{
+			if (!hitWallX)
+				x += velocityX;
+			if (!hitWallY)
+				y += velocityY;
+		}
+	}
+
+	// UpdateAI virtual function that needs overriding
+    void UpdateAI( float timeStep) override {
 		//UpdateAI(timeStep);
 		if (relativeAngle < PI)
 			RotateAntiClockwise();
@@ -56,50 +64,64 @@ public:
 	}
 };
 
-class BulletSprite : public MovableSprite, public DestroyableSprite {
+class BulletSprite : public Collidable, public MovableSprite, public DestroyableSprite {
 
 public:
 	BulletSprite(float initX, float initY, float initZ, Texture* initAliveSprite, Texture* initHitSprite, float initAngle)
 		: SpriteObject(initX, initY, initZ, SpriteType::BULLET_TYPE, false, SPRITE_TEXTURE_WIDTH, SPRITE_TEXTURE_HEIGHT, initAliveSprite),
 		// built sprite inheritable behaviours
-		MovableSprite(16.0f, 16.0f, initAngle, 0.0f, 0.01f),
+		MovableSprite(16.0f, 16.0f, initAngle, 0.0f),
+		Collidable(0.0f),
 		DestroyableSprite(1.0f, initHitSprite, initHitSprite, false) {}
 
 	virtual ~BulletSprite() = default;
 
-	void UpdateSprite(float timeStep, float playerX, float playerY, float playerTilt, std::list<SpriteObject*>& allSprites, const std::vector<int>& floorMap) override {
+	void UpdateSprite(float timeStep, float playerX, float playerY, float playerTilt, const std::vector<int>& floorMap, std::list<SpriteObject*>& allSprites) override {
+		// update position relative to player
 		SpriteObject::UpdateTimeAndDistanceToPlayer(timeStep, playerX, playerY);
-		UpdateMovement(timeStep, floorMap, allSprites);
 
-		//// see if dying
-		//if (DestroyableSprite::IsSpriteDying()) {
-		//	DestroyableSprite::UpdateIfHit(timeStep); // update dying texture and time
-		//}
-		//else // else continue to update movement and state
-		//{
-		//	if (MovableSprite::hitWall) {
-		//		DestroyableSprite::MakeDying();
-		//	}
-		//	else {
-		//		MovableSprite::UpdateMovement(timeStep, floorMap, allSprites); // collision with walls and movement
-		//		//CheckCollisions(allSprites);
-		//	}
-		//}
-	}
-
-private:
-	void CheckCollisions(std::list<SpriteObject*>& allSprites) {
-		for (auto* other : allSprites) {
-			if (other == this) continue; // Skip self
-
-			DestroyableSprite* target = dynamic_cast<DestroyableSprite*>(other);
-			if (target && IsCollidingWith(target)) {
-				HandleCollision(target);
-			}
+		// see if dying
+		if (DestroyableSprite::IsSpriteDying()) {
+			DestroyableSprite::UpdateIfHit(timeStep); // update dying texture and time
+		}
+		else // else continue to update movement and state
+		{
+			MovableSprite::UpdateMovement(timeStep, floorMap, allSprites);
 		}
 	}
 
-	bool IsCollidingWith(SpriteObject* other) {
+private:
+
+	// MovableSprite virtual function that needs overriding
+	void UpdateMovement(float timeStep, const std::vector<int>& floorMap, std::list<SpriteObject*>& allSprites) override
+	{
+		if (hitWallX || hitWallY)
+		{
+			DestroyableSprite::MakeDying();
+			return;
+		}
+		else if (CheckCollisions(allSprites)){
+			x += velocityX;
+			y += velocityY;
+		}
+	}
+
+	bool CheckCollisions(std::list<SpriteObject*>& allSprites) {
+		for (auto* other : allSprites) {
+			if (other == this) continue; // Skip self
+
+			DestroyableSprite* destroyableTarget = dynamic_cast<DestroyableSprite*>(other);
+			Collidable* collidableTarget = dynamic_cast<Collidable*>(other);
+
+			if (destroyableTarget && collidableTarget && IsCollidingWith(collidableTarget)) {
+				HandleCollision(destroyableTarget);
+				return true;
+			}
+		}
+		return false; // no collisions
+	}
+
+	bool IsCollidingWith(Collidable* other) {
 		return RayIntersectsCircle(other->GetX(), other->GetY(), other->GetCollisionBuffer());
 	}
 
@@ -155,9 +177,9 @@ public:
 	virtual ~FloorlampSprite() = default;
 
 
-	void UpdateSprite(float timeStep, float playerX, float playerY, float playerTilt, std::list<SpriteObject*>& allSprites, const std::vector<int>& floorMap) override
+	void UpdateSprite(float timeStep, float playerX, float playerY, float playerTilt, const std::vector<int>& floorMap, std::list<SpriteObject*>& allSprites) override
 	{
-		UpdateTimeAndDistanceToPlayer(timeStep, playerX, playerY);
+		SpriteObject::UpdateTimeAndDistanceToPlayer(timeStep, playerX, playerY);
 	}
 
 };

@@ -6,13 +6,16 @@
 
 SpriteObject::SpriteObject(float initX, float initY, float initZ, SpriteType initType, bool isIlluminated, int spriteWidth, int spriteHeight, Texture* initSprite, float initAngle)
 	: x(initX), y(initY), z(initZ), baseZ(initZ), distToPlayer(1000.f), angleToPlayer(0.0f), width(spriteWidth), height(spriteHeight), type(initType), 
-		illuminated(isIlluminated), currentSprite(initSprite), timeElapsed(0.0f), facingAngle(initAngle), collisionBuffer(0.0f) {}
+		illuminated(isIlluminated), currentSprite(initSprite), timeElapsed(0.0f), facingAngle(initAngle) {}
 
 
 // base pixel fetching method
 CHAR_INFO SpriteObject::GetPixel(int x, int y) const
 {
-	return currentSprite->GetPixel(x, y);
+	if (currentSprite == nullptr)
+		return { PIXEL_SOLID, FG_BLUE };
+	else
+		return currentSprite->GetPixel(x, y);
 }
 
 // all sprites need this to be drawn appropriately
@@ -80,9 +83,4 @@ bool SpriteObject::GetIlluminated() const
 SpriteType SpriteObject::GetSpriteType() const
 {
 	return type;
-}
-
-float SpriteObject::GetCollisionBuffer() const
-{
-	return collisionBuffer;
 }

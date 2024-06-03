@@ -22,7 +22,6 @@ protected:
     bool illuminated;
     Texture* currentSprite;
     float timeElapsed;
-    float collisionBuffer; // effective physical size in game from center-line
 
 
 public:
@@ -33,7 +32,7 @@ public:
 
     // UpdateSprite has to be overridden by specific class definition
     virtual void UpdateSprite(float timeStep, float playerX, float playerY, float playerTilt,
-        std::list<SpriteObject*>& allSprites, const std::vector<int>& floorMap) = 0;    
+        const std::vector<int>& floorMap, std::list<SpriteObject*>& allSprites) = 0;
     
     // effectively RENDER - GetPixel can be overridden by specific class definition depending of attributes
     virtual CHAR_INFO GetPixel(int x, int y) const;
@@ -48,7 +47,6 @@ public:
     float GetZ() const;
     bool GetIlluminated() const;
     SpriteType GetSpriteType() const;
-    float GetCollisionBuffer() const;
 
 protected:
     void UpdateTimeAndDistanceToPlayer(float timeStep, float playerX, float playerY);

@@ -2,24 +2,13 @@
 
 #include <math.h>
 
-class BulletSprite
-    ;
 #include "SpriteObject.h"
-
 #include "GameConstants.h"
-
 
 class Static : public virtual SpriteObject {
 
 public:
     Static() {}
-};
-
-class Collideable : public virtual SpriteObject {
-
-
-public:
-    Collideable(float collisionBuffer = 0.0f) {}
 };
 
 class Bobbable : public virtual SpriteObject {
@@ -35,7 +24,6 @@ public:
         z = baseZ + sinf(timeElapsed * bobbingSpeed) * bobbingHeight;
     }
 };
-
 
 class RotatableSprite : public virtual SpriteObject {
 protected:
@@ -70,10 +58,12 @@ public:
         xOffset = (viewIndex % 4) * width; // 4 views per row
         yOffset = (viewIndex / 4) * height; // Move to next row for views 4-7
         
-        return currentSprite->GetPixel(x + xOffset, y + yOffset);
+        if (currentSprite == nullptr)
+            return { PIXEL_SOLID, FG_BLUE };
+        else
+            return currentSprite->GetPixel(x + xOffset, y + yOffset);
     }
 };
-
 
 class DestroyableSprite : public virtual SpriteObject {
 protected:
@@ -83,134 +73,76 @@ protected:
     bool dead;
     Texture* aliveSprite;
     Texture* hitSprite;
+    Texture* dyingSprite;
     Texture* deadSprite;
-    float deadTime; // Time since the sprite was declared dead
-    const float dyingDisplayDuration = 0.2f; // Duration to display dead sprite in seconds
+    float hitTime;
+    float dyingTime; // Time since the sprite was declared dead
+    const float hitDisplayDuration = 0.3f; // Duration to display hit sprite in seconds
+    const float dyingDisplayDuration = 0.3f; // Duration to display dead sprite in seconds
 
 
 public:
-    DestroyableSprite(float initHealth = 100.0f, Texture* initDeadSprite = nullptr, Texture* initHitSprite = nullptr, bool initIsDead = false)
-        : health(initHealth), dead(initIsDead), dying(false), hit(false), aliveSprite(currentSprite), deadSprite(initDeadSprite), hitSprite(initHitSprite), deadTime(0.0f) {}
+    DestroyableSprite(float initHealth = 100.0f, Texture* initHitSprite = nullptr, Texture* initDyingSprite = nullptr, Texture* initDeadSprite = nullptr, bool initIsDead = false)
+        : health(initHealth), dead(initIsDead), dying(false), hit(false), aliveSprite(currentSprite), hitSprite(initHitSprite), dyingSprite(initDyingSprite), deadSprite(initDeadSprite),  hitTime(0.0f), dyingTime(0.0f) {}
 
     bool IsSpriteDead() const { return dead; }
-    void MakeDead() { dead = true; }
-    
+    void MakeDead() {
+        currentSprite = deadSprite;
+        dead = true;
+        z = 0.0f;
+    }
     bool IsSpriteDying() const { return dying; }
     void MakeDying() { dying = true; currentSprite = deadSprite; }
+
+    void SetDamage(float amount)
+    {
+        health -= amount;
+    }
 
     bool IsSpriteHit() const { return hit; }
     void SetHit(bool value) { hit = value; currentSprite = hitSprite; }
 
     void UpdateIfHit(float deltaTime) {
-        if (dying) {
-            deadTime += deltaTime;
-            if (deadTime >= dyingDisplayDuration) {
+        if (hit)
+        {
+            hitTime += deltaTime;
+
+            if (currentSprite != hitSprite)
+                currentSprite = hitSprite;
+
+            if (hitTime >= hitDisplayDuration) {
+                currentSprite = aliveSprite;
+                hit = false;
+            }
+        }
+
+        if ( health < 0.0f || dead) {
+            dyingTime += deltaTime;
+
+            if (currentSprite != dyingSprite)
+                currentSprite = deadSprite;
+
+            if (dyingTime >= dyingDisplayDuration) {
                 MakeDead();
             }
         }
+
+        //// see if dying
+        //if (IsSpriteDying()) {
+        //    DestroyableSprite::UpdateIfHit(timeStep); // update dying texture and time
+        //}
+        //else // else continue to update movement and state
+        //{
+        //    if (MovableSprite::hitWall) {
+        //        DestroyableSprite::MakeDying();
+        //    }
+        //    else {
+        //        MovableSprite::UpdateMovement(timeStep, floorMap, allSprites); // collision with walls and movement
+        //        //CheckCollisions(allSprites);
+        //    }
+        //}
     }
 };
-
-//class MovableSprite : public virtual SpriteObject {
-//protected:
-//    float velocityX;
-//    float velocityY;
-//    float currentSpeed;
-//    float maxSpeed;
-//    float rotationSpeed;
-//    bool hitWall; // flag for if sprite hits wall in its update
-//
-//public:
-//    MovableSprite(float initSpeed = 0.0f, float initMaxSpeed = 1.0f, float initAngle = 0.0f, float initRotationSpeed = 0.1f, float collisionBuffer = 0.0f)
-//        : currentSpeed(initSpeed), maxSpeed(initMaxSpeed), rotationSpeed(initRotationSpeed), velocityX(0.0f), velocityY(0.0f), hitWall(false)
-//    {
-//        SpriteObject::facingAngle = initAngle; // reset facing angle
-//        SpriteObject::collisionBuffer = collisionBuffer; // reset collision buffer as default is 0.0f
-//    }
-//
-//    void UpdateMovement(float timeStep, const std::vector<int>& wallMap, int mapWidth, int mapHeight, std::list<SpriteObject*>& allSprites) {
-//        hitWall = false; // reset hit wall
-//
-//        // Predictive movement
-//        float predictedX = x + sinf(facingAngle + P2) * currentSpeed * timeStep;
-//        float predictedY = y - cosf(facingAngle + P2) * currentSpeed * timeStep;
-//
-//        // Check collision with walls
-//        int oldX = static_cast<int>(x);
-//        int oldY = static_cast<int>(y);
-//
-//        // set appropriate collision buffer sign
-//        float xBuff = velocityX > 0 ? collisionBuffer : -collisionBuffer;
-//        float yBuff = velocityY > 0 ? collisionBuffer : -collisionBuffer;
-//
-//        int newX = static_cast<int>(predictedX + xBuff);
-//        int newY = static_cast<int>(predictedY + yBuff);
-//
-//        // Check for wall collisions
-//        if (newX >= 0 && newX < mapWidth && wallMap[oldY * mapWidth + newX] != 0)
-//            hitWall = true;
-//
-//        if (newY >= 0 && newY < mapHeight && wallMap[newY * mapWidth + oldX] != 0)
-//            hitWall = true;
-//
-//        // Check for collisions with other movable sprites
-//        bool collisionWithOtherSprite = false;
-//        for (auto& other : allSprites) {
-//            if (other == this) continue; // Skip self
-//
-//            MovableSprite* movable = dynamic_cast<MovableSprite*>(other);
-//            if (movable && IsCollidingWith(predictedX, predictedY, movable)) {
-//                collisionWithOtherSprite = true;
-//                break;
-//            }
-//        }
-//
-//        // Only update position if no collision
-//        if (!hitWall && !collisionWithOtherSprite) {
-//            x = predictedX;
-//            y = predictedY;
-//        }
-//    }
-//
-//    void IncreaseSpeed(float amount) {
-//        currentSpeed += amount;
-//        if (currentSpeed > maxSpeed) {
-//            currentSpeed = maxSpeed; // Clamp to maxSpeed
-//        }
-//    }
-//
-//    void DecreaseSpeed(float amount) {
-//        currentSpeed -= amount;
-//        if (currentSpeed < 0) {
-//            currentSpeed = 0; // Clamp to zero
-//        }
-//    }
-//
-//    void RotateClockwise() {
-//        facingAngle += rotationSpeed;
-//
-//        // Normalize facing angle below 2*PI
-//        if (facingAngle >= 2 * PI) facingAngle -= 2 * PI;
-//    }
-//
-//    void RotateAntiClockwise() {
-//        facingAngle -= rotationSpeed;
-//
-//        // Normalize facing angle above 0
-//        if (facingAngle < 0) facingAngle += 2 * PI;
-//    }
-//
-//    float GetVelocityX() const { return velocityX; }
-//    float GetVelocityY() const { return velocityY; }
-//
-//private:
-//    bool IsCollidingWith(float predictedX, float predictedY, MovableSprite* other) {
-//        float dx = predictedX - other->GetX();
-//        float dy = predictedY - other->GetY();
-//        float distance = sqrtf(dx * dx + dy * dy);
-//        return distance < (width / 2 + other->GetSpriteWidth() / 2);
-//    }
-//};
 
 class MovableSprite : public virtual SpriteObject {
 protected:
@@ -219,76 +151,45 @@ protected:
     float currentSpeed;
     float maxSpeed;
     float rotationSpeed;
-    bool hitOther;
-    bool hitWall; // flag for if sprite hits wall in its update
+
 
 public:
-    MovableSprite(float initSpeed = 0.0f, float initMaxSpeed = 1.0f, float initAngle = 0.0f, float initRotationSpeed = 0.1f, float collisionBuffer = 0.0f)
-        : currentSpeed(initSpeed), maxSpeed(initMaxSpeed), rotationSpeed(initRotationSpeed), velocityX(0.0f), velocityY(0.0f), hitWall(false)
+    MovableSprite(float initSpeed = 0.0f, float initMaxSpeed = 1.0f, float initAngle = 0.0f, float initRotationSpeed = 0.1f)
+        : currentSpeed(initSpeed), maxSpeed(initMaxSpeed), rotationSpeed(initRotationSpeed), velocityX(0.0f), velocityY(0.0f)
     {
         SpriteObject::facingAngle = initAngle; // reset facing angle
-        SpriteObject::collisionBuffer = collisionBuffer; // reset collision buffer as default is 0.0f
     }
 
-    void UpdateMovement(float timeStep, std::vector<int> wallMap, const std::list<SpriteObject*>& spriteObjects) {
+    // virtual movement that needs overriding by child class
+    virtual void UpdateMovement(float timeStep, const std::vector<int>& floorMap, std::list<SpriteObject*>& allSprites) = 0 {};
 
-        hitWall = false; // reset hit wall
+    // update vector xy
+    void UpdateVelocity(float timeStep)
+    {
+        UpdateVelocityX(timeStep);
+        UpdateVelocityY(timeStep);
+    }
 
-        // Update velocity based on speed and facing angle
+    // only update x component of vector (needed for wall sliding)
+    void UpdateVelocityX(float timeStep) {
+        // Update velocity X-axis based on speed and facing angle
         velocityX = sinf(facingAngle + P2) * currentSpeed * timeStep;
+    }
+
+    float GetVelocityX()
+    {
+        return velocityX;
+    }
+
+    // only update y component of vector (needed for wall sliding)
+    void UpdateVelocityY(float timeStep) {
+        // Update velocity Y-axis based on speed and facing angle
         velocityY = -cosf(facingAngle + P2) * currentSpeed * timeStep;
+    }
 
-        // Check collision with walls and adjust velocity if needed
-        int oldX = static_cast<int>(x);
-        int oldY = static_cast<int>(y);
-
-        // set appropriate collision buffer sign
-        float xBuff = velocityX > 0 ? collisionBuffer : -collisionBuffer;
-        float yBuff = velocityY > 0 ? collisionBuffer : -collisionBuffer;
-
-        int newX = static_cast<int>(x + velocityX + xBuff);
-        int newY = static_cast<int>(y + velocityY + yBuff);
-
-        bool bumpedOtherX{ false };
-        bool bumpedOtherY{ false };
-
-
-        for (const auto& sprite : spriteObjects)
-        {
-            // Use dynamic cast to check if the sprite is a MovableSprite
-            MovableSprite* movable = dynamic_cast<MovableSprite*>(sprite);
-
-            if (movable) {
-                // Skip self in collision check
-                if (movable == this)
-                    continue;
-
-                // Check for collision in the x direction
-                if (movable->GetDistanceFromOther(newX, y) < movable->GetCollisionBuffer()) {
-                    bumpedOtherX = true;
-                }
-
-                // Check for collision in the y direction
-                if (movable->GetDistanceFromOther(x, newY) < movable->GetCollisionBuffer()) {
-                    bumpedOtherY = true;
-                }
-
-                // If collision in both directions, break early
-                if (bumpedOtherX && bumpedOtherY)
-                    break;
-            }
-        }
-
-        // Update position based on velocity if no wall - hitwall true
-        if (newX >= 0 && newX < MAP_WIDTH && wallMap[oldY * MAP_WIDTH + newX] == 0 && !bumpedOtherX )
-            x += velocityX;
-        else
-            hitWall = true;
-
-        if (newY >= 0 && newY < MAP_HEIGHT && wallMap[newY * MAP_WIDTH + oldX] == 0 && !bumpedOtherY)
-            y += velocityY;
-        else
-            hitWall = true;
+    float GetVelocityY()
+    {
+        return velocityY;
     }
 
     void IncreaseSpeed(float amount) {
@@ -322,6 +223,74 @@ public:
     float GetVelocityY() const { return velocityY; }
 };
 
+class Collidable : public virtual SpriteObject {
+protected:
+    float collisionBuffer; // effective physical size in game from center-line
+
+    // flags for if sprite collisions
+    bool hitOther;
+    bool hitWallX;
+    bool hitWallY;
+
+public:
+    Collidable(float collisionBuffer = 0.0f)
+        : collisionBuffer(collisionBuffer), hitOther(false), hitWallX(false), hitWallY(false) {}
+
+
+    void UpdateHitFlags(float vX, float vY, std::vector<int> wallMap, const std::list<SpriteObject*>& spriteObjects) {
+
+        // reset hit flags
+        hitWallX = false;
+        hitWallY = false;
+        hitOther = false;
+
+        // Check collision with walls and adjust velocity if needed
+        int oldX = static_cast<int>(x);
+        int oldY = static_cast<int>(y);
+
+        // set appropriate collision buffer sign
+        float xBuff = vX > 0 ? collisionBuffer : -collisionBuffer;
+        float yBuff = vY > 0 ? collisionBuffer : -collisionBuffer;
+
+        int newX = static_cast<int>(x + vX + xBuff);
+        int newY = static_cast<int>(y + vY + yBuff);
+
+        for (const auto& sprite : spriteObjects)
+        {
+            // Use dynamic cast to check if the sprite is a MovableSprite
+            Collidable* solidOther = dynamic_cast<Collidable*>(sprite);
+
+            if (solidOther) {
+                // Skip self in collision check
+                if (solidOther == this)
+                    continue;
+
+                // Check for collision if moves new velcocity
+                if (solidOther->GetDistanceFromOther(newX, newY) < solidOther->GetCollisionBuffer() + collisionBuffer) {
+                    hitOther = true;
+                }
+
+                // If collision, break early, no need to check rest of list
+                if (hitOther)
+                    break;
+            }
+        }
+
+        // Update position based on velocity if no wall - hitwall true
+        if (newX >= 0 && newX < MAP_WIDTH && wallMap[oldY * MAP_WIDTH + newX] != 0)
+            hitWallX = true;
+
+        if (newY >= 0 && newY < MAP_HEIGHT && wallMap[newY * MAP_WIDTH + oldX] != 0)
+            hitWallY = true;
+    }
+
+    float GetCollisionBuffer() const
+    {
+        return collisionBuffer;
+    }
+
+};
+
 
 class AISprite : public virtual SpriteObject {
 protected:
@@ -332,5 +301,5 @@ public:
         : aggression (initAggression), fireRate(initFireRate) {}
 
     // to be defined by particular AI of specific sprite
-    virtual void UpdateAI(const float timeStep) = 0;
+    virtual void UpdateAI(float timeStep) = 0 {};
 };
