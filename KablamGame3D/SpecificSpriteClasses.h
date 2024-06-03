@@ -158,9 +158,9 @@ private:
 
 	void HandleCollision(DestroyableSprite* target) {
 		// Handle the collision (e.g., mark both the bullet and the target as hit or dying)
-		SetHit(true); // Mark the bullet as hit
+		MakeHit(); // Mark the bullet as hit
 		MakeDying(); // Mark the bullet as dying
-		target->SetHit(true); // Mark the target as hit
+		target->MakeHit(); // Mark the target as hit
 		target->MakeDying(); // Mark the target as dying
 	}
 };

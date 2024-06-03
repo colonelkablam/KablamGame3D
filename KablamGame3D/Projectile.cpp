@@ -3,7 +3,7 @@
 Projectile::Projectile(float initX, float initY, float initZ, Texture* initAliveSprite, Texture* initDyingSprite, float initAngle)
     : SpriteObject(initX, initY, initZ, SpriteType::BULLET_TYPE, false, SPRITE_TEXTURE_WIDTH, SPRITE_TEXTURE_HEIGHT, initAliveSprite),
     MovableSprite(16.0f, 16.0f, initAngle, 0.0f),
-    Collidable(0.0f),
+    Collidable(0.01f),
     DestroyableSprite(1.0f, nullptr, initDyingSprite, nullptr, false) {}
 
 void Projectile::UpdateSprite(float timeStep, float playerX, float playerY, float playerTilt, const std::vector<int>& floorMap, std::list<SpriteObject*>& allSprites) {
@@ -40,6 +40,10 @@ bool Projectile::CheckCollisions(std::list<SpriteObject*>& allSprites) {
 
         DestroyableSprite* destroyableTarget = dynamic_cast<DestroyableSprite*>(other);
         Collidable* collidableTarget = dynamic_cast<Collidable*>(other);
+        Projectile* projectileTarget = dynamic_cast<Projectile*>(other);
+
+        // Skip collision check if the other sprite is also a Projectile
+        if (projectileTarget) continue;
 
         if (destroyableTarget && collidableTarget && IsCollidingWith(collidableTarget)) {
             HandleCollision(destroyableTarget);
@@ -80,7 +84,7 @@ void Projectile::HandleCollision(DestroyableSprite* target) {
     // Handle the collision (e.g., mark both the bullet and the target as hit or dying)
     //SetHit(true); // Mark the bullet as hit
     MakeDying(); // Mark the bullet as dying
-    target->SetHit(true); // Mark the target as hit
+    target->MakeHit(); // Mark the target as hit
     target->SetDamage(35);
     //target->MakeDying(); // Mark the target as dying
 }

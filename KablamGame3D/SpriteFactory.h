@@ -13,16 +13,17 @@ public:
 class OctoFactory : public SpriteFactory {
 private:
     Texture* aliveTexture;
-    Texture* deadTexture;
     Texture* hitTexture;
+    Texture* dyingTexture;
+    Texture* deadTexture;
 
 public:
-    OctoFactory(Texture* alive, Texture* dead, Texture* hit)
-        : aliveTexture(alive), deadTexture(dead), hitTexture(hit) {}
+    OctoFactory(Texture* alive, Texture* hit, Texture* dying, Texture* dead)
+        : aliveTexture(alive), hitTexture(hit), dyingTexture(dead), deadTexture(dead) {}
 
     SpriteObject* CreateSprite(float x, float y, float z, float initAngle) const override {
 
-        return new Enemy{ x, y, z, aliveTexture, deadTexture, hitTexture, 2, 2, false };
+        return new Enemy{ x, y, z, aliveTexture, hitTexture, dyingTexture, deadTexture, 2, 2, false };
     }
 };
 

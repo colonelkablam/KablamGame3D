@@ -341,7 +341,7 @@ void KablamGame3D::SetPlayerStart(const std::vector<int>& floorMap)
 // Method to initialize factories
 	// Method to initialize factories
 void KablamGame3D::InitialiseFactories() {
-	spriteFactories[1] = new OctoFactory(spriteOctoBaddy, spriteOctoBaddy, spriteOctoBaddyHit);
+	spriteFactories[1] = new OctoFactory(spriteOctoBaddy, spriteOctoBaddyHit, spriteOctoBaddyHit, nullptr);
 	spriteFactories[2] = new FloorlampFactory(spriteFloorLamp);
 	//spriteFactories[3] = new BarrelFactory(spriteBarrel);
 

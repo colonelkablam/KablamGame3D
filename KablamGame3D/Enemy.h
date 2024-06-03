@@ -6,7 +6,7 @@ class Enemy : public Collidable, public MovableSprite, public RotatableSprite, p
 protected:
 
 public:
-    Enemy(float initX, float initY, float initZ, Texture* initAliveSprite, Texture* initDeadSprite, Texture* initHitSprite, int initAggression, int initFireRate, bool initIsDead = false);
+    Enemy(float initX, float initY, float initZ, Texture* initAliveSprite, Texture* initHitSprite = nullptr, Texture* initDyingSprite = nullptr, Texture* initDeadSprite = nullptr, int initAggression = 0, int initFireRate = 1, bool initIsDead = false);
 
     virtual ~Enemy() = default;
 

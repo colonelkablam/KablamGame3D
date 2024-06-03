@@ -16,12 +16,13 @@ protected:
     float bobbingSpeed; // Speed of the bobbing motion
     float bobbingHeight; // Amplitude of the bobbing motion
 public:
-    Bobbable(int initBobbingSpeed = 4.0f, int initBobbingHeight = 1.0f)
-        : bobbingSpeed(initBobbingSpeed), bobbingHeight(initBobbingHeight) {}
+    Bobbable(float initBobbingSpeed = 3.0f, float initBobbingHeight = 1.0f)
+        // generate a variation in bobbing speed with x/y location in starting array
+        : bobbingSpeed(initBobbingSpeed + (1 - 1/(x+y/2) * (MAP_WIDTH + MAP_HEIGHT)/2 )), bobbingHeight(initBobbingHeight) {}
 
     void Bobbing()
     {
-        z = baseZ + sinf(timeElapsed * bobbingSpeed) * bobbingHeight;
+        z = baseZ + sinf(timeElapsed * bobbingSpeed ) * bobbingHeight;
     }
 };
 
@@ -77,8 +78,8 @@ protected:
     Texture* deadSprite;
     float hitTime;
     float dyingTime; // Time since the sprite was declared dead
-    const float hitDisplayDuration = 0.3f; // Duration to display hit sprite in seconds
-    const float dyingDisplayDuration = 0.3f; // Duration to display dead sprite in seconds
+    const float hitDisplayDuration = 0.4f; // Duration to display hit sprite in seconds
+    const float dyingDisplayDuration = 4.8f; // Duration to display dead sprite in seconds
 
 
 public:
@@ -86,16 +87,35 @@ public:
         : health(initHealth), dead(initIsDead), dying(false), hit(false), aliveSprite(currentSprite), hitSprite(initHitSprite), dyingSprite(initDyingSprite), deadSprite(initDeadSprite),  hitTime(0.0f), dyingTime(0.0f) {}
 
     bool IsSpriteDead() const { return dead; }
+    
     void MakeDead() {
         currentSprite = deadSprite;
+        dyingTime = 0.0f;
         dead = true;
         z = 0.0f;
     }
     bool IsSpriteDying() const { return dying; }
+    
     void MakeDying() {
         dying = true;
         currentSprite = dyingSprite; 
+        z = 0.0f;
+
     }
+    bool IsSpriteHit() const { return hit; }
+    
+    void MakeHit() {
+        hit = true;
+        currentSprite = hitSprite;
+    }
+
+    void MakeUnHit() {
+        hit = false;
+        hitTime = 0.0f;
+        currentSprite = aliveSprite;
+    }
+    //void SetHit(bool value) { hit = value; currentSprite = hitSprite; }
+
 
     void SetDamage(float amount)
     {
@@ -106,17 +126,13 @@ public:
         }
     }
 
-    bool IsSpriteHit() const { return hit; }
-    void SetHit(bool value) { hit = value; currentSprite = hitSprite; }
-
     void UpdateIfHit(float deltaTime) {
         if (hit)
         {
             hitTime += deltaTime;
 
             if (hitTime >= hitDisplayDuration) {
-                currentSprite = aliveSprite;
-                hit = false;
+                MakeUnHit();
             }
         }
 
@@ -127,21 +143,6 @@ public:
                 MakeDead();
             }
         }
-
-        //// see if dying
-        //if (IsSpriteDying()) {
-        //    DestroyableSprite::UpdateIfHit(timeStep); // update dying texture and time
-        //}
-        //else // else continue to update movement and state
-        //{
-        //    if (MovableSprite::hitWall) {
-        //        DestroyableSprite::MakeDying();
-        //    }
-        //    else {
-        //        MovableSprite::UpdateMovement(timeStep, floorMap, allSprites); // collision with walls and movement
-        //        //CheckCollisions(allSprites);
-        //    }
-        //}
     }
 };
 
@@ -269,11 +270,8 @@ public:
                 // Check for collision if moves new velcocity
                 if (solidOther->GetDistanceFromOther(newX, newY) < solidOther->GetCollisionBuffer() + collisionBuffer) {
                     hitOther = true;
+                    break; // If collision, break early, no need to check rest of list
                 }
-
-                // If collision, break early, no need to check rest of list
-                if (hitOther)
-                    break;
             }
         }
 
