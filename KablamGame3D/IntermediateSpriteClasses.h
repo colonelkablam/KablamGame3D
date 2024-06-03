@@ -92,11 +92,18 @@ public:
         z = 0.0f;
     }
     bool IsSpriteDying() const { return dying; }
-    void MakeDying() { dying = true; currentSprite = deadSprite; }
+    void MakeDying() {
+        dying = true;
+        currentSprite = dyingSprite; 
+    }
 
     void SetDamage(float amount)
     {
         health -= amount;
+        if (health < 0.0f && !dead && !dying)
+        {
+            MakeDying();
+        }
     }
 
     bool IsSpriteHit() const { return hit; }
@@ -107,20 +114,14 @@ public:
         {
             hitTime += deltaTime;
 
-            if (currentSprite != hitSprite)
-                currentSprite = hitSprite;
-
             if (hitTime >= hitDisplayDuration) {
                 currentSprite = aliveSprite;
                 hit = false;
             }
         }
 
-        if ( health < 0.0f || dead) {
+        if (dying) {
             dyingTime += deltaTime;
-
-            if (currentSprite != dyingSprite)
-                currentSprite = deadSprite;
 
             if (dyingTime >= dyingDisplayDuration) {
                 MakeDead();
