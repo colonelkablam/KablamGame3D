@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "KablamGame3D.h"
 #include "IntermediateSpriteClasses.h"
 
 class OctoSprite : public MovableSprite, public RotatableSprite, public DestroyableSprite, public AISprite, public Bobbable {
@@ -11,7 +12,7 @@ public:
         : SpriteObject(initX, initY, initZ, SpriteType::OCTO_TYPE, false, SPRITE_TEXTURE_WIDTH, SPRITE_TEXTURE_HEIGHT, initAliveSprite),
         
         // built sprite inheritable behaviours
-        MovableSprite(1.5f, 10.0f, 0.0f, 0.03f, 0.2f),
+        MovableSprite(1.5f, 10.0f, 0.0f, 0.01f, 0.2f),
         RotatableSprite(),
         DestroyableSprite(100.0f, initDeadSprite, initHitSprite, initIsDead), 
         AISprite(initAggression, initFireRate),
@@ -26,8 +27,23 @@ public:
 		UpdateTimeAndDistanceToPlayer(timeStep, playerX, playerY);
 		UpdateRelativeAngleToPlayer();
 		UpdateAI(timeStep);
-		UpdateMovement(timeStep, floorMap);
+		UpdateMovement(timeStep, floorMap, allSprites);
 		UpdateIfHit(timeStep);
+
+		//// see if dying
+		//if (DestroyableSprite::IsSpriteDying()) {
+		//	DestroyableSprite::UpdateIfHit(timeStep); // update dying texture and time
+		//}
+		//else // else continue to update movement and state
+		//{
+		//	if (MovableSprite::hitWall) {
+		//		DestroyableSprite::MakeDying();
+		//	}
+		//	else {
+		//		MovableSprite::UpdateMovement(timeStep, floorMap, allSprites); // collision with walls and movement
+		//		CheckCollisions(allSprites);
+		//	}
+		//}
 		Bobbing();
 	}
 
@@ -53,21 +69,22 @@ public:
 
 	void UpdateSprite(float timeStep, float playerX, float playerY, float playerTilt, std::list<SpriteObject*>& allSprites, const std::vector<int>& floorMap) override {
 		SpriteObject::UpdateTimeAndDistanceToPlayer(timeStep, playerX, playerY);
-		
-		// see if dying
-		if (DestroyableSprite::IsSpriteDying()) {
-			DestroyableSprite::UpdateIfHit(timeStep); // update dying texture and time
-		}
-		else // else continue to update movement and state
-		{
-			if (MovableSprite::hitWall) {
-				DestroyableSprite::MakeDying();
-			}
-			else {
-				MovableSprite::UpdateMovement(timeStep, floorMap); // collision with walls and movement
-				CheckCollisions(allSprites);
-			}
-		}
+		UpdateMovement(timeStep, floorMap, allSprites);
+
+		//// see if dying
+		//if (DestroyableSprite::IsSpriteDying()) {
+		//	DestroyableSprite::UpdateIfHit(timeStep); // update dying texture and time
+		//}
+		//else // else continue to update movement and state
+		//{
+		//	if (MovableSprite::hitWall) {
+		//		DestroyableSprite::MakeDying();
+		//	}
+		//	else {
+		//		MovableSprite::UpdateMovement(timeStep, floorMap, allSprites); // collision with walls and movement
+		//		//CheckCollisions(allSprites);
+		//	}
+		//}
 	}
 
 private:

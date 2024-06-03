@@ -15,6 +15,13 @@ public:
     Static() {}
 };
 
+class Collideable : public virtual SpriteObject {
+
+
+public:
+    Collideable(float collisionBuffer = 0.0f) {}
+};
+
 class Bobbable : public virtual SpriteObject {
 protected:
     float bobbingSpeed; // Speed of the bobbing motion
@@ -104,6 +111,106 @@ public:
     }
 };
 
+//class MovableSprite : public virtual SpriteObject {
+//protected:
+//    float velocityX;
+//    float velocityY;
+//    float currentSpeed;
+//    float maxSpeed;
+//    float rotationSpeed;
+//    bool hitWall; // flag for if sprite hits wall in its update
+//
+//public:
+//    MovableSprite(float initSpeed = 0.0f, float initMaxSpeed = 1.0f, float initAngle = 0.0f, float initRotationSpeed = 0.1f, float collisionBuffer = 0.0f)
+//        : currentSpeed(initSpeed), maxSpeed(initMaxSpeed), rotationSpeed(initRotationSpeed), velocityX(0.0f), velocityY(0.0f), hitWall(false)
+//    {
+//        SpriteObject::facingAngle = initAngle; // reset facing angle
+//        SpriteObject::collisionBuffer = collisionBuffer; // reset collision buffer as default is 0.0f
+//    }
+//
+//    void UpdateMovement(float timeStep, const std::vector<int>& wallMap, int mapWidth, int mapHeight, std::list<SpriteObject*>& allSprites) {
+//        hitWall = false; // reset hit wall
+//
+//        // Predictive movement
+//        float predictedX = x + sinf(facingAngle + P2) * currentSpeed * timeStep;
+//        float predictedY = y - cosf(facingAngle + P2) * currentSpeed * timeStep;
+//
+//        // Check collision with walls
+//        int oldX = static_cast<int>(x);
+//        int oldY = static_cast<int>(y);
+//
+//        // set appropriate collision buffer sign
+//        float xBuff = velocityX > 0 ? collisionBuffer : -collisionBuffer;
+//        float yBuff = velocityY > 0 ? collisionBuffer : -collisionBuffer;
+//
+//        int newX = static_cast<int>(predictedX + xBuff);
+//        int newY = static_cast<int>(predictedY + yBuff);
+//
+//        // Check for wall collisions
+//        if (newX >= 0 && newX < mapWidth && wallMap[oldY * mapWidth + newX] != 0)
+//            hitWall = true;
+//
+//        if (newY >= 0 && newY < mapHeight && wallMap[newY * mapWidth + oldX] != 0)
+//            hitWall = true;
+//
+//        // Check for collisions with other movable sprites
+//        bool collisionWithOtherSprite = false;
+//        for (auto& other : allSprites) {
+//            if (other == this) continue; // Skip self
+//
+//            MovableSprite* movable = dynamic_cast<MovableSprite*>(other);
+//            if (movable && IsCollidingWith(predictedX, predictedY, movable)) {
+//                collisionWithOtherSprite = true;
+//                break;
+//            }
+//        }
+//
+//        // Only update position if no collision
+//        if (!hitWall && !collisionWithOtherSprite) {
+//            x = predictedX;
+//            y = predictedY;
+//        }
+//    }
+//
+//    void IncreaseSpeed(float amount) {
+//        currentSpeed += amount;
+//        if (currentSpeed > maxSpeed) {
+//            currentSpeed = maxSpeed; // Clamp to maxSpeed
+//        }
+//    }
+//
+//    void DecreaseSpeed(float amount) {
+//        currentSpeed -= amount;
+//        if (currentSpeed < 0) {
+//            currentSpeed = 0; // Clamp to zero
+//        }
+//    }
+//
+//    void RotateClockwise() {
+//        facingAngle += rotationSpeed;
+//
+//        // Normalize facing angle below 2*PI
+//        if (facingAngle >= 2 * PI) facingAngle -= 2 * PI;
+//    }
+//
+//    void RotateAntiClockwise() {
+//        facingAngle -= rotationSpeed;
+//
+//        // Normalize facing angle above 0
+//        if (facingAngle < 0) facingAngle += 2 * PI;
+//    }
+//
+//    float GetVelocityX() const { return velocityX; }
+//    float GetVelocityY() const { return velocityY; }
+//
+//private:
+//    bool IsCollidingWith(float predictedX, float predictedY, MovableSprite* other) {
+//        float dx = predictedX - other->GetX();
+//        float dy = predictedY - other->GetY();
+//        float distance = sqrtf(dx * dx + dy * dy);
+//        return distance < (width / 2 + other->GetSpriteWidth() / 2);
+//    }
+//};
 
 class MovableSprite : public virtual SpriteObject {
 protected:
@@ -112,6 +219,7 @@ protected:
     float currentSpeed;
     float maxSpeed;
     float rotationSpeed;
+    bool hitOther;
     bool hitWall; // flag for if sprite hits wall in its update
 
 public:
@@ -122,7 +230,7 @@ public:
         SpriteObject::collisionBuffer = collisionBuffer; // reset collision buffer as default is 0.0f
     }
 
-    void UpdateMovement(float timeStep, std::vector<int> wallMap) {
+    void UpdateMovement(float timeStep, std::vector<int> wallMap, const std::list<SpriteObject*>& spriteObjects) {
 
         hitWall = false; // reset hit wall
 
@@ -141,13 +249,43 @@ public:
         int newX = static_cast<int>(x + velocityX + xBuff);
         int newY = static_cast<int>(y + velocityY + yBuff);
 
+        bool bumpedOtherX{ false };
+        bool bumpedOtherY{ false };
+
+
+        for (const auto& sprite : spriteObjects)
+        {
+            // Use dynamic cast to check if the sprite is a MovableSprite
+            MovableSprite* movable = dynamic_cast<MovableSprite*>(sprite);
+
+            if (movable) {
+                // Skip self in collision check
+                if (movable == this)
+                    continue;
+
+                // Check for collision in the x direction
+                if (movable->GetDistanceFromOther(newX, y) < movable->GetCollisionBuffer()) {
+                    bumpedOtherX = true;
+                }
+
+                // Check for collision in the y direction
+                if (movable->GetDistanceFromOther(x, newY) < movable->GetCollisionBuffer()) {
+                    bumpedOtherY = true;
+                }
+
+                // If collision in both directions, break early
+                if (bumpedOtherX && bumpedOtherY)
+                    break;
+            }
+        }
+
         // Update position based on velocity if no wall - hitwall true
-        if (newX >= 0 && newX < MAP_WIDTH && wallMap[oldY * MAP_WIDTH + newX] == 0)
+        if (newX >= 0 && newX < MAP_WIDTH && wallMap[oldY * MAP_WIDTH + newX] == 0 && !bumpedOtherX )
             x += velocityX;
         else
             hitWall = true;
 
-        if (newY >= 0 && newY < MAP_HEIGHT && wallMap[newY * MAP_WIDTH + oldX] == 0)
+        if (newY >= 0 && newY < MAP_HEIGHT && wallMap[newY * MAP_WIDTH + oldX] == 0 && !bumpedOtherY)
             y += velocityY;
         else
             hitWall = true;

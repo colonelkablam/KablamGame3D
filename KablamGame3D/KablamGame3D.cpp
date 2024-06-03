@@ -31,7 +31,7 @@ KablamGame3D::~KablamGame3D()
 	delete spriteFireballHit;
 
 
-	for (auto factory : spriteFactories)
+	for (auto& factory : spriteFactories)
 		delete factory.second;
 
 	for (auto sprite : listSpriteObjects)
