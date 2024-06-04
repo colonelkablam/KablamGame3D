@@ -1,17 +1,17 @@
 #include "Projectile.h"
 
 Projectile::Projectile(float initX, float initY, float initZ, Texture* initAliveSprite, Texture* initDyingSprite, float initAngle)
-    : SpriteObject(initX, initY, initZ, SpriteType::BULLET_TYPE, false, SPRITE_TEXTURE_WIDTH, SPRITE_TEXTURE_HEIGHT, initAliveSprite),
+    : SpriteObject(initX, initY, initZ, SpriteType::BULLET_TYPE, true, SPRITE_TEXTURE_WIDTH, SPRITE_TEXTURE_HEIGHT, initAliveSprite),
     MovableSprite(16.0f, 16.0f, initAngle, 0.0f),
     Collidable(0.01f),
-    DestroyableSprite(1.0f, nullptr, initDyingSprite, nullptr, false) {}
+    DestroyableSprite(1.0f, initAliveSprite, initAliveSprite, initDyingSprite, 0.0f, 0.0f, 0.2f, false) {}
 
 void Projectile::UpdateSprite(float timeStep, float playerX, float playerY, float playerTilt, const std::vector<int>& floorMap, std::list<SpriteObject*>& allSprites) {
     // update position relative to player
     SpriteObject::UpdateTimeAndDistanceToPlayer(timeStep, playerX, playerY);
 
     // see if dying
-    if (DestroyableSprite::IsSpriteDying()) {
+    if (DestroyableSprite::IsSpriteDead()) {
         DestroyableSprite::UpdateIfHit(timeStep); // update dying texture and time
     }
     else {
@@ -26,7 +26,9 @@ void Projectile::UpdateMovement(float timeStep, const std::vector<int>& floorMap
     Collidable::UpdateHitFlags(velocityX, velocityY, floorMap, allSprites);
 
     if (hitWallX || hitWallY) {
-        DestroyableSprite::MakeDying();
+        DestroyableSprite::MakeDead();
+        Beep(300, 20);
+
     }
     else if (!CheckCollisions(allSprites)) {
         x += velocityX;
@@ -45,7 +47,7 @@ bool Projectile::CheckCollisions(std::list<SpriteObject*>& allSprites) {
         // Skip collision check if the other sprite is also a Projectile
         if (projectileTarget) continue;
 
-        if (destroyableTarget && collidableTarget && IsCollidingWith(collidableTarget)) {
+        if (destroyableTarget && collidableTarget && IsCollidingWith(collidableTarget) && !destroyableTarget->IsSpriteDead()) {
             HandleCollision(destroyableTarget);
             return true;
         }
@@ -81,10 +83,8 @@ bool Projectile::RayIntersectsCircle(float cx, float cy, float radius) {
 }
 
 void Projectile::HandleCollision(DestroyableSprite* target) {
-    // Handle the collision (e.g., mark both the bullet and the target as hit or dying)
-    //SetHit(true); // Mark the bullet as hit
-    MakeDying(); // Mark the bullet as dying
-    target->MakeHit(); // Mark the target as hit
+    // Handle the collision (both the bullet and target are affected)
+    MakeDead(); // Mark the bullet as dead
+    target->MakeHit();
     target->SetDamage(35);
-    //target->MakeDying(); // Mark the target as dying
 }

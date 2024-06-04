@@ -1,6 +1,5 @@
 #include "KablamGame3D.h"
 #include <cmath>
-
 #include <iomanip>
 #include <sstream>
 
@@ -27,6 +26,8 @@ KablamGame3D::~KablamGame3D()
 	delete spriteBarrel;
 	delete spriteOctoBaddy;
 	delete spriteOctoBaddyHit;
+	delete spriteOctoBaddyDyingAni;
+	delete spriteOctoBaddyDead;
 	delete spriteFireball;
 	delete spriteFireballHit;
 
@@ -74,6 +75,9 @@ bool KablamGame3D::OnGameCreate()
 	spriteBarrel = new Texture(L"./Textures/Sprites/sprite_barrel_rotate_32.txr");
 	spriteOctoBaddy = new Texture(L"./Textures/Sprites/sprite_octo_rotate_32.txr");
 	spriteOctoBaddyHit = new Texture(L"./Textures/Sprites/sprite_octo_rotate_hit_32.txr");
+	spriteOctoBaddyDyingAni = new Texture(L"./Textures/Sprites/sprite_octo_dying_ani_32.txr");
+	spriteOctoBaddyDead = new Texture(L"./Textures/Sprites/sprite_octo_dead_32.txr");
+
 	spriteFireball = new Texture(L"./Textures/Sprites/sprite_player_fireball_32.txr");
 	spriteFireballHit = new Texture(L"./Textures/Sprites/sprite_player_fireball_hit32.txr");
 
@@ -341,12 +345,12 @@ void KablamGame3D::SetPlayerStart(const std::vector<int>& floorMap)
 // Method to initialize factories
 	// Method to initialize factories
 void KablamGame3D::InitialiseFactories() {
-	spriteFactories[1] = new OctoFactory(spriteOctoBaddy, spriteOctoBaddyHit, spriteOctoBaddyHit, nullptr);
+	spriteFactories[1] = new OctoFactory(spriteOctoBaddy, spriteOctoBaddyHit, spriteOctoBaddyDyingAni, spriteOctoBaddyDead, 1.0f);
 	spriteFactories[2] = new FloorlampFactory(spriteFloorLamp);
 	//spriteFactories[3] = new BarrelFactory(spriteBarrel);
 
 
-	spriteFactories[99] = new BulletFactory(spriteFireball, spriteFireballHit);
+	spriteFactories[99] = new BulletFactory(spriteFireball, spriteFireballHit, 0.5f);
 
 
 }
@@ -481,7 +485,9 @@ bool KablamGame3D::ApplyMovementAndActions(const float fElapsedTime)
 	// handle ACTION keys
 	if (actionStates.fire)
 	{
-		listSpriteObjects.push_back(spriteFactories[99]->CreateSprite( fPlayerX, fPlayerY, 0.4f, fPlayerA));
+		listSpriteObjects.push_back(spriteFactories[99]->CreateSprite( fPlayerX, fPlayerY, (fPlayerH * 2) - 1.0f, fPlayerA));
+		Beep(1000, 20);
+
 	}
 
 	if (actionStates.jump && !bPlayerJumping)
@@ -874,9 +880,10 @@ void KablamGame3D::DisplayObjects()
 	{
 		SpriteObject* object = *it; // iterator based loop as will safely remove objects from the list
 
-		// Remove dead objects if they are of type DestroyableSprite
+		// Remove dead objects if they are of type DestroyableSprite, and time to remove
 		DestroyableSprite* destroyable = dynamic_cast<DestroyableSprite*>(object);
-		if (destroyable && destroyable->IsSpriteDead()) {
+
+		if (destroyable && destroyable->IsRemovable()) {
 			// Increment player score if the dead object is an OctoSprite
 			if (destroyable->GetSpriteType() == SpriteType::OCTO_TYPE) {
 				playerScore++;
@@ -992,7 +999,7 @@ void KablamGame3D::UpdateSkyView()
 	float angleScale = skyTexture->GetWidth() / FOV * 2.6f;
 
 	xSkyOffset = static_cast<int>(fPlayerA * angleScale) % skyTexture->GetWidth();
-	ySkyOffset = skyTexture->GetHeight() - GetConsoleHeight() / 2 + fPlayerTilt;
+	ySkyOffset = static_cast<int>(skyTexture->GetHeight() - GetConsoleHeight() / 2 + fPlayerTilt) - 1;
 }
 
 void KablamGame3D::DisplaySky(int x, int y)
@@ -1053,9 +1060,9 @@ void KablamGame3D::DisplayMap(int xPos, int yPos, int scale) {
 		}
 
 		// Draw player position and orientation
-		int pX = xPos + (int)(fPlayerX * scale);
-		int pY = yPos + (int)(fPlayerY * scale);
-		DrawLine(pX, pY, pX + cosf(fPlayerA) * scale*2, pY + sinf(fPlayerA) * scale*2, FG_DARK_RED);
+		int pX = xPos + static_cast<int>(fPlayerX * scale);
+		int pY = yPos + static_cast<int>(fPlayerY * scale);
+		DrawLine(pX, pY, pX + static_cast<int>(cosf(fPlayerA) * scale*2), pY + static_cast<int>(sinf(fPlayerA) * scale*2), FG_DARK_RED);
 		DrawPoint(pX, pY, FG_WHITE, PIXEL_SOLID);
 	}
 }

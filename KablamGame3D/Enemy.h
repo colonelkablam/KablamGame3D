@@ -1,7 +1,7 @@
 #pragma once
 #include "IntermediateSpriteClasses.h"
 
-class Enemy : public Collidable, public MovableSprite, public RotatableSprite, public DestroyableSprite, public AISprite, public Bobbable {
+class Enemy : public Collidable, public MovableSprite, public RotatableAnimatable, public DestroyableSprite, public AISprite, public Bobbable, public DontCleanUpWhenDead {
 
 protected:
 

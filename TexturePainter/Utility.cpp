@@ -1,6 +1,16 @@
 #include <iostream>
 #include <sstream> // For std::wstringstream
 #include <cwctype> // For std::towlower & std::iswalpha
+#include <limits> // for max()
+#include <windows.h>
+
+
+
+// Undefine the macros
+#undef max
+#undef min
+
+
 
 #include "Utility.h"
 
@@ -163,16 +173,29 @@ bool LetterListener(const std::wstring& userInput, const wchar_t checkLetter) {
 int WStringToInteger(const std::wstring& input)
 {
     int number{ 0 };
-
-    // Convert std::wstring to int using std::wstringstream
     std::wstringstream wss(input);
+
+    // Attempt to convert std::wstring to int
     wss >> number;
 
-    // Check if the conversion was successful
-    if (!wss.fail() && !wss.bad() && wss.eof()) {
+    // Check if the conversion was successful and the whole string was consumed
+    if (!wss.fail() && wss.eof()) {
         return number;
     }
-    // else return -1
+
+    // Handle potential issues with the conversion process
+    if (wss.fail()) {
+        // Check if the input string was out of range for an int
+        long long tempNumber{ 0 };
+        std::wistringstream wiss(input);
+        wiss >> tempNumber;
+
+        if (tempNumber > std::numeric_limits<int>::max() || tempNumber < std::numeric_limits<int>::min()) {
+            return -1; // Out of range
+        }
+    }
+
+    // If we reached here, the conversion was not successful
     return -1;
 }
 

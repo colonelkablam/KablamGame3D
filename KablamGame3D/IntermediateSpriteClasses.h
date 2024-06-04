@@ -11,30 +11,52 @@ public:
     Static() {}
 };
 
+class DontCleanUpWhenDead : public virtual SpriteObject {
+
+public:
+    DontCleanUpWhenDead() {}
+};
+
 class Bobbable : public virtual SpriteObject {
 protected:
     float bobbingSpeed; // Speed of the bobbing motion
     float bobbingHeight; // Amplitude of the bobbing motion
+    bool isBobbing; // Flag to indicate if bobbing is active
+
 public:
     Bobbable(float initBobbingSpeed = 3.0f, float initBobbingHeight = 1.0f)
         // generate a variation in bobbing speed with x/y location in starting array
-        : bobbingSpeed(initBobbingSpeed + (1 - 1/(x+y/2) * (MAP_WIDTH + MAP_HEIGHT)/2 )), bobbingHeight(initBobbingHeight) {}
+        : bobbingSpeed(initBobbingSpeed + (1 - 1/(x+y/2) * (MAP_WIDTH + MAP_HEIGHT)/2 )), bobbingHeight(initBobbingHeight), isBobbing(true) {}
 
     void Bobbing()
     {
-        z = baseZ + sinf(timeElapsed * bobbingSpeed ) * bobbingHeight;
+        if (isBobbing) {
+            z = baseZ + sinf(timeElapsed * bobbingSpeed) * bobbingHeight;
+        }
+    }
+
+    void StartBobbing() {
+        isBobbing = true;
+    }
+
+    void StopBobbing() {
+        isBobbing = false;
+        z = baseZ; // Reset to the base position when bobbing stops
     }
 };
 
-class RotatableSprite : public virtual SpriteObject {
+class RotatableAnimatable : public virtual SpriteObject {
 protected:
     // Each segment covers 45 degrees or PI/4 radians to handle texture mapping of different views
-    const float SEGMENT_ANGLE = (2 * PI) / 8; 
+    const float SEGMENT_ANGLE = (2 * PI) / NUM_ROTATIONAL_VIEWING_SEGMENTS; 
     float relativeAngle;
+    bool rotate;
+    bool animate;
+    int frameIndex;
 
 public:
-    RotatableSprite()
-        : relativeAngle(0.0f) {}
+    RotatableAnimatable()
+        : relativeAngle(0.0f), rotate(true), animate(false), frameIndex(0) {}
 
     void UpdateRelativeAngleToPlayer()
     {
@@ -47,22 +69,57 @@ public:
         if (relativeAngle > 2 * PI)
             relativeAngle -= 2 * PI;
     }
+    void MakeRotatable()
+    {
+        animate = false;
+        rotate = true;
+    }
+
+    void MakeAnimatable()
+    {
+        animate = true;
+        rotate = false;
+    }
+
+    void MakeStatic()
+    {
+        animate = false;
+        rotate = false;
+    }
+
+    void SetFrame(int index)
+    {
+        frameIndex = index % NUM_DYING_ANIMATION_FRAMES;
+    }
 
     CHAR_INFO GetPixel(int x, int y) const override {
-        int xOffset = 0;
-        int yOffset = 0;
+        if (currentSprite == nullptr) {
+            return { PIXEL_SOLID, FG_BLUE }; // if no texture given
+        }
+        else if (rotate) { // rotatable display of texture
+            int xOffset = 0;
+            int yOffset = 0;
 
-        // Determine the view index
-        int viewIndex = static_cast<int>((relativeAngle + SEGMENT_ANGLE / 2) / SEGMENT_ANGLE) % 8;
+            int viewIndex = static_cast<int>((relativeAngle + SEGMENT_ANGLE / 2) / SEGMENT_ANGLE) % NUM_ROTATIONAL_VIEWING_SEGMENTS;
 
-        // Calculate offsets based on the view index
-        xOffset = (viewIndex % 4) * width; // 4 views per row
-        yOffset = (viewIndex / 4) * height; // Move to next row for views 4-7
-        
-        if (currentSprite == nullptr)
-            return { PIXEL_SOLID, FG_BLUE };
-        else
+            int modulo = NUM_ROTATIONAL_VIEWING_SEGMENTS / 2;
+
+            xOffset = (viewIndex % modulo) * width;
+            yOffset = (viewIndex / modulo) * height;
+
             return currentSprite->GetPixel(x + xOffset, y + yOffset);
+        }
+        else if (animate) { // animation display (used when dying)
+
+            int modulo = NUM_DYING_ANIMATION_FRAMES / 2;
+
+            int xOffset = (frameIndex % modulo) * width;
+            int yOffset = static_cast<int>(frameIndex / modulo) * height;
+            return currentSprite->GetPixel(x + xOffset, y + yOffset);
+        }
+        else {
+            return currentSprite->GetPixel(x, y);
+        }
     }
 };
 
@@ -72,41 +129,54 @@ protected:
     bool hit; // flag if taken damage/hit during collision detection
     bool dying;
     bool dead;
+    bool removable;
     Texture* aliveSprite;
     Texture* hitSprite;
     Texture* dyingSprite;
     Texture* deadSprite;
     float hitTime;
     float dyingTime; // Time since the sprite was declared dead
-    const float hitDisplayDuration = 0.4f; // Duration to display hit sprite in seconds
-    const float dyingDisplayDuration = 4.8f; // Duration to display dead sprite in seconds
+    float deathTime;
+    float hitDisplayDuration; // Duration to display hit sprite in seconds
+    float dyingDisplayDuration; // Duration to display dead sprite in seconds
+    float deadDisplayDuration; // Duration to display dead sprite in seconds
 
 
 public:
-    DestroyableSprite(float initHealth = 100.0f, Texture* initHitSprite = nullptr, Texture* initDyingSprite = nullptr, Texture* initDeadSprite = nullptr, bool initIsDead = false)
-        : health(initHealth), dead(initIsDead), dying(false), hit(false), aliveSprite(currentSprite), hitSprite(initHitSprite), dyingSprite(initDyingSprite), deadSprite(initDeadSprite),  hitTime(0.0f), dyingTime(0.0f) {}
+    DestroyableSprite(float initHealth = 100.0f, Texture* initHitSprite = nullptr, Texture* initDyingSprite = nullptr, Texture* initDeadSprite = nullptr, float hitT = 0.3f, float dyingT = 1.0f, float deadT = 10.0f, bool initIsDead = false)
+        : health(initHealth), dead(initIsDead), dying(false), hit(false), removable(false), aliveSprite(currentSprite), hitSprite(initHitSprite), dyingSprite(initDyingSprite), deadSprite(initDeadSprite),
+            hitTime(0.0f), dyingTime(0.0f), deathTime(0.0f), hitDisplayDuration(hitT), dyingDisplayDuration(dyingT), deadDisplayDuration(deadT) {
+        currentSprite = aliveSprite; // Ensure the initial sprite is set correctly
+    }
 
     bool IsSpriteDead() const { return dead; }
-    
+
     void MakeDead() {
         currentSprite = deadSprite;
-        dyingTime = 0.0f;
+        deathTime = 0.0f;
         dead = true;
-        z = 0.0f;
+        dying = false;
+        hit = false;
     }
+
     bool IsSpriteDying() const { return dying; }
-    
+
     void MakeDying() {
         dying = true;
-        currentSprite = dyingSprite; 
-        z = 0.0f;
-
+        hit = false;
+        dead = false;
+        currentSprite = dyingSprite;
+        dyingTime = 0.0f;
     }
+
     bool IsSpriteHit() const { return hit; }
-    
+
     void MakeHit() {
-        hit = true;
-        currentSprite = hitSprite;
+        if (!dead && !dying) {
+            hit = true;
+            currentSprite = hitSprite;
+            hitTime = 0.0f; // Reset hit time when hit
+        }
     }
 
     void MakeUnHit() {
@@ -114,33 +184,75 @@ public:
         hitTime = 0.0f;
         currentSprite = aliveSprite;
     }
-    //void SetHit(bool value) { hit = value; currentSprite = hitSprite; }
 
+    bool IsRemovable()
+    {
+        return removable;
+    }
 
     void SetDamage(float amount)
     {
-        health -= amount;
-        if (health < 0.0f && !dead && !dying)
-        {
-            MakeDying();
+        if (!dead && !dying) {
+            health -= amount;
+            if (health <= 0.0f && !dead && !dying)
+            {
+                RotatableAnimatable* rotateable = dynamic_cast<RotatableAnimatable*>(this);
+                if (rotateable)
+                {
+                    rotateable->MakeStatic();
+                }
+
+                MakeDying();
+            }
+            else if (!hit) {
+                MakeHit();
+            }
         }
     }
 
     void UpdateIfHit(float deltaTime) {
-        if (hit)
-        {
-            hitTime += deltaTime;
+        RotatableAnimatable* animatable = dynamic_cast<RotatableAnimatable*>(this);
 
-            if (hitTime >= hitDisplayDuration) {
-                MakeUnHit();
-            }
+        if (dead) {
+            deathTime += deltaTime;
+            if (deathTime >= deadDisplayDuration)
+                removable = true;
+
+            return;
         }
 
-        if (dying) {
+        // if a rotatable and animatable sprite
+        if (animatable && dying) {
+            animatable->MakeAnimatable();
+
+            dyingTime += deltaTime;
+
+            // Calculate frame duration for the dying animation
+            float frameDuration = dyingDisplayDuration / NUM_DYING_ANIMATION_FRAMES; // frames in animation texture
+            int frameIndex = static_cast<int>(dyingTime / frameDuration);
+
+            // Ensure frame index is within valid range
+            if (frameIndex >= NUM_DYING_ANIMATION_FRAMES) {
+                animatable->MakeStatic();
+                MakeDead();
+            }
+            else {
+                // Update the current sprite based on the dying frame
+                animatable->SetFrame(frameIndex);
+            }
+        }
+        else if (dying) {
             dyingTime += deltaTime;
 
             if (dyingTime >= dyingDisplayDuration) {
                 MakeDead();
+            }
+        }
+        else if (hit) {
+            hitTime += deltaTime;
+
+            if (hitTime >= hitDisplayDuration) {
+                MakeUnHit();
             }
         }
     }
@@ -254,12 +366,17 @@ public:
         float xBuff = vX > 0 ? collisionBuffer : -collisionBuffer;
         float yBuff = vY > 0 ? collisionBuffer : -collisionBuffer;
 
+        // find new xy coords if move made
+        float fNewX = x + vX + xBuff;
+        float fNewY = y + vY + yBuff;
+
+        // get new xy of map
         int newX = static_cast<int>(x + vX + xBuff);
         int newY = static_cast<int>(y + vY + yBuff);
 
         for (const auto& sprite : spriteObjects)
         {
-            // Use dynamic cast to check if the sprite is a MovableSprite
+            // Use dynamic cast to check if the sprite is a Collidable sprite
             Collidable* solidOther = dynamic_cast<Collidable*>(sprite);
 
             if (solidOther) {
@@ -267,8 +384,14 @@ public:
                 if (solidOther == this)
                     continue;
 
-                // Check for collision if moves new velcocity
-                if (solidOther->GetDistanceFromOther(newX, newY) < solidOther->GetCollisionBuffer() + collisionBuffer) {
+                // Use dynamic cast to check if the sprite is a Destroyable (as will pass through dying and dead sprites)
+                DestroyableSprite* destroyable = dynamic_cast<DestroyableSprite*>(solidOther);
+                bool deadOrDying{ false };
+                if (destroyable) {
+                    deadOrDying = destroyable->IsSpriteDying() || destroyable->IsSpriteDead();
+                }
+                // Check for collision if sprite moves the new velocity
+                if (!deadOrDying && solidOther->GetDistanceFromOther(fNewX, fNewY) < (solidOther->GetCollisionBuffer() + collisionBuffer)) {
                     hitOther = true;
                     break; // If collision, break early, no need to check rest of list
                 }

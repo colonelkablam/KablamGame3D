@@ -210,7 +210,7 @@ void Texture::TwoMainColourCounts(const std::map<short, int>& colourMap, std::pa
 	}
 }
 
-Texture::MipmapLevel* Texture::GetMipmapLevel(float detail) const {
+Texture::MipmapLevel* Texture::GetMipmapLevel(int detail) const {
 	MipmapLevel* currentLevel = topMipmap;
 	int level = 0;
 
@@ -357,7 +357,7 @@ CHAR_INFO Texture::SamplePixel(float x, float y) const
 }
 
 // MIPMAPPING
-CHAR_INFO Texture::SamplePixelWithMipmap(float x, float y, float detail) const {
+CHAR_INFO Texture::SamplePixelWithMipmap(float x, float y, int detail) const {
 	// check if mipmaps generated
 	if (topMipmap != nullptr)
 	{

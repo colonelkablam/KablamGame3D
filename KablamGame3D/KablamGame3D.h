@@ -50,6 +50,8 @@ private:
 	Texture* spriteBarrel;
 	Texture* spriteOctoBaddy;
 	Texture* spriteOctoBaddyHit;
+	Texture* spriteOctoBaddyDyingAni;
+	Texture* spriteOctoBaddyDead;
 	Texture* spriteFireball;
 	Texture* spriteFireballHit;
 

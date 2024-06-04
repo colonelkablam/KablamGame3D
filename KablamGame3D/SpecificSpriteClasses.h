@@ -5,7 +5,7 @@
 #include "KablamGame3D.h"
 #include "IntermediateSpriteClasses.h"
 
-class Enemy : public Collidable, public MovableSprite, public RotatableSprite, public DestroyableSprite, public AISprite, public Bobbable {
+class Enemy : public Collidable, public MovableSprite, public RotatableAnimatable, public DestroyableSprite, public AISprite, public Bobbable {
 
 public:
     Enemy(float initX, float initY, float initZ, Texture* initAliveSprite, Texture* initDeadSprite, Texture* initHitSprite, int initAggression, int initFireRate, bool initIsDead = false )
@@ -14,7 +14,7 @@ public:
         // built sprite inheritable behaviours
         MovableSprite(1.5f, 10.0f, 0.0f, 0.03f),
 		Collidable(0.3f),
-        RotatableSprite(),
+        RotatableAnimatable(),
         DestroyableSprite(100.0f, initDeadSprite, initHitSprite, initIsDead), 
         AISprite(initAggression, initFireRate),
 		Bobbable(2.0f, 1.15f) {}
@@ -26,7 +26,7 @@ public:
 	{
 		
 		SpriteObject::UpdateTimeAndDistanceToPlayer(timeStep, playerX, playerY);
-		RotatableSprite::UpdateRelativeAngleToPlayer();
+		RotatableAnimatable::UpdateRelativeAngleToPlayer();
 		AISprite::UpdateAI(timeStep);
 		MovableSprite::UpdateMovement(timeStep, floorMap, allSprites);
 		DestroyableSprite::UpdateIfHit(timeStep);

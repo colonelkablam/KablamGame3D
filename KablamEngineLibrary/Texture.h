@@ -131,10 +131,10 @@ public:
 	CHAR_INFO SamplePixel(float x, float y) const;
 
 	// mipmap
-	CHAR_INFO SamplePixelWithMipmap(float x, float y, float detail) const;
+	CHAR_INFO SamplePixelWithMipmap(float x, float y, int detail) const;
 
 private:
-	MipmapLevel* GetMipmapLevel(float detail) const;
+	MipmapLevel* GetMipmapLevel(int detail) const;
 
 	// filtering sampling
 public:

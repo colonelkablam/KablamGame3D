@@ -5,6 +5,7 @@
 #include "FloorLampSprite.h"
 
 class SpriteFactory {
+
 public:
     virtual ~SpriteFactory() = default;
     virtual SpriteObject* CreateSprite(float x, float y, float z, float initAngle = 0.0f) const = 0;
@@ -18,8 +19,8 @@ private:
     Texture* deadTexture;
 
 public:
-    OctoFactory(Texture* alive, Texture* hit, Texture* dying, Texture* dead)
-        : aliveTexture(alive), hitTexture(hit), dyingTexture(dead), deadTexture(dead) {}
+    OctoFactory(Texture* alive, Texture* hit, Texture* dying, Texture* dead, float z)
+        : aliveTexture(alive), hitTexture(hit), dyingTexture(dying), deadTexture(dead) {}
 
     SpriteObject* CreateSprite(float x, float y, float z, float initAngle) const override {
 
@@ -34,7 +35,7 @@ private:
     Texture* dyingTexture;
 
 public:
-    BulletFactory(Texture* alive, Texture* dying)
+    BulletFactory(Texture* alive, Texture* dying, float z)
         : aliveTexture(alive), dyingTexture(dying) {}
 
     SpriteObject* CreateSprite(float x, float y, float z, float angle) const override {
