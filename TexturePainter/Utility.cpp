@@ -14,6 +14,51 @@
 
 #include "Utility.h"
 
+void SetConsoleWindowSize(int width, int height, int extraBufferLines)
+{
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    // Set the screen buffer size - needs to be done first
+    COORD bufferSize = { width, height + extraBufferLines };
+    SetConsoleScreenBufferSize(hConsole, bufferSize);
+
+    // Set the console window size
+    SMALL_RECT windowSize = { 0, 0, width - 1, height - 1 };
+    SetConsoleWindowInfo(hConsole, TRUE, &windowSize);
+}
+
+void SetConsoleFont(int fontSize, const wchar_t* fontName)
+{
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_FONT_INFOEX cfi;
+    cfi.cbSize = sizeof(CONSOLE_FONT_INFOEX);
+    GetCurrentConsoleFontEx(hConsole, FALSE, &cfi);
+    wcscpy_s(cfi.FaceName, fontName); // Set font
+    cfi.dwFontSize.Y = fontSize; // font height
+    cfi.dwFontSize.X = 0; // system choose the font width
+    SetCurrentConsoleFontEx(hConsole, FALSE, &cfi);
+}
+
+void CenterConsoleWindow()
+{
+    HWND consoleWindow = GetConsoleWindow();
+    RECT rect;
+    GetWindowRect(consoleWindow, &rect);
+    int consoleWidth = rect.right - rect.left;
+    int consoleHeight = rect.bottom - rect.top;
+
+    // Get the screen dimensions
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+
+    // Calculate the new position to center the console window
+    int x = (screenWidth - consoleWidth) / 2;
+    int y = (screenHeight - consoleHeight) / 2;
+
+    // Set the new position
+    MoveWindow(consoleWindow, x, y, consoleWidth, consoleHeight, TRUE);
+}
+
 bool GetValidFileName(const std::wstring& prompt, std::wstring& userInput, const std::wstring& illegalChars, const int maxLength) {
 
     std::wcout << prompt;

@@ -142,7 +142,6 @@ protected:
         short c11 = 0;
     };
 
-
 public:
 
     // constructor 

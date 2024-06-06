@@ -1,12 +1,12 @@
 #pragma once
 #include "IntermediateSpriteClasses.h"
 
-class Enemy : public Collidable, public MovableSprite, public RotatableAnimatable, public DestroyableSprite, public AISprite, public Bobbable, public DontCleanUpWhenDead {
+class Enemy : public Collidable, public MovableSprite, public RotatableAnimatable, public DestroyableSprite, public AISprite, public Bobbable, public DontCleanUpWhenDead, public MakesNoise {
 
 protected:
 
 public:
-    Enemy(float initX, float initY, float initZ, Texture* initAliveSprite, Texture* initHitSprite = nullptr, Texture* initDyingSprite = nullptr, Texture* initDeadSprite = nullptr, int initAggression = 0, int initFireRate = 1, bool initIsDead = false);
+    Enemy(float initX, float initY, float initZ, Texture* initAliveSprite, Texture* initHitSprite = nullptr, Texture* initDyingSprite = nullptr, Texture* initDeadSprite = nullptr, int initAggression = 0, int initFireRate = 1, bool initIsDead = false, SoundManager* sounds = nullptr);
 
     virtual ~Enemy() = default;
 

@@ -1,9 +1,14 @@
 #include <iostream>
+#include <windows.h>  // For general Windows API functions
 
+#include <mmsystem.h> // For multimedia functions
+
+#pragma comment(lib, "winmm.lib") // Link with the Winmm library
 #include "KablamGame3D.h"
 
 int main()
 {
+	// will hopefully not be seen...
 	std::cout << "Welcome to KablamGame3D!" << std::endl;
 
 	KablamGame3D kablamGame3D(L"K-blam3D");
@@ -20,7 +25,7 @@ int main()
 	// mega res			1280 x 720
 	// ultra res		1920 x 1080
 
-	kablamGame3D.BuildConsole(320, 120, 4, 4, 0, 0);
+	kablamGame3D.BuildConsole(320, 160, 4, 4, 0, 0);
 	
 	kablamGame3D.Start();
 

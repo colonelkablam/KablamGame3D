@@ -1,10 +1,16 @@
 #include "Projectile.h"
+#include "SoundManager.h"
 
-Projectile::Projectile(float initX, float initY, float initZ, Texture* initAliveSprite, Texture* initDyingSprite, float initAngle)
+Projectile::Projectile(float initX, float initY, float initZ, Texture* initAliveSprite, Texture* initDyingSprite, float initAngle, SoundManager* sounds)
     : SpriteObject(initX, initY, initZ, SpriteType::BULLET_TYPE, true, SPRITE_TEXTURE_WIDTH, SPRITE_TEXTURE_HEIGHT, initAliveSprite),
     MovableSprite(16.0f, 16.0f, initAngle, 0.0f),
     Collidable(0.01f),
-    DestroyableSprite(1.0f, initAliveSprite, initAliveSprite, initDyingSprite, 0.0f, 0.0f, 0.2f, false) {}
+    DestroyableSprite(1.0f, initAliveSprite, initAliveSprite, initDyingSprite, 0.0f, 0.0f, 0.2f, false),
+    MakesNoise (sounds)
+{
+
+    soundManager->PlaySoundByName(L"shootFireball");
+}
 
 void Projectile::UpdateSprite(float timeStep, float playerX, float playerY, float playerTilt, const std::vector<int>& floorMap, std::list<SpriteObject*>& allSprites) {
     // update position relative to player
@@ -26,9 +32,8 @@ void Projectile::UpdateMovement(float timeStep, const std::vector<int>& floorMap
     Collidable::UpdateHitFlags(velocityX, velocityY, floorMap, allSprites);
 
     if (hitWallX || hitWallY) {
+        soundManager->PlaySoundByName(L"fireballHit", false, 1 - distToPlayer/32);
         DestroyableSprite::MakeDead();
-        Beep(300, 20);
-
     }
     else if (!CheckCollisions(allSprites)) {
         x += velocityX;
@@ -84,6 +89,7 @@ bool Projectile::RayIntersectsCircle(float cx, float cy, float radius) {
 
 void Projectile::HandleCollision(DestroyableSprite* target) {
     // Handle the collision (both the bullet and target are affected)
+    soundManager->PlaySoundByName(L"fireballHit", false, 1 - distToPlayer / 32);
     MakeDead(); // Mark the bullet as dead
     target->MakeHit();
     target->SetDamage(35);

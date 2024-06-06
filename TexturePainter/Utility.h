@@ -5,6 +5,12 @@
 #include <vector>
 #include <string>
 
+void SetConsoleWindowSize(int width, int height, int extraBufferLines = 0);
+
+void SetConsoleFont(int fontSize, const wchar_t* fontName = L"Lucida Console");
+
+void CenterConsoleWindow();
+
 bool GetValidFileName(const std::wstring& prompt, std::wstring& userInput, const std::wstring& illegalChars, const int maxLength);
 
 bool IsValidFileName(const std::wstring& fileName, const std::wstring& illegalChars, const int maxLength);

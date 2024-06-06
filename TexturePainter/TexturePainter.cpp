@@ -69,7 +69,7 @@ bool TexturePainter::GetUserStartInput()
         std::wstring letter{ L"T" };
         if (numberOfFiles > 0)
         {
-            prompt = L"\nPlease select an existing File Name(1-" + std::to_wstring(numberOfFiles) + L"), or ";
+            prompt = L"\nPlease select an existing File Name(1-" + std::to_wstring(numberOfFiles) + L") or\n";
             letter = L"t";
         }
         prompt += letter + L"ype a new name to start new texture project ('q' to exit): ";

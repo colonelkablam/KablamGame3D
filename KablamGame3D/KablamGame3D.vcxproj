@@ -70,6 +70,14 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>$(SolutionDir)\Externals\includes;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)\Externals\libs;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LibraryPath>$(SolutionDir)\Externals\libs;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)\Externals\includes;$(IncludePath)</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -82,7 +90,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>KablamEngineLibrary.lib;User32.lib</AdditionalDependencies>
+      <AdditionalDependencies>irrKlang.lib;KablamEngineLibrary.lib;User32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\Debug</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -102,7 +110,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>KablamEngineLibrary.lib;User32.lib</AdditionalDependencies>
+      <AdditionalDependencies>irrKlang.lib;KablamEngineLibrary.lib;User32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\Release</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -145,10 +153,10 @@
     <ClInclude Include="FloorLampSprite.h" />
     <ClInclude Include="GameConstants.h" />
     <ClInclude Include="Projectile.h" />
+    <ClInclude Include="SoundManager.h" />
     <ClInclude Include="SpriteFactory.h" />
     <ClInclude Include="IntermediateSpriteClasses.h" />
     <ClInclude Include="KablamGame3D.h" />
-    <ClInclude Include="SpecificSpriteClasses.h" />
     <ClInclude Include="SpriteEnums.h" />
     <ClInclude Include="SpriteObject.h" />
   </ItemGroup>
@@ -158,6 +166,7 @@
     <ClCompile Include="KablamGame3D.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Projectile.cpp" />
+    <ClCompile Include="SoundManager.cpp" />
     <ClCompile Include="SpriteObject.cpp" />
   </ItemGroup>
   <ItemGroup>

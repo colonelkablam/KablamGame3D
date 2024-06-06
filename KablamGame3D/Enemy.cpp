@@ -1,13 +1,14 @@
 #include "Enemy.h"
 
-Enemy::Enemy(float initX, float initY, float initZ, Texture* initAliveSprite, Texture* initHitSprite, Texture* initDyingSprite, Texture* initDeadSprite, int initAggression, int initFireRate, bool initIsDead)
+Enemy::Enemy(float initX, float initY, float initZ, Texture* initAliveSprite, Texture* initHitSprite, Texture* initDyingSprite, Texture* initDeadSprite, int initAggression, int initFireRate, bool initIsDead, SoundManager* sounds)
     : SpriteObject(initX, initY, initZ, SpriteType::OCTO_TYPE, false, SPRITE_TEXTURE_WIDTH, SPRITE_TEXTURE_HEIGHT, initAliveSprite),
     MovableSprite(1.5f, 10.0f, 0.0f, 0.03f),
     Collidable(0.3f),
     RotatableAnimatable(),
     DestroyableSprite(100.0f, initHitSprite, initDyingSprite, initDeadSprite, 0.3f, 1.0f, 10.0f, initIsDead),
     AISprite(initAggression, initFireRate),
-    Bobbable(2.0f, 0.6f) {}
+    Bobbable(2.0f, 0.6f),
+    MakesNoise(sounds) {}
 
 void Enemy::UpdateSprite(float timeStep, float playerX, float playerY, float playerTilt, const std::vector<int>& floorMap, std::list<SpriteObject*>& allSprites) {
     SpriteObject::UpdateTimeAndDistanceToPlayer(timeStep, playerX, playerY);

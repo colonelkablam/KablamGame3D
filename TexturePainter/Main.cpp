@@ -1,10 +1,17 @@
 #include <iostream>
+#include <Windows.h>  // For Windows console manip
 
 #include "TexturePainter.h"
 #include "Utility.h"
 
 int main()
 {
+    // Set console window size and center it
+    SetConsoleWindowSize(100, 30, 30);
+    SetConsoleFont(16, L"Lucida Console");
+    CenterConsoleWindow();
+
+
 	std::cout << "Welcome to...\n\n";
 	printChunkyString("Texture Painter"); // in utility
 	std::cout << "\n";

@@ -5,11 +5,15 @@
 
 // constructors 
 KablamGame3D::KablamGame3D(std::wstring newTitle)
-	: sSaveFolderName{ L"Saves\\" }, sSaveFileName{ L"save_game" }, sSaveExtension{ L".kgs" } {
+	: sSaveFolderName{ L"Saves\\" }, sSaveFileName{ L"save_game" }, sSaveExtension{ L".kgs" }, soundManager{ nullptr } {
 
 	// constructor stuff...
 	sConsoleTitle = newTitle;
 	eventLog.push_back(GetFormattedDateTime() + L" - Output of Error Log of last " + sConsoleTitle + L" session" + L":\n");
+
+	// create sound engine
+	soundManager = new SoundManager(this);
+
 }
 
 KablamGame3D::~KablamGame3D()
@@ -38,6 +42,7 @@ KablamGame3D::~KablamGame3D()
 	for (auto sprite : listSpriteObjects)
 		delete sprite;
 
+	delete soundManager;
 }
 
 // virtual methods of KablamGraphicsEngine class (need defining)
@@ -95,6 +100,14 @@ bool KablamGame3D::OnGameCreate()
 
 	SetResizeWindowLock(true);
 	SetConsoleFocusPause(true);
+
+	// add sounds to soundManager
+	soundManager->AddSound(L"inGameMusic", L"./Sounds/caught_in_the_hex2.wav");
+	soundManager->AddSound(L"shootFireball", L"./Sounds/shoot_fireball.wav");
+	soundManager->AddSound(L"fireballHit", L"./Sounds/fireball_hit.wav");
+
+	// start music 
+	soundManager->PlaySoundByName(L"inGameMusic", true);
 
 	return true;
 }
@@ -345,12 +358,12 @@ void KablamGame3D::SetPlayerStart(const std::vector<int>& floorMap)
 // Method to initialize factories
 	// Method to initialize factories
 void KablamGame3D::InitialiseFactories() {
-	spriteFactories[1] = new OctoFactory(spriteOctoBaddy, spriteOctoBaddyHit, spriteOctoBaddyDyingAni, spriteOctoBaddyDead, 1.0f);
+	spriteFactories[1] = new OctoFactory(spriteOctoBaddy, spriteOctoBaddyHit, spriteOctoBaddyDyingAni, spriteOctoBaddyDead, 1.0f, soundManager);
 	spriteFactories[2] = new FloorlampFactory(spriteFloorLamp);
 	//spriteFactories[3] = new BarrelFactory(spriteBarrel);
 
 
-	spriteFactories[99] = new BulletFactory(spriteFireball, spriteFireballHit, 0.5f);
+	spriteFactories[99] = new BulletFactory(spriteFireball, spriteFireballHit, 0.5f, soundManager);
 
 
 }
@@ -410,6 +423,8 @@ void KablamGame3D::HandleKeyPress()
 	actionStates.toggleMap = GetKeyState(L'M').bPressed;
 	actionStates.toggleNextDisplay = GetKeyState(VK_OEM_PERIOD).bPressed;
 	actionStates.togglePrevDisplay = GetKeyState(VK_OEM_COMMA).bPressed;
+	actionStates.startMusic = GetKeyState(L'T').bPressed;
+	actionStates.stopMusic = GetKeyState(L'Y').bPressed;
 
 
 }
@@ -486,7 +501,7 @@ bool KablamGame3D::ApplyMovementAndActions(const float fElapsedTime)
 	if (actionStates.fire)
 	{
 		listSpriteObjects.push_back(spriteFactories[99]->CreateSprite( fPlayerX, fPlayerY, (fPlayerH * 2) - 1.0f, fPlayerA));
-		Beep(1000, 20);
+		//soundManager->PlaySoundByName(L"shootFireball");
 
 	}
 
@@ -533,6 +548,16 @@ bool KablamGame3D::ApplyMovementAndActions(const float fElapsedTime)
 		displayManager.SetPreviousDisplay();
 		DisplayAlertMessage(L"Display set to: " + displayManager.DisplayStateToString());
 
+	}
+
+	// music management
+	if (actionStates.startMusic)
+	{
+		soundManager->PlaySoundByName(L"inGameMusic", true);
+	}
+	if (actionStates.stopMusic)
+	{
+		soundManager->StopSoundByName(L"inGameMusic");
 	}
 
 	

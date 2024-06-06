@@ -4,11 +4,26 @@
 
 #include "SpriteObject.h"
 #include "GameConstants.h"
+#include "SoundManager.h"
 
 class Static : public virtual SpriteObject {
 
 public:
     Static() {}
+};
+
+class MakesNoise : public virtual SpriteObject {
+protected:
+    SoundManager* soundManager;
+public:
+    MakesNoise(SoundManager* sound)
+        : soundManager(sound) {}
+
+    ~MakesNoise()
+    {
+       // delete soundManager;
+    }
+
 };
 
 class DontCleanUpWhenDead : public virtual SpriteObject {
@@ -374,6 +389,17 @@ public:
         int newX = static_cast<int>(x + vX + xBuff);
         int newY = static_cast<int>(y + vY + yBuff);
 
+        // Update position based on velocity if no wall - hitwall true
+
+        if (oldY * MAP_WIDTH + newX < wallMap.size() || newY * MAP_WIDTH + oldX < wallMap.size()) // with wallMap array
+        {
+            if (newX >= 0 && newX < MAP_WIDTH && wallMap[oldY * MAP_WIDTH + newX] != 0)
+                hitWallX = true;
+
+            if (newY >= 0 && newY < MAP_HEIGHT && wallMap[newY * MAP_WIDTH + oldX] != 0)
+                hitWallY = true;
+        }
+
         for (const auto& sprite : spriteObjects)
         {
             // Use dynamic cast to check if the sprite is a Collidable sprite
@@ -391,19 +417,13 @@ public:
                     deadOrDying = destroyable->IsSpriteDying() || destroyable->IsSpriteDead();
                 }
                 // Check for collision if sprite moves the new velocity
-                if (!deadOrDying && solidOther->GetDistanceFromOther(fNewX, fNewY) < (solidOther->GetCollisionBuffer() + collisionBuffer)) {
+                if (deadOrDying == false && solidOther->GetDistanceFromOther(fNewX, fNewY) < (solidOther->GetCollisionBuffer() + collisionBuffer)) {
                     hitOther = true;
                     break; // If collision, break early, no need to check rest of list
                 }
             }
         }
 
-        // Update position based on velocity if no wall - hitwall true
-        if (newX >= 0 && newX < MAP_WIDTH && wallMap[oldY * MAP_WIDTH + newX] != 0)
-            hitWallX = true;
-
-        if (newY >= 0 && newY < MAP_HEIGHT && wallMap[newY * MAP_WIDTH + oldX] != 0)
-            hitWallY = true;
     }
 
     float GetCollisionBuffer() const

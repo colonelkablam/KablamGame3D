@@ -9,6 +9,8 @@
 #include "SpriteObject.h"
 #include "SpriteFactory.h"
 #include "TextDisplay.h"
+#include "SoundManager.h"
+
 
 // this is the actual game class - inherits from Graphics Engine
 // 
@@ -93,6 +95,9 @@ private:
 		bool toggleMap = false;
 		bool toggleNextDisplay = false;
 		bool togglePrevDisplay = false;
+		bool startMusic = false;
+		bool stopMusic = false;
+
 	};
 
 	ActionStates actionStates;
@@ -174,6 +179,8 @@ private:
 	// for displaying text to the screen
 	TextDisplay textDisplay;
 
+	// sound 
+	SoundManager* soundManager;
 
 public:
 
