@@ -2,7 +2,7 @@
 
 Enemy::Enemy(float initX, float initY, float initZ, Texture* initAliveSprite, Texture* initHitSprite, Texture* initDyingSprite, Texture* initDeadSprite, int initAggression, int initFireRate, bool initIsDead, SoundManager* sounds)
     : SpriteObject(initX, initY, initZ, SpriteType::OCTO_TYPE, false, SPRITE_TEXTURE_WIDTH, SPRITE_TEXTURE_HEIGHT, initAliveSprite),
-    MovableSprite(1.5f, 10.0f, 0.0f, 0.03f),
+    MovableSprite(1.5f, 10.0f, 0.0f, 1.0f),
     Collidable(0.3f),
     RotatableAnimatable(),
     DestroyableSprite(100.0f, initHitSprite, initDyingSprite, initDeadSprite, 0.3f, 1.0f, 10.0f, initIsDead),
@@ -62,7 +62,7 @@ void Enemy::UpdateMovement(float timeStep, const std::vector<int>& floorMap, std
 // virtual method from AISprite that needs defining
 void Enemy::UpdateAI(float timeStep) {
     if (relativeAngle < PI)
-        RotateAntiClockwise();
+        RotateAntiClockwise(timeStep);
     else
-        RotateClockwise();
+        RotateClockwise(timeStep);
 }

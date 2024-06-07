@@ -84,6 +84,8 @@ private:
 		bool lookDown = false;
 		bool rotateLeft = false;
 		bool rotateRight = false;
+		bool rotateLeftSmall = false;
+		bool rotateRightSmall = false;
 		bool forward = false;
 		bool backward = false;
 		bool left = false;
@@ -211,6 +213,8 @@ private:
 
 	// apply movements to player
 	bool ApplyMovementAndActions(const float fElapsedTime);
+
+	void AdjustAngle(float& angle, float adjustment);
 
 	void TryMovement(float pdx, float pdy, float fElapsedTime);
 

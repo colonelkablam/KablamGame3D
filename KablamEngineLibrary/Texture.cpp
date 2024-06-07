@@ -419,6 +419,7 @@ CHAR_INFO Texture::LinearInterpolationWithGlyphShading(float x, float y) const {
 	pixel.Attributes = c00 | (c01 << 4 );
 	pixel.Char.UnicodeChar = glyph;
 
+
 	return pixel;
 }
 

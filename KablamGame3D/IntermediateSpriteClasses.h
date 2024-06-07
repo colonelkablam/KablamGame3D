@@ -136,6 +136,47 @@ public:
             return currentSprite->GetPixel(x, y);
         }
     }
+
+    // linear interpolation pixel fetching method
+    CHAR_INFO GetPixelLinearInterpolation(float x, float y) const
+    {
+        if (currentSprite == nullptr) {
+            return { PIXEL_SOLID, FG_BLUE };
+        }
+
+        if (rotate) {
+            // Calculate offsets based on the view index and the relative angle
+            int viewIndex = static_cast<int>((relativeAngle + SEGMENT_ANGLE / 2) / SEGMENT_ANGLE) % NUM_ROTATIONAL_VIEWING_SEGMENTS;
+            int modulo = NUM_ROTATIONAL_VIEWING_SEGMENTS / 2;
+
+            int xOffset = (viewIndex % modulo) * width;
+            int yOffset = (viewIndex / modulo) * height;
+
+            //return currentSprite->LinearInterpolationWithGlyphShading(x + xOffset, y + yOffset);
+
+
+            //// Adjust x and y with the calculated offsets
+            x = (x * width + xOffset) / static_cast<float>(currentSprite->GetWidth());
+            y = (y * height + yOffset) / static_cast<float>(currentSprite->GetHeight());
+        }
+        else if (animate) {
+            // Calculate offsets based on the frame index
+            int modulo = NUM_DYING_ANIMATION_FRAMES / 2;
+
+            int xOffset = (frameIndex % modulo) * width;
+            int yOffset = static_cast<int>(frameIndex / modulo) * height;
+
+            //return currentSprite->LinearInterpolationWithGlyphShading(x + xOffset, y + yOffset);
+
+
+            //// Adjust x and y with the calculated offsets
+            x = (x * width + xOffset) / static_cast<float>(currentSprite->GetWidth());
+            y = (y * height + yOffset) / static_cast<float>(currentSprite->GetHeight());
+        }
+        
+        return currentSprite->LinearInterpolationWithGlyphShading(x, y);
+    }
+
 };
 
 class DestroyableSprite : public virtual SpriteObject {
@@ -335,14 +376,14 @@ public:
         }
     }
 
-    void RotateClockwise() {
-        facingAngle += rotationSpeed;
+    void RotateClockwise(float timeStep) {
+        facingAngle += rotationSpeed * timeStep;;
 
         // Normalize facing angle below 2*PI
         if (facingAngle >= 2 * PI) facingAngle -= 2 * PI;
     }
-    void RotateAntiClockwise() {
-        facingAngle -= rotationSpeed;
+    void RotateAntiClockwise(float timeStep) {
+        facingAngle -= rotationSpeed * timeStep;
 
         // Normalize facing angle above 0
         if (facingAngle < 0) facingAngle += 2 * PI;

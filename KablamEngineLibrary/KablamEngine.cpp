@@ -612,7 +612,7 @@ int KablamEngine::DrawSectionOfTextureToScreen(const Texture& texture, COORD scr
 }
 
 // goes through screen[] and applies linear glyph shading
-void KablamEngine::ApplyBilinearFilterScreen()
+void KablamEngine::ApplyDominantColorGlyphBlend()
 {
     // iterate through screen array to smooth out display
     for (int x{ 0 }; x < nScreenWidth; x++)

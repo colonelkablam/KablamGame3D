@@ -18,6 +18,15 @@ CHAR_INFO SpriteObject::GetPixel(int x, int y) const
 		return currentSprite->GetPixel(x, y);
 }
 
+// linear interpolation pixel fetching method
+CHAR_INFO SpriteObject::GetPixelLinearInterpolation(float x, float y) const
+{
+	if (currentSprite == nullptr)
+		return { PIXEL_SOLID, FG_BLUE };
+	else
+		return currentSprite->LinearInterpolationWithGlyphShading(x, y);
+}
+
 // all sprites need this to be drawn appropriately
 void SpriteObject::UpdateTimeAndDistanceToPlayer(float timeStep, float playerX, float playerY)
 {

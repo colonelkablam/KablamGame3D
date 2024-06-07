@@ -36,6 +36,8 @@ public:
     
     // effectively RENDER - GetPixel can be overridden by specific class definition depending of attributes
     virtual CHAR_INFO GetPixel(int x, int y) const;
+    virtual CHAR_INFO GetPixelLinearInterpolation(float x, float y) const;
+
     
     float GetDistanceFromPlayer() const;
     float GetDistanceFromOther(float otherX, float otherY) const;

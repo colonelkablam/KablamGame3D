@@ -189,7 +189,7 @@ private:
     void TwoMainColourCounts(const std::map<short, int>& colourMap, std::pair<short, int>& firstColour, std::pair<short, int>& secondColour);
 
 protected:
-    void ApplyBilinearFilterScreen();
+    void ApplyDominantColorGlyphBlend();
     void UpdateInputStates();
     void SetConsoleFocusPause(bool state);
     bool GetConsoleFocus();

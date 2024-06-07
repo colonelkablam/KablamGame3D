@@ -25,9 +25,23 @@ private:
     // Flag to indicate if the sound engine is operational
     bool isOperational;
 
+    std::wstring inGameMusicName;
+    std::wstring inGameMusicFilePath;
+    bool inGameMusicPlaying;
+    bool inGameMusicAdded;
+    int inGameMusicVolume;
+    int sfxVolume;
+
 public:
     SoundManager(KablamEngine* graphicsEngine);
     ~SoundManager();
+
+    // Add in-game music to the manager
+    void AddInGameMusic(const std::wstring& name, const std::wstring& fileExtension);
+
+    void PlayInGameMusic();
+
+    void StopInGameMusic();
 
     // Add a sound file to the manager
     void AddSound(const std::wstring& name, const std::wstring& filePath);

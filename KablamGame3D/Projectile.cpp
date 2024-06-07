@@ -4,7 +4,7 @@
 Projectile::Projectile(float initX, float initY, float initZ, Texture* initAliveSprite, Texture* initDyingSprite, float initAngle, SoundManager* sounds)
     : SpriteObject(initX, initY, initZ, SpriteType::BULLET_TYPE, true, SPRITE_TEXTURE_WIDTH, SPRITE_TEXTURE_HEIGHT, initAliveSprite),
     MovableSprite(16.0f, 16.0f, initAngle, 0.0f),
-    Collidable(0.01f),
+    Collidable(0.1f),
     DestroyableSprite(1.0f, initAliveSprite, initAliveSprite, initDyingSprite, 0.0f, 0.0f, 0.2f, false),
     MakesNoise (sounds)
 {

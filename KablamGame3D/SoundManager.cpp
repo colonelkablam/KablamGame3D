@@ -5,7 +5,7 @@
 #include <iostream>
 
 SoundManager::SoundManager(KablamEngine* gEngine)
-    : graphicsEngine(gEngine), soundEngine(nullptr), isOperational(false) {
+    : graphicsEngine(gEngine), soundEngine(nullptr), isOperational(false), inGameMusicPlaying(false), inGameMusicAdded(false), inGameMusicVolume(50), sfxVolume(70) {
     try {
         soundEngine = irrklang::createIrrKlangDevice();
         if (!soundEngine) {
@@ -28,6 +28,53 @@ SoundManager::~SoundManager() {
     }
 }
 
+void SoundManager::AddInGameMusic(const std::wstring& name, const std::wstring& filePath) {
+    if (!isOperational) return;
+    inGameMusicName = name;
+    inGameMusicFilePath = filePath;
+    soundMap[name] = filePath;
+    inGameMusicAdded = true;
+}
+
+void SoundManager::PlayInGameMusic() {
+    if (!isOperational) return;
+    if (!inGameMusicAdded) return; // not added 
+    if (inGameMusicPlaying) return; // Music is already playing
+
+    // Check if the in-game music is loaded
+    auto it = soundMap.find(inGameMusicName);
+    if (it == soundMap.end()) return; // In-game music not loaded
+
+    std::string filePathStr = wstringToString(it->second);
+
+    // Play the in-game music in a loop
+    irrklang::ISound* music = soundEngine->play2D(filePathStr.c_str(), true, false, true);
+    if (music) {
+        music->setVolume(inGameMusicVolume / 100.0f);
+        playingSounds[inGameMusicName] = music;
+        inGameMusicPlaying = true;
+        graphicsEngine->AddToLog(L"In-game music started: " + it->second);
+    }
+    else {
+        graphicsEngine->AddToLog(L"Error: Unable to play in-game music: " + it->second);
+    }
+}
+
+void SoundManager::StopInGameMusic() {
+    if (!isOperational) return;
+    if (!inGameMusicAdded) return; // not added
+    if (!inGameMusicPlaying) return; // Music is not playing
+
+    auto it = playingSounds.find(inGameMusicName);
+    if (it != playingSounds.end() && it->second) {
+        it->second->stop();
+        it->second->drop();
+        playingSounds.erase(it);
+        inGameMusicPlaying = false;
+        graphicsEngine->AddToLog(L"In-game music stopped.");
+    }
+}
+
 void SoundManager::AddSound(const std::wstring& name, const std::wstring& filePath) {
     if (!isOperational) return;
     soundMap[name] = filePath;
@@ -47,7 +94,7 @@ int SoundManager::PlaySoundByName(const std::wstring& name, bool loop, float vol
 
         irrklang::ISound* sound = soundEngine->play2D(filePathStr.c_str(), loop, false, true);
         if (sound) {
-            sound->setVolume(volume);
+            sound->setVolume(sfxVolume / 100.0f);
             playingSounds[name] = sound;
             return 0; // Success
         }

@@ -102,12 +102,12 @@ bool KablamGame3D::OnGameCreate()
 	SetConsoleFocusPause(true);
 
 	// add sounds to soundManager
-	soundManager->AddSound(L"inGameMusic", L"./Sounds/caught_in_the_hex2.wav");
+	soundManager->AddInGameMusic(L"inGameMusic", L"./Sounds/caught_in_the_hex2.wav");
 	soundManager->AddSound(L"shootFireball", L"./Sounds/shoot_fireball.wav");
 	soundManager->AddSound(L"fireballHit", L"./Sounds/fireball_hit.wav");
 
 	// start music 
-	soundManager->PlaySoundByName(L"inGameMusic", true);
+	soundManager->PlayInGameMusic();
 
 	return true;
 }
@@ -308,11 +308,11 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 		} // end of column
 	} // end of screen column iteration
 
-	// ApplyBilinearFilterScreen(); // far too slow
+	//ApplyDominantColorGlyphBlend(); // KablamEngine whole screen smoothing/blending -> far too slow!
 
 	DisplayObjects();
 	DisplayAim();
-	DisplayMap(nScreenWidth - 2*32 - 5, 5, 2);
+	DisplayMap(nScreenWidth - MAP_DISPLAY_SCALE * MAP_WIDTH - 5, 5, MAP_DISPLAY_SCALE);
 	DisplayScore();
 
 	return true;
@@ -411,6 +411,8 @@ void KablamGame3D::HandleKeyPress()
 	actionStates.backward = GetKeyState(L'S').bHeld;
 	actionStates.rotateRight = GetKeyState(VK_RIGHT).bHeld;
 	actionStates.rotateLeft = GetKeyState(VK_LEFT).bHeld;
+	actionStates.rotateRightSmall = GetKeyState(VK_RIGHT).bPressed;
+	actionStates.rotateLeftSmall = GetKeyState(VK_LEFT).bPressed;
 	actionStates.lookUp = GetKeyState(VK_UP).bHeld;
 	actionStates.lookDown = GetKeyState(VK_DOWN).bHeld;
 
@@ -433,18 +435,23 @@ bool KablamGame3D::ApplyMovementAndActions(const float fElapsedTime)
 {
 
 	//Handle Rotation
-	if (actionStates.rotateLeft)
+	if (actionStates.rotateLeftSmall) // handle small turns when pressed
 	{
-		fPlayerA -= (fPlayerRotationSpeed)*fElapsedTime;
-		//handling player angle wrap-around
-		if (fPlayerA < 0) fPlayerA += 2 * PI;
+		AdjustAngle(fPlayerA, -(fPlayerRotationSpeed / 3) * fElapsedTime);
+	}
+	else if (actionStates.rotateLeft)
+	{
+		AdjustAngle(fPlayerA, -(fPlayerRotationSpeed)*fElapsedTime);
 	}
 
-	if (actionStates.rotateRight)
+	//Handle Rotation
+	if (actionStates.rotateRightSmall) // handle small turns when pressed
 	{
-		fPlayerA += (fPlayerRotationSpeed)*fElapsedTime;
-		//handling player angle wrap-around
-		if (fPlayerA > 2 * PI) fPlayerA -= 2 * PI;
+		AdjustAngle(fPlayerA, (fPlayerRotationSpeed / 3) * fElapsedTime);
+	}
+	else if (actionStates.rotateRight)
+	{
+		AdjustAngle(fPlayerA, (fPlayerRotationSpeed)*fElapsedTime);
 	}
 
 	// Handle looking 
@@ -500,7 +507,7 @@ bool KablamGame3D::ApplyMovementAndActions(const float fElapsedTime)
 	// handle ACTION keys
 	if (actionStates.fire)
 	{
-		listSpriteObjects.push_back(spriteFactories[99]->CreateSprite( fPlayerX, fPlayerY, (fPlayerH * 2) - 1.0f, fPlayerA));
+		listSpriteObjects.push_back(spriteFactories[99]->CreateSprite( fPlayerX, fPlayerY, (fPlayerH * 2) - 2.0f, fPlayerA));
 		//soundManager->PlaySoundByName(L"shootFireball");
 
 	}
@@ -553,11 +560,11 @@ bool KablamGame3D::ApplyMovementAndActions(const float fElapsedTime)
 	// music management
 	if (actionStates.startMusic)
 	{
-		soundManager->PlaySoundByName(L"inGameMusic", true);
+		soundManager->PlayInGameMusic();
 	}
 	if (actionStates.stopMusic)
 	{
-		soundManager->StopSoundByName(L"inGameMusic");
+		soundManager->StopInGameMusic();
 	}
 
 	
@@ -566,6 +573,15 @@ bool KablamGame3D::ApplyMovementAndActions(const float fElapsedTime)
 		DisplayAlertMessage(L"Game Paused.");
 
 	return true;
+}
+
+void KablamGame3D::AdjustAngle(float& angle, float adjustment)
+{
+	angle += adjustment;
+	if (angle < 0)
+		angle += PI2;
+	else if (angle >= PI2)
+		angle -= PI2;
 }
 
 // helper function
@@ -988,6 +1004,9 @@ void KablamGame3D::DisplayObjects()
 
 								CHAR_INFO pixel{ object->GetPixel(spriteX, spriteY) };
 
+								// TBC - needs the transparent glyph in a sprite texture (L' ') handled - all trabsparent pixels are be turned to solid black glyphs
+								//CHAR_INFO pixel{ object->GetPixelLinearInterpolation(static_cast<float>(spriteX) / spriteWidth, static_cast<float>(spriteY) / spriteHeight) };
+
 								// check if 'transparent'
 						//short glyph = object.currentSprite->GetGlyph(spriteX, spriteY);
 								short glyph = pixel.Char.UnicodeChar;
@@ -1041,7 +1060,7 @@ void KablamGame3D::DisplaySky(int x, int y)
 void KablamGame3D::DisplayAim(short colour, short glyph)
 {
 	int xOff = int(GetConsoleWidth() / 2) - 2;
-	int yOff = int(GetConsoleHeight() / 2) - 2;
+	int yOff = int(GetConsoleHeight() / 1.9) - 2; // 1.9 is to shift crosshair down to match player projectile launch height
 
 	for (size_t x{ 0 }; x < 5; x++)
 		for (size_t y{ 0 }; y < 5; y++)
