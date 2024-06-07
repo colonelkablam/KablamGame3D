@@ -958,11 +958,11 @@ void KablamGame3D::DisplayObjects()
 			// within field of view
 			bool bInPlayerFOV = fabs(fObjectAngle) < FOV / 2.0f;
 
+
+
+
 			if (bInPlayerFOV && fDistanceFromPlayer >= 0.5f && fDistanceFromPlayer < 30.0f)
 			{
-				/*int spriteWidth = object.currentSprite->GetWidth();
-				int spriteHeight = object.currentSprite->GetHeight();*/
-
 				int spriteWidth = object->GetSpriteWidth();
 				int spriteHeight = object->GetSpriteHeight();
 

@@ -10,11 +10,12 @@ Enemy::Enemy(float initX, float initY, float initZ, Texture* initAliveSprite, Te
     Bobbable(2.0f, 0.6f),
     MakesNoise(sounds) {}
 
-void Enemy::UpdateSprite(float timeStep, float playerX, float playerY, float playerTilt, const std::vector<int>& floorMap, std::list<SpriteObject*>& allSprites) {
+void Enemy::UpdateSprite(float timeStep, float playerX, float playerY, float playerTilt, const std::vector<int>& wallMap, std::list<SpriteObject*>& allSprites) {
     SpriteObject::UpdateTimeAndDistanceToPlayer(timeStep, playerX, playerY);
     RotatableAnimatable::UpdateRelativeAngleToPlayer();
     Enemy::UpdateAI(timeStep);
-    Enemy::UpdateMovement(timeStep, floorMap, allSprites);
+    AISprite::UpdateCanSpriteSeePlayer(wallMap, playerX, playerY);
+    Enemy::UpdateMovement(timeStep, wallMap, allSprites);
     DestroyableSprite::UpdateIfHit(timeStep);
     Bobbable::Bobbing();
 }
@@ -61,8 +62,20 @@ void Enemy::UpdateMovement(float timeStep, const std::vector<int>& floorMap, std
 
 // virtual method from AISprite that needs defining
 void Enemy::UpdateAI(float timeStep) {
-    if (relativeAngle < PI)
-        RotateAntiClockwise(timeStep);
-    else
+
+    if (canSeePlayer)
+    {
+        SetRotationSpeed(1.5f);
+        SetSpeed(2.0f);
+
+        if (relativeAngle < PI)
+            RotateAntiClockwise(timeStep);
+        else
+            RotateClockwise(timeStep);
+    }
+    else {
+        SetRotationSpeed(0.6f);
+        SetSpeed(0.2f);
         RotateClockwise(timeStep);
+    }
 }

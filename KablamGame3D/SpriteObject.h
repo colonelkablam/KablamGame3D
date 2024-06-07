@@ -14,7 +14,7 @@ protected:
     float z; // height off floor
     float baseZ; // starting height
     float distToPlayer;
-    float angleToPlayer;
+    float angleFromPlayer;
     float facingAngle;
     int width;
     int height;

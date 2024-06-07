@@ -76,7 +76,7 @@ public:
     void UpdateRelativeAngleToPlayer()
     {
         // Calculate the relative angle (where it is looking rel. to player)
-        relativeAngle = facingAngle - angleToPlayer + PI;
+        relativeAngle = facingAngle - angleFromPlayer + PI;
         
         // normalise between 0 - 2*PI
         if (relativeAngle < 0)
@@ -376,6 +376,16 @@ public:
         }
     }
 
+    void SetSpeed(float amount)
+    {
+        currentSpeed = amount;
+    }
+
+    void SetRotationSpeed(float amount)
+    {
+        rotationSpeed = amount;
+    }
+
     void RotateClockwise(float timeStep) {
         facingAngle += rotationSpeed * timeStep;;
 
@@ -477,12 +487,95 @@ public:
 
 class AISprite : public virtual SpriteObject {
 protected:
+    bool isFacingPlayer;
+    bool isWallInWay;
+    bool canSeePlayer;
+    bool knowsWherePlayerWas;
+    float playerWasX;
+    float playerWasY;
+    float timeToForget; // currently set to a default in constructor
     int aggression;
     int fireRate;
+
 public:
     AISprite(int initAggression = 0.0f, int initFireRate = 10)
-        : aggression (initAggression), fireRate(initFireRate) {}
+        : aggression (initAggression), fireRate(initFireRate), isFacingPlayer(false), isWallInWay(false), canSeePlayer(false), knowsWherePlayerWas(false),
+        playerWasX (1.0f), playerWasY(0.0f), timeToForget(5.0f) {}
 
     // to be defined by particular AI of specific sprite
     virtual void UpdateAI(float timeStep) = 0 {};
+
+    void UpdateCanSpriteSeePlayer(const std::vector<int>& mapWalls, float playerX, float playerY) {
+        // Check if the sprite is facing the player
+
+        float pA{ angleFromPlayer };
+        pA += PI;
+        if (pA > PI2)
+            pA -= PI2;
+
+        isFacingPlayer = fabs(facingAngle - pA) < PI/2; // Adjust the angle tolerance as needed
+
+        if (!isFacingPlayer) {
+            canSeePlayer = false;
+            return;
+        }
+
+        // Get the starting position of the sprite
+        float x0 = GetX();
+        float y0 = GetY();
+        float x1 = playerX;
+        float y1 = playerY;
+
+        // Calculate the direction vector from the sprite to the player
+        float dx = x1 - x0;
+        float dy = y1 - y0;
+        float distance = sqrt(dx * dx + dy * dy);
+        float stepSize = 0.1f; // The size of each step along the line
+
+        // Normalize the direction vector
+        dx /= distance;
+        dy /= distance;
+
+        float currentX = x0;
+        float currentY = y0;
+
+        while (true) {
+            // Calculate the current position in the map grid
+            int mapX = static_cast<int>(currentX);
+            int mapY = static_cast<int>(currentY);
+
+            // Check if the current position is within bounds
+            if (mapX >= 0 && mapX < MAP_WIDTH && mapY >= 0 && mapY < MAP_HEIGHT) {
+                // Calculate the index in the 1D mapWalls vector
+                int index = mapY * MAP_WIDTH + mapX;
+
+                // Check if there's a wall
+                if (mapWalls[index] > 0) {
+                    isWallInWay = true;
+                    canSeePlayer = false;
+                    return;
+                }
+            }
+            else {
+                canSeePlayer = false;
+                isWallInWay = true;
+                return; // Out of bounds
+            }
+
+            // Check if we've reached the end point
+            if (sqrt((currentX - x1) * (currentX - x1) + (currentY - y1) * (currentY - y1)) < stepSize) {
+                canSeePlayer = true;
+                isWallInWay = false;
+                return;
+            }
+
+            // Move along the line by the step size
+            currentX += dx * stepSize;
+            currentY += dy * stepSize;
+        }
+
+        canSeePlayer = false;
+        isWallInWay = false;
+    }
+
 };

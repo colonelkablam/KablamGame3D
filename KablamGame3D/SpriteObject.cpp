@@ -5,7 +5,7 @@
 #include "SpriteObject.h"
 
 SpriteObject::SpriteObject(float initX, float initY, float initZ, SpriteType initType, bool isIlluminated, int spriteWidth, int spriteHeight, Texture* initSprite, float initAngle)
-	: x(initX), y(initY), z(initZ), baseZ(initZ), distToPlayer(1000.f), angleToPlayer(0.0f), width(spriteWidth), height(spriteHeight), type(initType), 
+	: x(initX), y(initY), z(initZ), baseZ(initZ), distToPlayer(1000.f), angleFromPlayer(0.0f), width(spriteWidth), height(spriteHeight), type(initType), 
 		illuminated(isIlluminated), currentSprite(initSprite), timeElapsed(0.0f), facingAngle(initAngle) {}
 
 
@@ -40,7 +40,7 @@ void SpriteObject::UpdateTimeAndDistanceToPlayer(float timeStep, float playerX, 
 	// angle from player feet
 	float dx = x - playerX;
 	float dy = y - playerY;
-	angleToPlayer = atan2(dy, dx);
+	angleFromPlayer = atan2(dy, dx);
 }
 
 float SpriteObject::GetDistanceFromPlayer() const
@@ -57,7 +57,7 @@ float SpriteObject::GetDistanceFromOther(float otherX, float otherY) const
 
 float SpriteObject::GetAngleToPlayer() const
 {
-	return angleToPlayer;
+	return angleFromPlayer;
 }
 
 int SpriteObject::GetSpriteWidth() const
