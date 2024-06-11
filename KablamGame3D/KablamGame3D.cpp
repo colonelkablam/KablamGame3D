@@ -43,6 +43,12 @@ KablamGame3D::~KablamGame3D()
 		delete sprite;
 
 	delete soundManager;
+
+	for (auto& pair : doorContainer)
+	{
+		delete pair.second;
+	}
+	doorContainer.clear();
 }
 
 // virtual methods of KablamGraphicsEngine class (need defining)
@@ -97,6 +103,8 @@ bool KablamGame3D::OnGameCreate()
 	InitialiseFactories();
 	SetPlayerStart(mapFloorTiles);
 	SetObjectsStart(mapObjects);
+	SetDoorMap(mapWalls);
+
 
 	SetResizeWindowLock(true);
 	SetConsoleFocusPause(true);
@@ -146,6 +154,10 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 		if (fRayAngle < 0)
 			fRayAngle += 2 * PI;
 
+		// to store map wall hit coords
+		std::pair<int, int> XmapWallHitCoords{ 0,0 };
+		std::pair<int, int> YmapWallHitCoords{ 0,0 };
+
 
 		// decalare and initialise variables to store HORIZONTAL distances
 		float fYDistanceToWall{ 1000.0f };
@@ -153,7 +165,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 		int nWallTypeY{ 0 };
 
 		// looking at HORIZONTAL Y line collision
-		SetHorizontalWallCollisionValues(fRayAngle, fYDistanceToWall, fYTileHit, nWallTypeY);
+		SetHorizontalWallCollisionValues(fRayAngle, fYDistanceToWall, fYTileHit, nWallTypeY, YmapWallHitCoords);
 
 		// decalare and initialise variables to store VERTICAL distances
 		float fXDistanceToWall{ 1000.0f };
@@ -161,13 +173,14 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 		int nWallTypeX{ 0 };
 
 		// looking at VERTICAL X line collision
-		SetVerticalWallCollisionValues(fRayAngle, fXDistanceToWall, fXTileHit, nWallTypeX);
+		SetVerticalWallCollisionValues(fRayAngle, fXDistanceToWall, fXTileHit, nWallTypeX, XmapWallHitCoords);
 
 		// decalare variables to store final results
 		float fDistanceToWall{ 1000.0f };
 		float fTileHit{ -1.0f };
 		int nWallType{ 0 };
 		bool bHitXWall{ false };
+		std::pair<int, int> mapWallHitCoords{ 0,0 };
 
 		// get shortist distance and correlating tile hit axis and wall type
 		if (fYDistanceToWall <= fXDistanceToWall)
@@ -176,6 +189,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 			fDistanceToWall = fYDistanceToWall;
 			fTileHit = fYTileHit;
 			nWallType = nWallTypeY;
+			mapWallHitCoords = YmapWallHitCoords; // actual map coords of wall hit
 		}
 		else
 		{
@@ -183,6 +197,8 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 			fDistanceToWall = fXDistanceToWall;
 			fTileHit = fXTileHit;
 			nWallType = nWallTypeX;
+			mapWallHitCoords = XmapWallHitCoords; // actual map coords of wall hit
+
 		}
 
 		// add before fish-eye!! this gives 'true' distance
@@ -191,6 +207,8 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 
 		// correct for fish-eye effect
 		fDistanceToWall *= cosf(fRayAngle - fPlayerA);
+
+
 
 		// get ratios of wall to ceiling and floor  ->  how much of the column to draw as ceiling/wall/floor  //
 
@@ -262,7 +280,15 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				float fSampleY = ((float)y - (float)nCeiling) / ((float)nFloor + 1 - (float)nCeiling );
 
 				// render pixel according to current display setting
-				SetRenderPixel(pixel, wallTextures.at(nWallType), fTileHit, fSampleY, fDistanceToWall, displaySetting, bHitXWall);
+
+				if (nWallType == 9)
+				{
+					pixel = doorContainer.at(mapWallHitCoords)->GetPixel(fTileHit, fSampleY);
+				}
+				else
+				{
+					SetRenderPixel(pixel, wallTextures.at(nWallType), fTileHit, fSampleY, fDistanceToWall, displaySetting, bHitXWall);
+				}
 
 				DrawPoint(x, y, pixel);
 
@@ -398,6 +424,24 @@ void KablamGame3D::SetObjectsStart(const std::vector<int>& floorMap) {
 				// Create sprite with adjusted values
 				listSpriteObjects.push_back(spriteFactories[tile]->CreateSprite(posX, posY, posZ));
 			}
+		}
+	}
+}
+
+void KablamGame3D::SetDoorMap(const std::vector<int>& wallMap)
+{
+	for (size_t x{ 0 }; x < MAP_WIDTH; ++x)
+	{
+		for (size_t y{ 0 }; y < MAP_WIDTH; ++y)
+		{
+			// Determine the index based on the 2D coordinates
+			int tile = wallMap[y * MAP_WIDTH + x];
+			if (tile == 9)
+			{
+				std::pair<int, int> coord = std::make_pair(static_cast<int>(x), static_cast<int>(y));
+				doorContainer[coord] = new Door(wallTextures.at(2));
+			}
+			// else do nothing
 		}
 	}
 }
@@ -605,7 +649,7 @@ void KablamGame3D::TryMovement(float pdx, float pdy, float fElapsedTime)
 
 }
 
-void KablamGame3D::SetHorizontalWallCollisionValues(float rayAngle, float& yDistanceToWall, float& yTileHit, int& yWallType)
+void KablamGame3D::SetHorizontalWallCollisionValues(float rayAngle, float& yDistanceToWall, float& yTileHit, int& yWallType, std::pair<int, int>& yMapWallCoords)
 {
 	// floats to hold ray x/y and then x/y offsets
 	float fRayY{ 0.0f }, fRayX{ 0.0f }, fRayYO{ 0.0f }, fRayXO{ 0.0f };
@@ -661,6 +705,18 @@ void KablamGame3D::SetHorizontalWallCollisionValues(float rayAngle, float& yDist
 						yTileHit = 1 - (fRayX - nTestX);
 					else
 						yTileHit = fRayX - nTestX;
+					
+					// if hitting door tile
+					if (yWallType == 9)
+					{
+						// find distance of wall 'hit' to 'left' side of tile
+						if (fRayYO < 0) // ray looking down
+							yTileHit = 1 - (fRayX - nTestX) + DOOR_RECESS * tan(PI / 2 - rayAngle);
+						else
+							yTileHit = (fRayX - nTestX) + DOOR_RECESS * tan(PI / 2 - rayAngle);
+					}
+
+					yMapWallCoords = { nTestX, nTestY };
 				}
 				else // add calculated offsets
 				{
@@ -675,16 +731,24 @@ void KablamGame3D::SetHorizontalWallCollisionValues(float rayAngle, float& yDist
 			}
 		}
 
-		// store distance to next HORIZONTAL line that is a wall
+		// store distance to next VERTICAL line that is a wall
 		if (bHitWall)
 		{
+			// set distance to hitting wall
 			yDistanceToWall = RayLength(fPlayerX, fPlayerY, fRayX, fRayY);
+
+			// if wall is 'door type' alter distance to make door appear to sit back 
+			if (yWallType == 9)
+			{
+				yDistanceToWall += DOOR_RECESS / abs(sinf(rayAngle));
+				//yWallType = 2;
+			}
 		}
 
 	} // end of HORIZONTAL line checking
 }
 
-void KablamGame3D::SetVerticalWallCollisionValues(float rayAngle, float& xDistanceToWall, float& xTileHit, int& xWallType)
+void KablamGame3D::SetVerticalWallCollisionValues(float rayAngle, float& xDistanceToWall, float& xTileHit, int& xWallType, std::pair<int, int>& xMapWallCoords)
 {
 	// floats to hold ray x/y and then x/y offsets
 	float fRayY{ 0.0f }, fRayX{ 0.0f }, fRayYO{ 0.0f }, fRayXO{ 0.0f };
@@ -743,6 +807,19 @@ void KablamGame3D::SetVerticalWallCollisionValues(float rayAngle, float& xDistan
 						xTileHit = 1 - (fRayY - nTestY);
 					else
 						xTileHit = fRayY - nTestY;
+
+					// if hitting door tile
+					if (xWallType == 9)
+					{
+						// find distance of wall 'hit' to 'left' side of tile
+						if (fRayXO < 0) // ray looking down
+							xTileHit =  1 - (fRayY - nTestY) + DOOR_RECESS * tan(rayAngle);
+						else
+							xTileHit = (fRayY - nTestY) + DOOR_RECESS * tan(rayAngle);
+					}
+
+					xMapWallCoords = { nTestX, nTestY };
+
 				}
 				else // add calculated offsets
 				{
@@ -760,9 +837,16 @@ void KablamGame3D::SetVerticalWallCollisionValues(float rayAngle, float& xDistan
 		// store distance to next HORIZONTAL line that is a wall
 		if (bHitWall)
 		{
+			// set distance to hitting wall
 			xDistanceToWall = RayLength(fPlayerX, fPlayerY, fRayX, fRayY);
-		}
 
+			// if wall is 'door type' alter distance to make door appear to sit back
+			if (xWallType == 9)
+			{
+				xDistanceToWall += DOOR_RECESS / abs(cosf(rayAngle));
+				//xWallType = 2;
+			}
+		}
 	} // end of VERTICAL line checking
 }
 
@@ -805,15 +889,18 @@ void KablamGame3D::SetHorizontalSurfaceHitCoords(int yColumn, float rayAngle, Fl
 
 void KablamGame3D::SetRenderPixel(CHAR_INFO& pixel, const Texture* textureToRender, const float textureTileXHit, const float textureTileYHit, const float distanceToHit, const DisplayState displaySetting, const bool hitXWall)
 {	
-	// draw corresponding pixel per ceiling tile
-	if (textureToRender == nullptr) // handle nullptr by not changing default pixel
+	// handle nullptr by not changing default pixel
+	if (textureToRender == nullptr) 
 		return;
-
-	//DrawPoint(x, y, colour, nCeilingShadeGlyph);
+	
+	// do nothing special
 	if (displaySetting == DisplayState::NORMAL)
 	{
 		pixel = textureToRender->SamplePixel(textureTileXHit, textureTileYHit);
 	}
+
+	// different shading effects
+
 
 	else if (displaySetting == DisplayState::DISTANCE_SHADING)
 	{

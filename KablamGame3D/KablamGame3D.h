@@ -10,6 +10,7 @@
 #include "SpriteFactory.h"
 #include "TextDisplay.h"
 #include "SoundManager.h"
+#include "Door.h"
 
 
 // this is the actual game class - inherits from Graphics Engine
@@ -27,9 +28,13 @@ private:
 
 	// vectors to hold level data
 	std::vector<int> mapWalls;
+	std::vector<int> mapDoors;
 	std::vector<int> mapFloorTiles;
 	std::vector<int> mapCeilingTiles;
 	std::vector<int> mapObjects;
+
+	// map to hold doors
+	std::map<std::pair<int, int>, Door*> doorContainer;
 
 	// vectors to hold texture data
 	std::vector<Texture*> wallTextures;
@@ -208,6 +213,9 @@ private:
 
 	void SetObjectsStart(const std::vector<int>& floorMap);
 
+	void SetDoorMap(const std::vector<int>& wallMap);
+
+
 	// handle player inputs
 	void HandleKeyPress();
 
@@ -218,9 +226,9 @@ private:
 
 	void TryMovement(float pdx, float pdy, float fElapsedTime);
 
-	void SetHorizontalWallCollisionValues(float rayAngle, float& yDistanceToWall, float& yTileHit, int& yWallType);
+	void SetHorizontalWallCollisionValues(float rayAngle, float& distanceToWall, float& tileHit, int& wallType, std::pair<int, int>& mapWallCoords);
 
-	void SetVerticalWallCollisionValues(float rayAngle, float& yDistanceToWall, float& yTileHit, int& yWallType);	
+	void SetVerticalWallCollisionValues(float rayAngle, float& distanceToWall, float& tileHit, int& wallType, std::pair<int, int>& mapWallCoords);
 
 	void SetHorizontalSurfaceHitCoords(int yColumn, float rayAngle, FloatCoord& hitCoords, COORD& indexCoords, bool lookingUp);
 

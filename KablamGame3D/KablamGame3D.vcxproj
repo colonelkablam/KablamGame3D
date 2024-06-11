@@ -149,6 +149,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Door.h" />
     <ClInclude Include="Enemy.h" />
     <ClInclude Include="FloorLampSprite.h" />
     <ClInclude Include="GameConstants.h" />
@@ -161,6 +162,7 @@
     <ClInclude Include="SpriteObject.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Door.cpp" />
     <ClCompile Include="Enemy.cpp" />
     <ClCompile Include="FloorLampSprite.cpp" />
     <ClCompile Include="KablamGame3D.cpp" />

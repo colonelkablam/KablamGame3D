@@ -6,6 +6,8 @@ const float PI2{ PI * 2 };
 const float P2{ PI / 2.0f };
 const float P3{ PI * (3.0f / 2.0f) };
 
+const float DOOR_RECESS{ 0.5f };
+
 const int NUM_DYING_ANIMATION_FRAMES{ 8 };
 const int NUM_ROTATIONAL_VIEWING_SEGMENTS{ 8 };
 
