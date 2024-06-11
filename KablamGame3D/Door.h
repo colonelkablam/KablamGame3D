@@ -6,6 +6,7 @@ class Door
 {
 private:
 	bool open;
+	float amountOpen;
 	bool needsKey;
 	int keyType;
 	float timeStayOpen;
@@ -17,6 +18,9 @@ public:
 	~Door();
 
 	void OpenDoor();
+
+	float GetAmountOpen();
+
 
 	void CloseDoor();
 

@@ -665,17 +665,17 @@ void KablamGame3D::SetHorizontalWallCollisionValues(float rayAngle, float& yDist
 	{
 		if (rayAngle < PI) // looking down
 		{
-			fRayY = (int)fPlayerY + 1.0f;								// next y intersect moving down
-			fRayX = fPlayerX + (fRayY - fPlayerY) / fTanValue;	// x position at next y intersect
-			fRayYO = 1.0f;													// y offset down (1x1 grid)
-			fRayXO = fRayYO / fTanValue;							// x offest for moving 1 y
+			fRayY = (int)fPlayerY + 1.0f;                                // next y intersect moving down
+			fRayX = fPlayerX + (fRayY - fPlayerY) / fTanValue;    // x position at next y intersect
+			fRayYO = 1.0f;                                                    // y offset down (1x1 grid)
+			fRayXO = fRayYO / fTanValue;                            // x offset for moving 1 y
 		}
 		else if (rayAngle > PI) // looking up
 		{
-			fRayY = (int)fPlayerY - 0.0001f;							// next y intersect moving up
-			fRayX = fPlayerX + (fRayY - fPlayerY) / fTanValue;	// x position at next y intersect
-			fRayYO = -1.0f;												// y offset up (1x1 grid)
-			fRayXO = fRayYO / fTanValue;							// x offest for moving 1 y
+			fRayY = (int)fPlayerY - 0.0001f;                            // next y intersect moving up
+			fRayX = fPlayerX + (fRayY - fPlayerY) / fTanValue;    // x position at next y intersect
+			fRayYO = -1.0f;                                                // y offset up (1x1 grid)
+			fRayXO = fRayYO / fTanValue;                            // x offset for moving 1 y
 		}
 
 		// calculate HORIZONTAL 
@@ -694,29 +694,79 @@ void KablamGame3D::SetHorizontalWallCollisionValues(float rayAngle, float& yDist
 			// test if ray has hit a wall
 			if (WithinMapBounds(nTestX, nTestY))
 			{
-				if (GetMapValue(nTestX, nTestY, mapWalls) != 0)
+				yWallType = GetMapValue(nTestX, nTestY, mapWalls);
+
+				if (yWallType == 1 || yWallType == 2)
 				{
 					bHitWall = true;
-					yWallType = GetMapValue(nTestX, nTestY, mapWalls);
 					nDepth = MAX_DEPTH_OF_VIEW;
+					yMapWallCoords = { nTestX, nTestY };
 
 					// find distance of wall 'hit' to 'left' side of tile
 					if (fRayYO > 0) // ray looking down
 						yTileHit = 1 - (fRayX - nTestX);
 					else
 						yTileHit = fRayX - nTestX;
-					
-					// if hitting door tile
-					if (yWallType == 9)
+				}
+				else if (yWallType == 9) // if hitting door tile
+				{
+					// Get the door object
+					try
 					{
+						Door* door = doorContainer.at({ nTestX, nTestY });
+
+						// Adjust the position based on the door's open amount
+						float doorPosition = door->GetAmountOpen();
+
 						// find distance of wall 'hit' to 'left' side of tile
 						if (fRayYO < 0) // ray looking down
-							yTileHit = 1 - (fRayX - nTestX) + DOOR_RECESS * tan(PI / 2 - rayAngle);
-						else
-							yTileHit = (fRayX - nTestX) + DOOR_RECESS * tan(PI / 2 - rayAngle);
-					}
+						{
+							yTileHit = (1 - (fRayX - nTestX) + DOOR_RECESS * tan(PI / 2 - rayAngle));
 
-					yMapWallCoords = { nTestX, nTestY };
+							// Adjust based on the door's open position
+							if (doorPosition < yTileHit)
+							{
+								bHitWall = true;
+								nDepth = MAX_DEPTH_OF_VIEW;
+								yMapWallCoords = { nTestX, nTestY };
+							}
+							else
+							{
+								fRayX += fRayXO;
+								fRayY += fRayYO;
+								nDepth++;
+							}
+
+						}
+						else
+						{
+							yTileHit = abs((fRayX - nTestX) + DOOR_RECESS * tan(PI / 2 - rayAngle));
+
+							// Adjust based on the door's open position
+							if (1 - doorPosition > yTileHit )
+							{
+								bHitWall = true;
+								nDepth = MAX_DEPTH_OF_VIEW;
+								yMapWallCoords = { nTestX, nTestY };
+							}
+							else
+							{
+								fRayX += fRayXO;
+								fRayY += fRayYO;
+								nDepth++;
+							}
+
+						}
+
+
+					}
+					catch (const std::out_of_range&)
+					{
+						// Handle the case where the door is not found in the container
+						fRayX += fRayXO;
+						fRayY += fRayYO;
+						nDepth++;
+					}
 				}
 				else // add calculated offsets
 				{
@@ -731,22 +781,21 @@ void KablamGame3D::SetHorizontalWallCollisionValues(float rayAngle, float& yDist
 			}
 		}
 
-		// store distance to next VERTICAL line that is a wall
+		// store distance to next HORIZONTAL line that is a wall
 		if (bHitWall)
 		{
 			// set distance to hitting wall
 			yDistanceToWall = RayLength(fPlayerX, fPlayerY, fRayX, fRayY);
 
-			// if wall is 'door type' alter distance to make door appear to sit back 
+			// if wall is 'door type' alter distance to make door appear to sit back
 			if (yWallType == 9)
 			{
 				yDistanceToWall += DOOR_RECESS / abs(sinf(rayAngle));
-				//yWallType = 2;
+				//xWallType = 2;
 			}
 		}
-
-	} // end of HORIZONTAL line checking
-}
+	}
+} // end of HORIZONTAL check
 
 void KablamGame3D::SetVerticalWallCollisionValues(float rayAngle, float& xDistanceToWall, float& xTileHit, int& xWallType, std::pair<int, int>& xMapWallCoords)
 {
