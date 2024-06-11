@@ -830,45 +830,95 @@ void KablamGame3D::SetVerticalWallCollisionValues(float rayAngle, float& xDistan
 			fRayYO = fRayXO * fTanValue;							// y offest for moving 1 x
 		}
 
+		// calculate HORIZONTAL 
 		while (nDepth < MAX_DEPTH_OF_VIEW)
 		{
 			// integer values for vector used to test if hitting wall
-			int nTestY{ 0 };
-			if (fRayY < 0) // as (int)-0.XX will go to 0, not -1 
-				nTestY = (int)fRayY - 1;
+
+			int nTestX{ 0 };
+			if (fRayX < 0) // as (int)-0.XX will go to 0, not -1
+				nTestX = (int)fRayX - 1;
 			else
-				nTestY = (int)fRayY;
+				nTestX = (int)fRayX;
 
-			int nTestX = (int)fRayX;
-
+			int nTestY = (int)fRayY;
 
 			// test if ray has hit a wall
 			if (WithinMapBounds(nTestX, nTestY))
 			{
-				if (GetMapValue(nTestX, nTestY, mapWalls) != 0)
+				xWallType = GetMapValue(nTestX, nTestY, mapWalls);
+
+				if (xWallType == 1 || xWallType == 2)
 				{
 					bHitWall = true;
-					xWallType = GetMapValue(nTestX, nTestY, mapWalls);
 					nDepth = MAX_DEPTH_OF_VIEW;
+					xMapWallCoords = { nTestX, nTestY };
 
 					// find distance of wall 'hit' to 'left' side of tile
-					if (fRayXO < 0) // ray looking left
+					if (fRayXO > 0) // ray looking down
 						xTileHit = 1 - (fRayY - nTestY);
 					else
 						xTileHit = fRayY - nTestY;
-
-					// if hitting door tile
-					if (xWallType == 9)
+				}
+				else if (xWallType == 9) // if hitting door tile
+				{
+					// Get the door object
+					try
 					{
+						Door* door = doorContainer.at({ nTestX, nTestY });
+
+						// Adjust the position based on the door's open amount
+						float doorPosition = door->GetAmountOpen();
+
 						// find distance of wall 'hit' to 'left' side of tile
 						if (fRayXO < 0) // ray looking down
-							xTileHit =  1 - (fRayY - nTestY) + DOOR_RECESS * tan(rayAngle);
+						{
+							xTileHit = (1 - (fRayY - nTestY) + DOOR_RECESS * tan(rayAngle));
+
+							// Adjust based on the door's open position
+							if (doorPosition < xTileHit)
+							{
+								bHitWall = true;
+								nDepth = MAX_DEPTH_OF_VIEW;
+								xMapWallCoords = { nTestX, nTestY };
+							}
+							else
+							{
+								fRayX += fRayXO;
+								fRayY += fRayYO;
+								nDepth++;
+							}
+
+						}
 						else
-							xTileHit = (fRayY - nTestY) + DOOR_RECESS * tan(rayAngle);
+						{
+							xTileHit = abs((fRayX - nTestX) + DOOR_RECESS * tan(rayAngle));
+
+							// Adjust based on the door's open position
+							if (1 - doorPosition > xTileHit)
+							{
+								bHitWall = true;
+								nDepth = MAX_DEPTH_OF_VIEW;
+								xMapWallCoords = { nTestX, nTestY };
+							}
+							else
+							{
+								fRayX += fRayXO;
+								fRayY += fRayYO;
+								nDepth++;
+							}
+
+						}
+
+
 					}
-
-					xMapWallCoords = { nTestX, nTestY };
-
+					catch (const std::out_of_range&)
+					{
+						// Handle the case where the door is not found in the container
+						fRayX += fRayXO;
+						fRayY += fRayYO;
+						nDepth++;
+					}
 				}
 				else // add calculated offsets
 				{
