@@ -124,6 +124,11 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 {
 	HandleKeyPress();
 
+	for (const auto& door : doorContainer)
+	{
+		door.second->UpdateDoor(fElapsedTime);
+	}
+
 	ApplyMovementAndActions(fElapsedTime);
 
 	for (auto& object : listSpriteObjects)
@@ -583,7 +588,8 @@ bool KablamGame3D::ApplyMovementAndActions(const float fElapsedTime)
 	// use 
 	if (actionStates.use)
 	{
-		DisplayAlertMessage(L"Use button pressed.");
+		//DisplayAlertMessage(L"Use button pressed.");
+		OpenDoorInFrontOfPlayer();
 	}
 
 	// map
@@ -642,13 +648,54 @@ void KablamGame3D::TryMovement(float pdx, float pdy, float fElapsedTime)
 	float newX = fPlayerX + pdx * fPlayerSpeed * fElapsedTime;
 	float newY = fPlayerY + pdy * fPlayerSpeed * fElapsedTime;
 
+	int mapValueXDir = GetMapValue((int)(newX + xBuffer), (int)fPlayerY, mapWalls);
+	int mapValueYDir = GetMapValue((int)fPlayerX, (int)(newY + yBuffer), mapWalls);
 	// Check for collisions including the buffer before updating positions
-	if (GetMapValue((int)(newX + xBuffer), (int)fPlayerY, mapWalls) == 0) {
-		fPlayerX = newX;
+	if (mapValueXDir == 0 || mapValueXDir == 9) {
+			fPlayerX = newX;
 	}
 
-	if (GetMapValue((int)fPlayerX, (int)(newY + yBuffer), mapWalls) == 0) {
-		fPlayerY = newY;
+	if (mapValueYDir == 0 || mapValueYDir == 9) {
+			fPlayerY = newY;
+	}
+}
+
+// manage player interaction with door
+void KablamGame3D::OpenDoorInFrontOfPlayer()
+{
+	int pX = static_cast<int>(fPlayerX);
+	int pY = static_cast<int>(fPlayerY);
+	int dX = 0;
+	int dY = 0;
+
+	if (fPlayerA > P2/2 && fPlayerA < PI - P2 / 2)
+	{
+		dY = 1;
+	}
+	else if (fPlayerA > PI + P2 / 2 && fPlayerA < 2 * PI - P2 / 2)
+	{
+		dY = -1;
+	}
+	else if (fPlayerA > PI2 - P2 / 2 || fPlayerA < P2 / 2)
+	{
+		dX = 1;
+	}
+	else if (fPlayerA > P2 + P2/2 && fPlayerA < PI + P2 - P2 / 2)
+	{
+		dX = -1;
+	}
+
+
+	std::pair<int, int> doorPosition = { pX + dX, pY + dY };
+
+	// Check if the door exists at the calculated position
+	if (doorContainer.find(doorPosition) != doorContainer.end())
+	{
+		Door* door = doorContainer.at(doorPosition);
+		if (door)
+		{
+			door->StartOpen();
+		}
 	}
 }
 

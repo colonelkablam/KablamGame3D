@@ -226,6 +226,9 @@ private:
 
 	void TryMovement(float pdx, float pdy, float fElapsedTime);
 
+	// manage player interaction with door
+	void OpenDoorInFrontOfPlayer();
+
 	void SetHorizontalWallCollisionValues(float rayAngle, float& distanceToWall, float& tileHit, int& wallType, std::pair<int, int>& mapWallCoords);
 
 	void SetVerticalWallCollisionValues(float rayAngle, float& distanceToWall, float& tileHit, int& wallType, std::pair<int, int>& mapWallCoords);
