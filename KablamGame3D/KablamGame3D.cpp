@@ -113,6 +113,8 @@ bool KablamGame3D::OnGameCreate()
 	soundManager->AddInGameMusic(L"inGameMusic", L"./Sounds/caught_in_the_hex2.wav");
 	soundManager->AddSound(L"shootFireball", L"./Sounds/shoot_fireball.wav");
 	soundManager->AddSound(L"fireballHit", L"./Sounds/fireball_hit.wav");
+	soundManager->AddSound(L"doorMainOpen", L"./Sounds/door_main_open.wav");
+	soundManager->AddSound(L"doorMainClose", L"./Sounds/door_main_close.wav");
 
 	// start music 
 	//soundManager->PlayInGameMusic();
@@ -448,7 +450,7 @@ void KablamGame3D::SetDoorMap(const std::vector<int>& wallMap)
 			if (tile == 9)
 			{
 				std::pair<int, int> coord = std::make_pair(static_cast<int>(x), static_cast<int>(y));
-				doorContainer[coord] = new Door(wallTextures.at(2));
+				doorContainer[coord] = new Door(wallTextures.at(2), soundManager);
 			}
 			// else do nothing
 		}
@@ -908,9 +910,9 @@ void KablamGame3D::SetVerticalWallCollisionValues(float rayAngle, float& xDistan
 
 					// find distance of wall 'hit' to 'left' side of tile
 					if (fRayXO < 0) // ray looking right
-						xTileHit = (fRayY - nTestY);
-					else            // ray looking left
 						xTileHit = 1 - (fRayY - nTestY);
+					else            // ray looking left
+						xTileHit = (fRayY - nTestY);
 				}
 				else if (xWallType == 9)					// if hitting door wall
 				{
@@ -1043,10 +1045,12 @@ void KablamGame3D::SetRenderPixel(CHAR_INFO& pixel, const Texture* textureToRend
 	if (textureToRender == nullptr) 
 		return;
 	
+	pixel = textureToRender->SamplePixel(textureTileXHit, textureTileYHit);
+
+
 	// do nothing special
 	if (displaySetting == DisplayState::NORMAL)
 	{
-		pixel = textureToRender->SamplePixel(textureTileXHit, textureTileYHit);
 	}
 
 	// different shading effects
@@ -1054,8 +1058,6 @@ void KablamGame3D::SetRenderPixel(CHAR_INFO& pixel, const Texture* textureToRend
 	{
 		// char to draw 'shade'
 		pixel.Char.UnicodeChar = GetGlyphShadeByDistance(distanceToHit);
-		// colour
-		pixel.Attributes = textureToRender->SampleColour(textureTileXHit, textureTileYHit);
 	}
 	else if (displaySetting == DisplayState::ANGLE_SHADING) // same as distance but 
 	{
@@ -1076,7 +1078,6 @@ void KablamGame3D::SetRenderPixel(CHAR_INFO& pixel, const Texture* textureToRend
 		pixel.Char.UnicodeChar = glyph;
 
 		// colour
-		pixel.Attributes = textureToRender->SampleColour(textureTileXHit, textureTileYHit);
 	}
 	else if (displaySetting == DisplayState::LINEAR_INT)
 	{

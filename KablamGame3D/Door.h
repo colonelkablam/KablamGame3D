@@ -2,6 +2,7 @@
 
 #include <Windows.h>
 #include "Texture.h"
+#include "SoundManager.h"
 
 class Door : public Texture
 {
@@ -15,15 +16,20 @@ private:
     float timeStayOpen;
     float openTimer;
     Texture* doorTexture;
+    SoundManager* soundManager;
 
 public:
-    Door(Texture* texture);
+    Door(Texture* texture, SoundManager* soundManager = nullptr);
 
     ~Door();
 
     void StartOpen();
 
+    void PlayOpen();
+
     void StartClose();
+
+    void PlayClose();
 
     float GetAmountOpen() const;
 

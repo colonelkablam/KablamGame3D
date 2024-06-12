@@ -2,8 +2,8 @@
 
 #include "Door.h"
 
-Door::Door(Texture* texture)
-    : doorTexture(texture), opening(false), closing(false), open(false), amountOpen(0.0f), needsKey(false), keyType(0), timeStayOpen(3.0f), openTimer(0.0f)
+Door::Door(Texture* texture, SoundManager* sManager)
+    : doorTexture(texture), soundManager(sManager), opening(false), closing(false), open(false), amountOpen(0.0f), needsKey(false), keyType(0), timeStayOpen(3.0f), openTimer(0.0f)
 {
 }
 
@@ -16,12 +16,24 @@ void Door::StartOpen()
     opening = true;
     closing = false;
     openTimer = 0.0f;
+    PlayOpen();
 }
 
 void Door::StartClose()
 {
     closing = true;
     opening = false;
+    PlayClose();
+}
+
+void Door::PlayOpen()
+{
+    soundManager->PlaySoundByName(L"doorMainOpen");
+}
+
+void Door::PlayClose()
+{
+    soundManager->PlaySoundByName(L"doorMainClose");
 }
 
 float Door::GetAmountOpen() const
@@ -31,7 +43,7 @@ float Door::GetAmountOpen() const
 
 bool Door::IsOpen() const
 {
-    return open && amountOpen == 1.0f;
+    return open && amountOpen == 0.9f;
 }
 
 bool Door::IsClosed() const
@@ -53,10 +65,10 @@ void Door::UpdateDoor(float timeStep)
 {
     if (opening)
     {
-        amountOpen += timeStep;
-        if (amountOpen >= 1.0f)
+        amountOpen += 2.5 * timeStep;
+        if (amountOpen >= 0.9f)
         {
-            amountOpen = 1.0f;
+            amountOpen = 0.9f;
             opening = false;
             open = true;
             openTimer = timeStayOpen;
@@ -74,7 +86,7 @@ void Door::UpdateDoor(float timeStep)
     }
 
     // If the door is fully open, count down the open timer
-    if (open && amountOpen == 1.0f && openTimer > 0.0f)
+    if (open && amountOpen == 0.9f && openTimer > 0.0f)
     {
         openTimer -= timeStep;
         if (openTimer <= 0.0f)
