@@ -35,7 +35,6 @@ KablamGame3D::~KablamGame3D()
 	delete spriteFireball;
 	delete spriteFireballHit;
 
-
 	for (auto& factory : spriteFactories)
 		delete factory.second;
 
@@ -88,10 +87,8 @@ bool KablamGame3D::OnGameCreate()
 	spriteOctoBaddyHit = new Texture(L"./Textures/Sprites/sprite_octo_rotate_hit_32.txr");
 	spriteOctoBaddyDyingAni = new Texture(L"./Textures/Sprites/sprite_octo_dying_ani_32.txr");
 	spriteOctoBaddyDead = new Texture(L"./Textures/Sprites/sprite_octo_dead_32.txr");
-
 	spriteFireball = new Texture(L"./Textures/Sprites/sprite_player_fireball_32.txr");
 	spriteFireballHit = new Texture(L"./Textures/Sprites/sprite_player_fireball_hit32.txr");
-
 
 	AddToLog(L"Sprite textures added...");
 
@@ -103,7 +100,7 @@ bool KablamGame3D::OnGameCreate()
 	InitialiseFactories();
 	SetPlayerStart(mapFloorTiles);
 	SetObjectsStart(mapObjects);
-	SetDoorMap(mapWalls);
+	SetDoorMap(mapWalls); // populate door map container to keep track of door states
 
 
 	SetResizeWindowLock(true);
@@ -115,6 +112,8 @@ bool KablamGame3D::OnGameCreate()
 	soundManager->AddSound(L"fireballHit", L"./Sounds/fireball_hit.wav");
 	soundManager->AddSound(L"doorMainOpen", L"./Sounds/door_main_open.wav");
 	soundManager->AddSound(L"doorMainClose", L"./Sounds/door_main_close.wav");
+	
+	AddToLog(L"Sounds added...");
 
 	// start music 
 	//soundManager->PlayInGameMusic();
@@ -216,8 +215,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 		fDistanceToWall *= cosf(fRayAngle - fPlayerA);
 
 
-
-		// get ratios of wall to ceiling and floor  ->  how much of the column to draw as ceiling/wall/floor  //
+		// get ratios of wall to ceiling and floor  ->  how much of the column to draw as ceiling/wall/floor 
 
 		// height of wall calculated as a ratio of ScreenHeight() / distance, * fWallUnit means height of top of wall
 		float fWall{ (GetConsoleHeight() / fDistanceToWall) * fWallHUnit };
@@ -241,9 +239,6 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 			{
 				// default sky pixel
 				CHAR_INFO pixel{ PIXEL_SOLID, FG_BLUE };
-				//pixel = skyTexture->GetPixel((int)x/2, (int)y/3);
-
-				//pixel.Attributes += BG_BLUE;
 
 				// declare storage for ceiling ray hit
 				FloatCoord ceilingHitCoords{ 0.0f, 0.0f };
