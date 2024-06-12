@@ -115,7 +115,7 @@ bool KablamGame3D::OnGameCreate()
 	soundManager->AddSound(L"fireballHit", L"./Sounds/fireball_hit.wav");
 
 	// start music 
-	soundManager->PlayInGameMusic();
+	//soundManager->PlayInGameMusic();
 
 	return true;
 }
@@ -696,19 +696,21 @@ void KablamGame3D::SetHorizontalWallCollisionValues(float rayAngle, float& yDist
 			{
 				yWallType = GetMapValue(nTestX, nTestY, mapWalls);
 
-				if (yWallType == 1 || yWallType == 2)
+				if (yWallType == 1 || yWallType == 2)		// if hitting static wall
+
 				{
+					// change hit flags
 					bHitWall = true;
 					nDepth = MAX_DEPTH_OF_VIEW;
 					yMapWallCoords = { nTestX, nTestY };
 
 					// find distance of wall 'hit' to 'left' side of tile
-					if (fRayYO > 0) // ray looking down
-						yTileHit = 1 - (fRayX - nTestX);
-					else
-						yTileHit = fRayX - nTestX;
+					if (fRayYO < 0) // ray looking down
+						yTileHit = (fRayX - nTestX);
+					else            // ray looking up
+						yTileHit = 1 -(fRayX - nTestX);
 				}
-				else if (yWallType == 9) // if hitting door tile
+				else if (yWallType == 9)					// if hitting door wall
 				{
 					// Get the door object
 					try
@@ -718,14 +720,15 @@ void KablamGame3D::SetHorizontalWallCollisionValues(float rayAngle, float& yDist
 						// Adjust the position based on the door's open amount
 						float doorPosition = door->GetAmountOpen();
 
-						// find distance of wall 'hit' to 'left' side of tile
+						// find distance of wall 'hit' to 'left' side of wall tecture
 						if (fRayYO < 0) // ray looking down
 						{
 							yTileHit = (1 - (fRayX - nTestX) + DOOR_RECESS * tan(PI / 2 - rayAngle));
 
 							// Adjust based on the door's open position
 							if (doorPosition < yTileHit)
-							{
+							{					
+								// change hit flags
 								bHitWall = true;
 								nDepth = MAX_DEPTH_OF_VIEW;
 								yMapWallCoords = { nTestX, nTestY };
@@ -738,13 +741,14 @@ void KablamGame3D::SetHorizontalWallCollisionValues(float rayAngle, float& yDist
 							}
 
 						}
-						else
+						else // ray looking up
 						{
-							yTileHit = abs((fRayX - nTestX) + DOOR_RECESS * tan(PI / 2 - rayAngle));
+							yTileHit = ((fRayX - nTestX)) + DOOR_RECESS * tan(PI / 2 - rayAngle);
 
 							// Adjust based on the door's open position
 							if (1 - doorPosition > yTileHit )
 							{
+								// change hit flags
 								bHitWall = true;
 								nDepth = MAX_DEPTH_OF_VIEW;
 								yMapWallCoords = { nTestX, nTestY };
@@ -855,10 +859,10 @@ void KablamGame3D::SetVerticalWallCollisionValues(float rayAngle, float& xDistan
 					xMapWallCoords = { nTestX, nTestY };
 
 					// find distance of wall 'hit' to 'left' side of tile
-					if (fRayXO > 0) // ray looking down
-						xTileHit = 1 - (fRayY - nTestY);
+					if (fRayXO > 0) // ray looking right
+						xTileHit =(fRayY - nTestY);
 					else
-						xTileHit = fRayY - nTestY;
+						xTileHit = 1 - (fRayY - nTestY);
 				}
 				else if (xWallType == 9) // if hitting door tile
 				{
@@ -892,7 +896,7 @@ void KablamGame3D::SetVerticalWallCollisionValues(float rayAngle, float& xDistan
 						}
 						else
 						{
-							xTileHit = abs((fRayX - nTestX) + DOOR_RECESS * tan(rayAngle));
+							xTileHit = ((fRayX - nTestX) + DOOR_RECESS * tan(rayAngle));
 
 							// Adjust based on the door's open position
 							if (1 - doorPosition > xTileHit)
