@@ -128,7 +128,7 @@ public:
 	// no mipmap
 	short SampleColour(float x, float) const;
 	short SampleGlyph(float x, float y) const;
-	CHAR_INFO SamplePixel(float x, float y) const;
+	virtual CHAR_INFO SamplePixel(float x, float y) const;
 
 	// mipmap
 	CHAR_INFO SamplePixelWithMipmap(float x, float y, int detail) const;
