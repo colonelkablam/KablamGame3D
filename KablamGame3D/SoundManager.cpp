@@ -5,7 +5,7 @@
 #include <iostream>
 
 SoundManager::SoundManager(KablamEngine* gEngine)
-    : graphicsEngine(gEngine), soundEngine(nullptr), isOperational(false), inGameMusicPlaying(false), inGameMusicAdded(false), inGameMusicVolume(50), sfxVolume(70) {
+    : graphicsEngine(gEngine), soundEngine(nullptr), isOperational(false), inGameMusicPlaying(false), inGameMusicAdded(false), inGameMusicVolume(50), sfxVolume(100) {
     try {
         soundEngine = irrklang::createIrrKlangDevice();
         if (!soundEngine) {
@@ -94,7 +94,7 @@ int SoundManager::PlaySoundByName(const std::wstring& name, bool loop, float vol
 
         irrklang::ISound* sound = soundEngine->play2D(filePathStr.c_str(), loop, false, true);
         if (sound) {
-            sound->setVolume(sfxVolume / 100.0f);
+            sound->setVolume((sfxVolume / 100.0f) * (volume ));
             playingSounds[name] = sound;
             return 0; // Success
         }
