@@ -275,21 +275,21 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 			{
 				// default wall pixel
 				CHAR_INFO pixel;
-				pixel.Attributes = FG_RED | BG_CYAN;
-				pixel.Char.UnicodeChar = PIXEL_HALF;
+				pixel.Attributes = FG_BLUE | BG_BLACK;
+				pixel.Char.UnicodeChar = L'I';
 
 				// calculate Y sample of texture tile (ratio of y value and wall height in pixels)
 				float fSampleY = ((float)y - (float)nCeiling) / ((float)nFloor + 1 - (float)nCeiling );
 
 				// render pixel according to current display setting
 
-				Texture* textureToRender;
+				Texture* textureToRender{ nullptr };
 
 				if (nWallType == 9)
 				{
 					textureToRender = doorContainer.at(mapWallHitCoords);
 				}
-				else
+				else if (nWallType == 1)
 				{
 					textureToRender = wallTextures.at(nWallType);
 
