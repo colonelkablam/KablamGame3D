@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Enemy.h"
+#include "Player.h"
 #include "Projectile.h"
 #include "FloorLampSprite.h"
 
@@ -17,14 +18,18 @@ private:
     Texture* dyingTexture;
     Texture* deadTexture;
     SoundManager* soundManager;
+    Player* player;
 
 public:
-    OctoFactory(Texture* alive, Texture* hit, Texture* dying, Texture* dead, float z, SoundManager* sounds)
-        : aliveTexture(alive), hitTexture(hit), dyingTexture(dying), deadTexture(dead), soundManager(sounds) {}
+    OctoFactory(Texture* alive, Texture* hit, Texture* dying, Texture* dead, float z, SoundManager* sounds, Player* p)
+        : aliveTexture(alive), hitTexture(hit), dyingTexture(dying), deadTexture(dead), soundManager(sounds), player{ p } {}
 
     SpriteObject* CreateSprite(float x, float y, float z, float initAngle) const override {
-
-        return new Enemy{ x, y, z, aliveTexture, hitTexture, dyingTexture, deadTexture, 2, 2, false, soundManager };
+        Enemy* octobaddy = new Enemy{ x, y, z, aliveTexture, hitTexture, dyingTexture, deadTexture, 2, 2, false, soundManager };
+        octobaddy->SetOnDeathAddScoreCallback([this](int points) {
+            player->IncreaseScore(points);
+            });
+        return octobaddy;
     }
 };
 

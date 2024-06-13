@@ -12,7 +12,7 @@ Projectile::Projectile(float initX, float initY, float initZ, Texture* initAlive
     soundManager->PlaySoundByName(L"shootFireball");
 }
 
-void Projectile::UpdateSprite(float timeStep, float playerX, float playerY, float playerTilt, const std::vector<int>& floorMap, std::list<SpriteObject*>& allSprites) {
+void Projectile::UpdateSprite(float timeStep, float playerX, float playerY, float playerTilt, const std::vector<int>& environmentMap, std::list<SpriteObject*>& allSprites) {
     // update position relative to player
     SpriteObject::UpdateTimeAndDistanceToPlayer(timeStep, playerX, playerY);
 
@@ -21,15 +21,15 @@ void Projectile::UpdateSprite(float timeStep, float playerX, float playerY, floa
         DestroyableSprite::UpdateIfHit(timeStep); // update dying texture and time
     }
     else {
-        Projectile::UpdateMovement(timeStep, floorMap, allSprites);
+        Projectile::UpdateMovement(timeStep, environmentMap, allSprites);
     }
 }
 
-void Projectile::UpdateMovement(float timeStep, const std::vector<int>& floorMap, std::list<SpriteObject*>& allSprites) {
+void Projectile::UpdateMovement(float timeStep, const std::vector<int>& environmentMap, std::list<SpriteObject*>& allSprites) {
     MovableSprite::UpdateVelocity(timeStep); // update the velocity of sprite
 
     // update the hit flags
-    Collidable::UpdateHitFlags(velocityX, velocityY, floorMap, allSprites);
+    Collidable::UpdateHitFlags(velocityX, velocityY, environmentMap, allSprites);
 
     if (hitWallX || hitWallY) {
         soundManager->PlaySoundByName(L"fireballHit", false, 1 - distToPlayer/32);
@@ -41,7 +41,7 @@ void Projectile::UpdateMovement(float timeStep, const std::vector<int>& floorMap
     }
 }
 
-bool Projectile::CheckCollisions(std::list<SpriteObject*>& allSprites) {
+bool Projectile::CheckCollisions(const std::list<SpriteObject*>& allSprites) {
     for (auto* other : allSprites) {
         if (other == this) continue; // Skip self
 
@@ -52,7 +52,7 @@ bool Projectile::CheckCollisions(std::list<SpriteObject*>& allSprites) {
         // Skip collision check if the other sprite is also a Projectile
         if (projectileTarget) continue;
 
-        if (destroyableTarget && collidableTarget && IsCollidingWith(collidableTarget) && !destroyableTarget->IsSpriteDead()) {
+        if (destroyableTarget && collidableTarget && IsCollidingWith(collidableTarget) && !destroyableTarget->IsSpriteDead() && !destroyableTarget->IsSpriteDying()) {
             HandleCollision(destroyableTarget);
             return true;
         }

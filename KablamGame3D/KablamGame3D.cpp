@@ -5,7 +5,8 @@
 
 // constructors 
 KablamGame3D::KablamGame3D(std::wstring newTitle)
-	: sSaveFolderName{ L"Saves\\" }, sSaveFileName{ L"save_game" }, sSaveExtension{ L".kgs" }, soundManager{ nullptr } {
+	: sSaveFolderName{ L"Saves\\" }, sSaveFileName{ L"save_game" }, sSaveExtension{ L".kgs" }, soundManager{ nullptr },
+	mapEnvironment( MAP_WIDTH * MAP_HEIGHT, 0 ) {
 
 	// constructor stuff...
 	sConsoleTitle = newTitle;
@@ -56,10 +57,10 @@ bool KablamGame3D::OnGameCreate()
 {
 	// import level data
 	// level data contains mapWall, mapFloorTiles, mapCeilingTiles vectors
-#include "./Levels/level_1_data.txt"
-
-
+	#include "./Levels/level_1_data.txt"
 	AddToLog(L"Map data added...");
+
+	InitialiseEnvironmentMap();
 
 	// import texture data
 	wallTextures.push_back(nullptr); // position 0 will return nullptr
@@ -97,11 +98,12 @@ bool KablamGame3D::OnGameCreate()
 
 	fDepthBuffers.resize(GetConsoleWidth(), 1000.0f);
 
+	player = new Player();
+	player->AddEnvironmentMap(&mapEnvironment);
 	InitialiseFactories();
 	SetPlayerStart(mapFloorTiles);
 	SetObjectsStart(mapObjects);
 	SetDoorMap(mapWalls); // populate door map container to keep track of door states
-
 
 	SetResizeWindowLock(true);
 	SetConsoleFocusPause(true);
@@ -118,6 +120,7 @@ bool KablamGame3D::OnGameCreate()
 	// start music 
 	//soundManager->PlayInGameMusic();
 
+
 	return true;
 }
 
@@ -127,14 +130,14 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 
 	for (const auto& door : doorContainer)
 	{
-		door.second->UpdateDoor(fElapsedTime);
+		door.second->UpdateDoor(fElapsedTime, mapEnvironment, player->GetX(), player->GetY());
 	}
 
 	ApplyMovementAndActions(fElapsedTime);
 
 	for (auto& object : listSpriteObjects)
 	{
-		object->UpdateSprite(fElapsedTime, fPlayerX, fPlayerY, fPlayerTilt, mapWalls, listSpriteObjects );
+		object->UpdateSprite(fElapsedTime, player->GetX(), player->GetY(), player->GetTilt(), mapEnvironment, listSpriteObjects);
 	}
 
 	// get the display setting before rendering the screen
@@ -142,7 +145,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 
 	// calculate ratio to multiply screen column by to get ray angle
 	float fAngleIncrement = FOV / static_cast<float>(GetConsoleWidth());
-	float fStartingAngle = fPlayerA - FOV / 2.0f;
+	float fStartingAngle = player->GetAngle() - FOV / 2.0f;
 
 	UpdateSkyView(); // keeps the calculations out of the screen columns loop, only needed per frame
 
@@ -212,7 +215,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 
 
 		// correct for fish-eye effect
-		fDistanceToWall *= cosf(fRayAngle - fPlayerA);
+		fDistanceToWall *= cosf(fRayAngle - player->GetAngle());
 
 
 		// get ratios of wall to ceiling and floor  ->  how much of the column to draw as ceiling/wall/floor 
@@ -221,7 +224,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 		float fWall{ (GetConsoleHeight() / fDistanceToWall) * fWallHUnit };
 
 		// calculate ceiling start according to wall height AND player height
-		float fCeiling{ GetConsoleHeight() / 2 - fWall * (fWallHUnit - fPlayerH) - fPlayerTilt };
+		float fCeiling{ GetConsoleHeight() / 2 - fWall * (fWallHUnit - player->GetHeight()) - player->GetTilt()};
 		// + (fPlayerH - fPlayerHDefault) / 3)  - will look down while jumping
 
 		// simple to calculate floor position 
@@ -248,7 +251,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				SetHorizontalSurfaceHitCoords(y, fRayAngle, ceilingHitCoords, ceilingHitIndex, true); // looking up so true flag
 
 				// how far the hit position is from the player position
-				float fDistanceToCeiling{ RayLength(fPlayerX, fPlayerY, ceilingHitCoords.X, ceilingHitCoords.Y) };
+				float fDistanceToCeiling{ RayLength(player->GetX(), player->GetY(), ceilingHitCoords.X, ceilingHitCoords.Y)};
 
 				// sample xy coords within texture
 				float fXTextureTileHit{ ceilingHitCoords.X - ceilingHitIndex.X };
@@ -315,7 +318,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				SetHorizontalSurfaceHitCoords(y, fRayAngle, floorHitCoords, floorHitIndex, false); // looking down so false flag
 
 				// how far the hit position is from the player position
-				float fDistanceToFloor{ RayLength(fPlayerX, fPlayerY, floorHitCoords.X, floorHitCoords.Y) };
+				float fDistanceToFloor{ RayLength(player->GetX(), player->GetY(), floorHitCoords.X, floorHitCoords.Y)};
 
 				// sample xy coords within texture
 				float fXTextureTileHit{ floorHitCoords.X - floorHitIndex.X };
@@ -353,7 +356,25 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 
 // member methods of derived KablamGame class
 
-// key press actions
+void KablamGame3D::InitialiseEnvironmentMap()
+{
+	for (size_t x{ 0 }; x < MAP_WIDTH; ++x)
+	{
+		for (size_t y{ 0 }; y < MAP_WIDTH; ++y)
+		{
+			// index based on the 2D coordinates
+			int wallTile = mapWalls[y * MAP_WIDTH + x]; 	// add solid walls to environment
+			// int floorTile = mapWalls[y * MAP_WIDTH + x]; 	// add impassable floors to environment
+
+			if (wallTile != 0)
+			{
+				mapEnvironment[y * MAP_WIDTH + x] = 1; // impassable map block added
+			}
+			// more maps to add if needed
+		}
+	}
+
+}
 
 void KablamGame3D::SetPlayerStart(const std::vector<int>& floorMap)
 {
@@ -383,28 +404,25 @@ void KablamGame3D::SetPlayerStart(const std::vector<int>& floorMap)
 	}
 
 	// Assign the starting position to the player
-	fPlayerX = static_cast<float>(xPosStart + 0.5f);
-	fPlayerY = static_cast<float>(yPosStart + 0.5f);
+	player->SetX(static_cast<float>(xPosStart + 0.5f));
+	player->SetY(static_cast<float>(yPosStart + 0.5f));
 }
 
 // Method to initialize factories
 	// Method to initialize factories
 void KablamGame3D::InitialiseFactories() {
-	spriteFactories[1] = new OctoFactory(spriteOctoBaddy, spriteOctoBaddyHit, spriteOctoBaddyDyingAni, spriteOctoBaddyDead, 1.0f, soundManager);
+	spriteFactories[1] = new OctoFactory(spriteOctoBaddy, spriteOctoBaddyHit, spriteOctoBaddyDyingAni, spriteOctoBaddyDead, 1.0f, soundManager, player);
 	spriteFactories[2] = new FloorlampFactory(spriteFloorLamp);
 	//spriteFactories[3] = new BarrelFactory(spriteBarrel);
 
-
 	spriteFactories[99] = new BulletFactory(spriteFireball, spriteFireballHit, 0.5f, soundManager);
-
-
 }
 
-void KablamGame3D::SetObjectsStart(const std::vector<int>& floorMap) {
+void KablamGame3D::SetObjectsStart(const std::vector<int>& objectMap) {
 	for (size_t x{ 0 }; x < MAP_WIDTH; ++x) {
 		for (size_t y{ 0 }; y < MAP_WIDTH; ++y) {
 			// Determine the index based on the 2D coordinates
-			int tile = floorMap[y * MAP_WIDTH + x];
+			int tile = objectMap[y * MAP_WIDTH + x];
 			if (spriteFactories.find(tile) != spriteFactories.end()) {
 				// Default values
 				float posX = x + 0.5f;
@@ -445,7 +463,7 @@ void KablamGame3D::SetDoorMap(const std::vector<int>& wallMap)
 			if (tile == 9)
 			{
 				std::pair<int, int> coord = std::make_pair(static_cast<int>(x), static_cast<int>(y));
-				doorContainer[coord] = new Door(wallTextures.at(2), soundManager);
+				doorContainer[coord] = new Door(x, y, wallTextures.at(2), soundManager);
 			}
 			// else do nothing
 		}
@@ -487,99 +505,71 @@ bool KablamGame3D::ApplyMovementAndActions(const float fElapsedTime)
 	//Handle Rotation
 	if (actionStates.rotateLeftSmall) // handle small turns when pressed
 	{
-		AdjustAngle(fPlayerA, -(fPlayerRotationSpeed / 3) * fElapsedTime);
+		player->RotateLeft(fElapsedTime/3);
 	}
 	else if (actionStates.rotateLeft)
 	{
-		AdjustAngle(fPlayerA, -(fPlayerRotationSpeed)*fElapsedTime);
+		player->RotateLeft(fElapsedTime);
 	}
 
 	//Handle Rotation
 	if (actionStates.rotateRightSmall) // handle small turns when pressed
 	{
-		AdjustAngle(fPlayerA, (fPlayerRotationSpeed / 3) * fElapsedTime);
+		player->RotateRight(fElapsedTime / 3);
 	}
 	else if (actionStates.rotateRight)
 	{
-		AdjustAngle(fPlayerA, (fPlayerRotationSpeed)*fElapsedTime);
+		player->RotateRight(fElapsedTime);
 	}
 
 	// Handle looking 
 	if (actionStates.lookUp)
 	{
-		if (fPlayerTilt > - TILT_MAX)
-			fPlayerTilt -= (fPlayerTiltSpeed)*fElapsedTime;
+		player->LookUp(fElapsedTime);
 	}
 
 	if (actionStates.lookDown)
 	{
-		if (fPlayerTilt <  TILT_MAX)
-			fPlayerTilt += (fPlayerTiltSpeed)*fElapsedTime;
+		player->LookDown(fElapsedTime);
 	}
 
 	// Handle Movement
 	if (actionStates.forward)
 	{
-		// calculate changes in x & y
-		float pdx = cosf(fPlayerA);
-		float pdy = sinf(fPlayerA);
-
-		TryMovement(pdx, pdy, fElapsedTime);
+		player->MoveForward(fElapsedTime);
 	}
 
 	if (actionStates.backward)
 	{
-		// calculate changes in x & y
-		float pdx = -cosf(fPlayerA);
-		float pdy = -sinf(fPlayerA);
-
-		TryMovement(pdx, pdy, fElapsedTime);
+		player->MoveBackward(fElapsedTime);
 	}
 
 	if (actionStates.right)
 	{
-		// calculate changes in x & y
-		float pdx = cosf(fPlayerA + PI / 2);
-		float pdy = sinf(fPlayerA + PI / 2);
-
-		TryMovement(pdx, pdy, fElapsedTime);
+		player->MoveRight(fElapsedTime);
 	}
 
 	if (actionStates.left)
 	{
-		// calculate changes in x & y
-		float pdx = cosf(fPlayerA - PI / 2);
-		float pdy = sinf(fPlayerA - PI / 2);
-
-		TryMovement(pdx, pdy, fElapsedTime);
+		player->MoveLeft(fElapsedTime);
 	}
 
 	// handle ACTION keys
 	if (actionStates.fire)
 	{
-		listSpriteObjects.push_back(spriteFactories[99]->CreateSprite( fPlayerX, fPlayerY, (fPlayerH * 2) - 2.0f, fPlayerA));
+		listSpriteObjects.push_back(spriteFactories[99]->CreateSprite( player->GetX(), player->GetY(), (player->GetHeight() * 2) - 2.0f, player->GetAngle()));
 		//soundManager->PlaySoundByName(L"shootFireball");
 
 	}
 
-	if (actionStates.jump && !bPlayerJumping)
+	if (actionStates.jump)
 	{
-		fPlayerUpVelocity = fPlayerJumpPower;
-		bPlayerJumping = true;
+		player->StartJump();
 	}
 
-	// jump mechanics
-	if (bPlayerJumping)
+	if (player->IsJumping())
 	{
-		fPlayerUpVelocity += fGravity * fElapsedTime;
-		fPlayerH += fPlayerUpVelocity * fElapsedTime;
-
-		if (fPlayerH <= fPlayerHDefault)
-		{
-			bPlayerJumping = false;
-			fPlayerH = fPlayerHDefault;
-			fPlayerUpVelocity = 0.0f;
-		}
+		player->Jumping(fElapsedTime);
 	}
 
 	// use 
@@ -626,69 +616,48 @@ bool KablamGame3D::ApplyMovementAndActions(const float fElapsedTime)
 	return true;
 }
 
-void KablamGame3D::AdjustAngle(float& angle, float adjustment)
-{
-	angle += adjustment;
-	if (angle < 0)
-		angle += PI2;
-	else if (angle >= PI2)
-		angle -= PI2;
-}
-
-// helper function
-void KablamGame3D::TryMovement(float pdx, float pdy, float fElapsedTime)
-{		// set appropriate collision buffer sign
-	float xBuffer = pdx > 0 ? playerCollisionBuffer : -playerCollisionBuffer;
-	float yBuffer = pdy > 0 ? playerCollisionBuffer : -playerCollisionBuffer;
-
-	// apply movement to player x y
-	float newX = fPlayerX + pdx * fPlayerSpeed * fElapsedTime;
-	float newY = fPlayerY + pdy * fPlayerSpeed * fElapsedTime;
-
-	int mapValueXDir = GetMapValue((int)(newX + xBuffer), (int)fPlayerY, mapWalls);
-	int mapValueYDir = GetMapValue((int)fPlayerX, (int)(newY + yBuffer), mapWalls);
-	// Check for collisions including the buffer before updating positions
-	if (mapValueXDir == 0 || mapValueXDir == 9) {
-			fPlayerX = newX;
-	}
-
-	if (mapValueYDir == 0 || mapValueYDir == 9) {
-			fPlayerY = newY;
-	}
-}
-
 // manage player interaction with door
 void KablamGame3D::OpenDoorInFrontOfPlayer()
 {
-	int pX = static_cast<int>(fPlayerX);
-	int pY = static_cast<int>(fPlayerY);
+	int pX = static_cast<int>(player->GetX());
+	int pY = static_cast<int>(player->GetY());
 	int dX = 0;
 	int dY = 0;
+	float pA = player->GetAngle();
 
-	if (fPlayerA > P2/2 && fPlayerA < PI - P2 / 2)
+	if (pA > P2 / 2 && pA < PI - P2 / 2)
 	{
 		dY = 1;
 	}
-	else if (fPlayerA > PI + P2 / 2 && fPlayerA < 2 * PI - P2 / 2)
+	else if (pA > PI + P2 / 2 && pA < 2 * PI - P2 / 2)
 	{
 		dY = -1;
 	}
-	else if (fPlayerA > PI2 - P2 / 2 || fPlayerA < P2 / 2)
+	else if (pA > PI2 - P2 / 2 || pA < P2 / 2)
 	{
 		dX = 1;
 	}
-	else if (fPlayerA > P2 + P2/2 && fPlayerA < PI + P2 - P2 / 2)
+	else if (pA > P2 + P2/2 && pA < PI + P2 - P2 / 2)
 	{
 		dX = -1;
 	}
 
+	std::pair<int, int> doorPosition1 = { pX + dX, pY + dY };
+	std::pair<int, int> doorPosition2 = { pX + dX*2, pY + dY*2 };
 
-	std::pair<int, int> doorPosition = { pX + dX, pY + dY };
 
 	// Check if the door exists at the calculated position
-	if (doorContainer.find(doorPosition) != doorContainer.end())
+	if (doorContainer.find(doorPosition1) != doorContainer.end())
 	{
-		Door* door = doorContainer.at(doorPosition);
+		Door* door = doorContainer.at(doorPosition1);
+		if (door)
+		{
+			door->StartOpen();
+		}
+	}
+	else if (doorContainer.find(doorPosition2) != doorContainer.end())
+	{
+		Door* door = doorContainer.at(doorPosition2);
 		if (door)
 		{
 			door->StartOpen();
@@ -707,20 +676,23 @@ void KablamGame3D::SetHorizontalWallCollisionValues(float rayAngle, float& yDist
 	// pre-calculate value as used frequently
 	float fTanValue{ tanf(rayAngle) };
 
+	float pX{ player->GetX() };
+	float pY{ player->GetY() };
+
 	// Skip if looking left (PI) or right (0) as will never intersect a horizontal line
 	if (rayAngle != 0.0f && rayAngle != PI)
 	{
 		if (rayAngle < PI) // looking down
 		{
-			fRayY = (int)fPlayerY + 1.0f;                                // next y intersect moving down
-			fRayX = fPlayerX + (fRayY - fPlayerY) / fTanValue;    // x position at next y intersect
+			fRayY = (int)pY + 1.0f;                                // next y intersect moving down
+			fRayX = pX + (fRayY - pY) / fTanValue;    // x position at next y intersect
 			fRayYO = 1.0f;                                                    // y offset down (1x1 grid)
 			fRayXO = fRayYO / fTanValue;                            // x offset for moving 1 y
 		}
 		else if (rayAngle > PI) // looking up
 		{
-			fRayY = (int)fPlayerY - 0.0001f;                            // next y intersect moving up
-			fRayX = fPlayerX + (fRayY - fPlayerY) / fTanValue;    // x position at next y intersect
+			fRayY = (int)pY - 0.0001f;                            // next y intersect moving up
+			fRayX = pX + (fRayY - pY) / fTanValue;    // x position at next y intersect
 			fRayYO = -1.0f;                                                // y offset up (1x1 grid)
 			fRayXO = fRayYO / fTanValue;                            // x offset for moving 1 y
 		}
@@ -834,7 +806,7 @@ void KablamGame3D::SetHorizontalWallCollisionValues(float rayAngle, float& yDist
 		if (bHitWall)
 		{
 			// set distance to hitting wall
-			yDistanceToWall = RayLength(fPlayerX, fPlayerY, fRayX, fRayY);
+			yDistanceToWall = RayLength(pX, pY, fRayX, fRayY);
 
 			// if wall is 'door type' alter distance to make door appear to sit back
 			if (yWallType == 9)
@@ -856,6 +828,9 @@ void KablamGame3D::SetVerticalWallCollisionValues(float rayAngle, float& xDistan
 	// pre-calculate value as used frequently
 	float fTanValue{ tanf(rayAngle) };
 
+	float pX{ player->GetX() };
+	float pY{ player->GetY() };
+
 	// Skip if looking up (3*PI/2) or down PI/2 as will never intersect a vertical line
 	if (rayAngle != P2 && rayAngle != P3)
 	{
@@ -865,15 +840,15 @@ void KablamGame3D::SetVerticalWallCollisionValues(float rayAngle, float& xDistan
 
 		if (rayAngle > P3 || rayAngle < P2) // looking right
 		{
-			fRayX = ((int)(fPlayerX)+1.0f);								// next x intersect moving right
-			fRayY = fPlayerY + (fRayX - fPlayerX) * fTanValue;	// y position at next x intersect
+			fRayX = ((int)(pX)+1.0f);								// next x intersect moving right
+			fRayY = pY + (fRayX - pX) * fTanValue;	// y position at next x intersect
 			fRayXO = 1;													// x offset down (1x1 grid)
 			fRayYO = fRayXO * fTanValue;							// y offest for moving 1 x
 		}
 		else if (rayAngle > P2 && rayAngle < P3) // looking left
 		{
-			fRayX = (int)fPlayerX - 0.0001f;								// next x intersect moving left
-			fRayY = fPlayerY + (fRayX - fPlayerX) * fTanValue;	// y position at next x intersect
+			fRayX = (int)pX - 0.0001f;								// next x intersect moving left
+			fRayY = pY + (fRayX - pX) * fTanValue;	// y position at next x intersect
 			fRayXO = -1;												// x offset up (1x1 grid)
 			fRayYO = fRayXO * fTanValue;							// y offest for moving 1 x
 		}
@@ -986,7 +961,7 @@ void KablamGame3D::SetVerticalWallCollisionValues(float rayAngle, float& xDistan
 		if (bHitWall)
 		{
 			// set distance to hitting wall
-			xDistanceToWall = RayLength(fPlayerX, fPlayerY, fRayX, fRayY);
+			xDistanceToWall = RayLength(pX, pY, fRayX, fRayY);
 
 			// if wall is 'door type' alter distance to make door appear to sit back
 			if (xWallType == 9)
@@ -999,26 +974,30 @@ void KablamGame3D::SetVerticalWallCollisionValues(float rayAngle, float& xDistan
 
 void KablamGame3D::SetHorizontalSurfaceHitCoords(int yColumn, float rayAngle, FloatCoord& hitCoords, COORD& indexCoords, bool lookingUp)
 {
-	float dy = yColumn - GetConsoleHeight() / 2.0f + fPlayerTilt;
+	float dy = yColumn - GetConsoleHeight() / 2.0f + player->GetTilt();
 
 	// handle dy == 0;
 	if (dy == 0)
 		dy = 1;
 
 	// 'fisheye' correction
-	float fRayFix = cosf(rayAngle - fPlayerA);
+	float fRayFix = cosf(rayAngle - player->GetAngle());
+
+	float pX{ player->GetX() };
+	float pY{ player->GetY() };
+	float pH{ player->GetHeight() };
 
 	if (lookingUp)
 	{	
 		// calculate ceiling textile 'hit' x & y - looking up so * fPlayerH - fWallHUnit
-		hitCoords.X = fPlayerX + cosf(rayAngle) * (GetConsoleHeight() * fWallHUnit * (fPlayerH - fWallHUnit)) / dy / fRayFix;
-		hitCoords.Y = fPlayerY + sinf(rayAngle) * (GetConsoleHeight() * fWallHUnit * (fPlayerH - fWallHUnit)) / dy / fRayFix;
+		hitCoords.X = pX + cosf(rayAngle) * (GetConsoleHeight() * fWallHUnit * (pH - fWallHUnit)) / dy / fRayFix;
+		hitCoords.Y = pY + sinf(rayAngle) * (GetConsoleHeight() * fWallHUnit * (pH - fWallHUnit)) / dy / fRayFix;
 	}
 	else // looking down
 	{
 		// calculate floor tile 'hit' x & y - looking down so * fPlayerH
-		hitCoords.X = fPlayerX + cosf(rayAngle) * (GetConsoleHeight() * fWallHUnit * fPlayerH) / dy / fRayFix;
-		hitCoords.Y = fPlayerY + sinf(rayAngle) * (GetConsoleHeight() * fWallHUnit * fPlayerH) / dy / fRayFix;
+		hitCoords.X = pX + cosf(rayAngle) * (GetConsoleHeight() * fWallHUnit * pH) / dy / fRayFix;
+		hitCoords.Y = pY + sinf(rayAngle) * (GetConsoleHeight() * fWallHUnit * pH) / dy / fRayFix;
 	}
 
 
@@ -1156,10 +1135,6 @@ void KablamGame3D::DisplayObjects()
 		DestroyableSprite* destroyable = dynamic_cast<DestroyableSprite*>(object);
 
 		if (destroyable && destroyable->IsRemovable()) {
-			// Increment player score if the dead object is an OctoSprite
-			if (destroyable->GetSpriteType() == SpriteType::OCTO_TYPE) {
-				playerScore++;
-			}
 			it = listSpriteObjects.erase(it); // Erase returns the next iterator
 			delete object; // Free the memory
 			continue;
@@ -1175,8 +1150,8 @@ void KablamGame3D::DisplayObjects()
 			float fDistanceFromPlayer = object->GetDistanceFromPlayer();
 
 			// Rotate around screen
-			float fEyeX = cosf(fPlayerA);
-			float fEyeY = sinf(fPlayerA);
+			float fEyeX = cosf(player->GetAngle());
+			float fEyeY = sinf(player->GetAngle());
 
 			// Get angle between object and players view direction
 			// relative angle from player to object = (angle x-axis to object) - (angle x-axis to look dir)
@@ -1200,7 +1175,7 @@ void KablamGame3D::DisplayObjects()
 				// calculate objects height, top, bottom, all with respect to the screen Y position (very similar to the wall height calculation)
 				float fObjectHeight = (GetConsoleHeight() / fDistanceFromPlayer) * fWallHUnit;
 				// takes into account the players view tilt and jump height
-				float fObjectTop{ GetConsoleHeight() / 2.0f - (fObjectHeight / 2 * (fWallHUnit - fPlayerHDefault - fPlayerH) * 2) - fPlayerTilt };
+				float fObjectTop{ GetConsoleHeight() / 2.0f - (fObjectHeight / 2 * (fWallHUnit - player->GetHeightDefault() - player->GetHeight()) * 2) - player->GetTilt()};
 				// account for object z height off floor ( div by 3 seems to get most pleasing result for when z = 0, object rests on floor )
 				float verticalAdjustment = ((spriteHeight / 3 - spriteHeight * object->GetZ()) * fWallHUnit) / fDistanceFromPlayer;
 				fObjectTop += verticalAdjustment;
@@ -1273,8 +1248,8 @@ void KablamGame3D::UpdateSkyView()
 	// angleScale is factor for angle to texture width mapping
 	float angleScale = skyTexture->GetWidth() / FOV * 2.6f;
 
-	xSkyOffset = static_cast<int>(fPlayerA * angleScale) % skyTexture->GetWidth();
-	ySkyOffset = static_cast<int>(skyTexture->GetHeight() - GetConsoleHeight() / 2 + fPlayerTilt) - 1;
+	xSkyOffset = static_cast<int>(player->GetAngle() * angleScale) % skyTexture->GetWidth();
+	ySkyOffset = static_cast<int>(skyTexture->GetHeight() - GetConsoleHeight() / 2 + player->GetTilt()) - 1;
 }
 
 void KablamGame3D::DisplaySky(int x, int y)
@@ -1335,9 +1310,9 @@ void KablamGame3D::DisplayMap(int xPos, int yPos, int scale) {
 		}
 
 		// Draw player position and orientation
-		int pX = xPos + static_cast<int>(fPlayerX * scale);
-		int pY = yPos + static_cast<int>(fPlayerY * scale);
-		DrawLine(pX, pY, pX + static_cast<int>(cosf(fPlayerA) * scale*2), pY + static_cast<int>(sinf(fPlayerA) * scale*2), FG_DARK_RED);
+		int pX = xPos + static_cast<int>(player->GetX() * scale);
+		int pY = yPos + static_cast<int>(player->GetY() * scale);
+		DrawLine(pX, pY, pX + static_cast<int>(cosf(player->GetAngle()) * scale*2), pY + static_cast<int>(sinf(player->GetAngle()) * scale*2), FG_DARK_RED);
 		DrawPoint(pX, pY, FG_WHITE, PIXEL_SOLID);
 	}
 }
@@ -1345,14 +1320,14 @@ void KablamGame3D::DisplayMap(int xPos, int yPos, int scale) {
 void KablamGame3D::DisplayScore()
 {
 	textDisplay.DisplayString(*this, 5, 5, headerText, FG_DARK_BLUE, PIXEL_SOLID, 1);
-	textDisplay.DisplayString(*this, 5, nScreenHeight - 35, L"score", FG_DARK_BLUE, PIXEL_SOLID, 1);
+	textDisplay.DisplayString(*this, 5, nScreenHeight - 35, L"kills", FG_DARK_BLUE, PIXEL_SOLID, 1);
 	textDisplay.DisplayString(*this, nScreenWidth - 45, nScreenHeight - 35, L"health", FG_DARK_BLUE, PIXEL_SOLID, 1);
 
-	std::wstring scoreText{ std::to_wstring(playerScore)};
+	std::wstring scoreText{ std::to_wstring(player->GetScore())};
 
 	// Convert playerHealth to a string with one decimal place and right-justify
 	std::wstringstream ss;
-	ss << std::fixed << std::setprecision(0) << playerHealth;
+	ss << std::fixed << std::setprecision(0) << player->GetHealth();
 	std::wstring healthText = ss.str();
 
 	// Pad with spaces to ensure right justification within a field width of 4 (e.g., "__0.0")

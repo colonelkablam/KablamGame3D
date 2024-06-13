@@ -331,7 +331,7 @@ public:
     }
 
     // virtual movement that needs overriding by child class
-    virtual void UpdateMovement(float timeStep, const std::vector<int>& floorMap, std::list<SpriteObject*>& allSprites) = 0 {};
+    virtual void UpdateMovement(float timeStep, const std::vector<int>& environmentMap, std::list<SpriteObject*>& allSprites) = 0 {};
 
     // update vector xy
     void UpdateVelocity(float timeStep)
@@ -417,7 +417,7 @@ public:
         : collisionBuffer(collisionBuffer), hitOther(false), hitWallX(false), hitWallY(false) {}
 
 
-    void UpdateHitFlags(float vX, float vY, std::vector<int> wallMap, const std::list<SpriteObject*>& spriteObjects) {
+    void UpdateHitFlags(float vX, float vY, std::vector<int> environmentMap, const std::list<SpriteObject*>& spriteObjects) {
 
         // reset hit flags
         hitWallX = false;
@@ -442,12 +442,12 @@ public:
 
         // Update position based on velocity if no wall - hitwall true
 
-        if (oldY * MAP_WIDTH + newX < wallMap.size() || newY * MAP_WIDTH + oldX < wallMap.size()) // with wallMap array
+        if (oldY * MAP_WIDTH + newX < environmentMap.size() || newY * MAP_WIDTH + oldX < environmentMap.size()) // with wallMap array
         {
-            if (newX >= 0 && newX < MAP_WIDTH && wallMap[oldY * MAP_WIDTH + newX] != 0)
+            if (newX >= 0 && newX < MAP_WIDTH && environmentMap[oldY * MAP_WIDTH + newX] != 0)
                 hitWallX = true;
 
-            if (newY >= 0 && newY < MAP_HEIGHT && wallMap[newY * MAP_WIDTH + oldX] != 0)
+            if (newY >= 0 && newY < MAP_HEIGHT && environmentMap[newY * MAP_WIDTH + oldX] != 0)
                 hitWallY = true;
         }
 
@@ -474,14 +474,12 @@ public:
                 }
             }
         }
-
     }
 
     float GetCollisionBuffer() const
     {
         return collisionBuffer;
     }
-
 };
 
 
@@ -505,7 +503,7 @@ public:
     // to be defined by particular AI of specific sprite
     virtual void UpdateAI(float timeStep) = 0 {};
 
-    void UpdateCanSpriteSeePlayer(const std::vector<int>& mapWalls, float playerX, float playerY) {
+    void UpdateCanSpriteSeePlayer(const std::vector<int>& environmentMap, float playerX, float playerY) {
         // Check if the sprite is facing the player
 
         float pA{ angleFromPlayer };
@@ -550,7 +548,7 @@ public:
                 int index = mapY * MAP_WIDTH + mapX;
 
                 // Check if there's a wall
-                if (mapWalls[index] > 0) {
+                if (environmentMap[index] == 1) {
                     isWallInWay = true;
                     canSeePlayer = false;
                     return;

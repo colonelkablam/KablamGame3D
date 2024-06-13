@@ -11,6 +11,7 @@
 #include "TextDisplay.h"
 #include "SoundManager.h"
 #include "Door.h"
+#include "Player.h"
 
 
 // this is the actual game class - inherits from Graphics Engine
@@ -21,6 +22,38 @@ class KablamGame3D : public KablamEngine
 
 private:
 	const float fWallHUnit = 1.75f;
+	const float FOV = PI / 4.0f;
+	const int MAX_DEPTH_OF_VIEW = 32;
+
+	Player* player;
+
+	struct ActionStates
+	{
+		bool lookUp = false;
+		bool lookDown = false;
+		bool rotateLeft = false;
+		bool rotateRight = false;
+		bool rotateLeftSmall = false;
+		bool rotateRightSmall = false;
+		bool forward = false;
+		bool backward = false;
+		bool left = false;
+		bool right = false;
+		bool fire = false;
+		bool use = false;
+		bool jump = false;
+		bool pause = false;
+		bool toggleMap = false;
+		bool toggleNextDisplay = false;
+		bool togglePrevDisplay = false;
+		bool startMusic = false;
+		bool stopMusic = false;
+
+	};
+
+	ActionStates actionStates;
+
+	int nMapDisplayStatus = 0;
 
 	const std::wstring sSaveFolderName; // relative path to subDir 
 	const std::wstring sSaveExtension;  // Kablam Game Save '.kgs'
@@ -30,6 +63,7 @@ private:
 	std::vector<int> mapWalls;
 	std::vector<int> mapDoors;
 	std::vector<int> mapFloorTiles;
+	std::vector<int> mapEnvironment; // this takes walls, floors, and doors (doors can update it), to create map of impassable world 'blocks'
 	std::vector<int> mapCeilingTiles;
 	std::vector<int> mapObjects;
 
@@ -62,7 +96,7 @@ private:
 	Texture* spriteFireball;
 	Texture* spriteFireballHit;
 
-
+	// map to hold sprite factories
 	std::unordered_map<int, SpriteFactory*> spriteFactories;
 
 	// list data structure used -> will be deleting/adding items regularly
@@ -71,65 +105,11 @@ private:
 	// store the depth of each column
 	std::vector <float> fDepthBuffers;
 
-	const float FOV = PI / 4.0f;
-	const int MAX_DEPTH_OF_VIEW = 32;
-
-	float fPlayerSpeed = 6.0f;
-	float fPlayerRotationSpeed = 1.7f;
-	float fPlayerTilt = 0.0f;
-	float fPlayerTiltSpeed = 170.0f;
-	const int TILT_MAX = 45;
-	const float playerCollisionBuffer = 0.2f;
-	int playerScore = 0;
-	float playerHealth = 100.0f;
-
-	struct ActionStates
-	{
-		bool lookUp = false;
-		bool lookDown = false;
-		bool rotateLeft = false;
-		bool rotateRight = false;
-		bool rotateLeftSmall = false;
-		bool rotateRightSmall = false;
-		bool forward = false;
-		bool backward = false;
-		bool left = false;
-		bool right = false;
-		bool fire = false;
-		bool use = false;
-		bool jump = false;
-		bool pause = false;
-		bool toggleMap = false;
-		bool toggleNextDisplay = false;
-		bool togglePrevDisplay = false;
-		bool startMusic = false;
-		bool stopMusic = false;
-
-	};
-
-	ActionStates actionStates;
-
-	COORD newMouseCoords = { 0,0 };
-	COORD centerScreenCoords = { 0,0 };
-	std::pair<int, int> mouseVelocity = { 0.0f, 0.0f };
-
+	// structure for float coordinates 
 	struct FloatCoord {
 		float X;
 		float Y;
 	};
-
-	float fPlayerX = 24.0f;
-	float fPlayerY = 24.0f;
-	float fPlayerA = 0;
-
-	float fPlayerHDefault = 0.7f;
-	float fPlayerH{ fPlayerHDefault };
-	float fPlayerUpVelocity = 0.0f;
-	float fGravity = -19.0f;
-	float fPlayerJumpPower = 6.0f;
-	bool bPlayerJumping = false;
-
-	int nMapDisplayStatus = 0;
 
 	std::wstring headerText{ L"KamblamEngine3D" };
 
@@ -206,8 +186,10 @@ public:
 
 private:
 
-	// Method to initialize factories
+	// Methods to initialize 
 	void InitialiseFactories();
+
+	void InitialiseEnvironmentMap();
 
 	void SetPlayerStart(const std::vector<int>& floorPlan);
 
@@ -222,11 +204,6 @@ private:
 	// apply movements to player
 	bool ApplyMovementAndActions(const float fElapsedTime);
 
-	void AdjustAngle(float& angle, float adjustment);
-
-	void TryMovement(float pdx, float pdy, float fElapsedTime);
-
-	// manage player interaction with door
 	void OpenDoorInFrontOfPlayer();
 
 	void SetHorizontalWallCollisionValues(float rayAngle, float& distanceToWall, float& tileHit, int& wallType, std::pair<int, int>& mapWallCoords);
