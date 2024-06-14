@@ -4,7 +4,7 @@
 Projectile::Projectile(float initX, float initY, float initZ, Texture* initAliveSprite, Texture* initDyingSprite, float initAngle, SoundManager* sounds)
     : SpriteObject(initX, initY, initZ, SpriteType::BULLET_TYPE, true, SPRITE_TEXTURE_WIDTH, SPRITE_TEXTURE_HEIGHT, initAliveSprite),
     MovableSprite(16.0f, 16.0f, initAngle, 0.0f),
-    Collidable(0.1f),
+    Collidable(0.0f),
     DestroyableSprite(1.0f, initAliveSprite, initAliveSprite, initDyingSprite, 0.0f, 0.0f, 0.2f, false),
     MakesNoise (sounds)
 {
@@ -26,12 +26,13 @@ void Projectile::UpdateSprite(float timeStep, float playerX, float playerY, floa
 }
 
 void Projectile::UpdateMovement(float timeStep, const std::vector<int>& environmentMap, std::list<SpriteObject*>& allSprites) {
-    MovableSprite::UpdateVelocity(timeStep); // update the velocity of sprite
+    MovableSprite::UpdateVelocity(timeStep); // update the velocity per frame of sprite
 
     // update the hit flags
     Collidable::UpdateHitFlags(velocityX, velocityY, environmentMap, allSprites);
 
-    if (hitWallX || hitWallY) {
+    // just need if newX and newY walltile is a hit as no 'sliding' for projectiles.
+    if (hitWallXY) {
         soundManager->PlaySoundByName(L"fireballHit", false, 1 - distToPlayer/32);
         DestroyableSprite::MakeDead();
     }

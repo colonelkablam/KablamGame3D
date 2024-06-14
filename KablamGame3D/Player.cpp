@@ -129,20 +129,37 @@ void Player::MoveLeft(float elapsedTime)
 
 // helper function
 void Player::TryMovement(float pdx, float pdy, float fElapsedTime)
-{	
+{
     // apply movement to player x y
     float newX = xPos + pdx * speed * fElapsedTime;
     float newY = yPos + pdy * speed * fElapsedTime;
 
-    if (newX * newY < MAP_WIDTH * MAP_HEIGHT); // if moving within map
-    {
-        // set appropriate collision buffer sign
-        float xBuffer = pdx > 0 ? collisionBuffer : -collisionBuffer;
-        float yBuffer = pdy > 0 ? collisionBuffer : -collisionBuffer;
+    // get appropriate buffer
+    float xBuffer = pdx > 0 ? collisionBuffer : -collisionBuffer;
+    float yBuffer = pdy > 0 ? collisionBuffer : -collisionBuffer;
 
-        int mapValueXDir = environmentMap->at((int)yPos * MAP_WIDTH + (newX + xBuffer));
-        int mapValueYDir = environmentMap->at((int)(newY + yBuffer) * MAP_WIDTH + xPos);
-        
+    // Find new xy coords if move made including buffer
+    float fNewX = xPos + xBuffer;
+    float fNewY = yPos + yBuffer;
+
+    // adjust for negative values as looking for grid index
+    if (fNewX < 0)
+        fNewX -= 1.0f;
+    if (fNewY < 0)
+        fNewY -= 1.0f;
+
+    // get new XY index values if move made
+    int newXIndex = static_cast<int>(fNewX);
+    int newYIndex = static_cast<int>(fNewY);
+
+    // Ensure the indices are within bounds before accessing the map
+    if (newXIndex >= 0 && newXIndex < MAP_WIDTH &&
+        newYIndex >= 0 && newYIndex < MAP_HEIGHT) {
+
+        // find values
+        int mapValueXDir = environmentMap->at(static_cast<int>(yPos) * MAP_WIDTH + newXIndex);
+        int mapValueYDir = environmentMap->at(newYIndex * MAP_WIDTH + static_cast<int>(xPos));
+
         // Check for collisions including the buffer before updating positions
         if (mapValueXDir == 0) {
             xPos = newX;

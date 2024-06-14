@@ -61,7 +61,6 @@ private:
 
 	// vectors to hold level data
 	std::vector<int> mapWalls;
-	std::vector<int> mapDoors;
 	std::vector<int> mapFloorTiles;
 	std::vector<int> mapEnvironment; // this takes walls, floors, and doors (doors can update it), to create map of impassable world 'blocks'
 	std::vector<int> mapCeilingTiles;

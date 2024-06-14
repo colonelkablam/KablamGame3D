@@ -401,6 +401,8 @@ public:
 
     float GetVelocityX() const { return velocityX; }
     float GetVelocityY() const { return velocityY; }
+    void SetVelocityX(int value) { velocityX = value; }
+    void SetVelocityY(int value) { velocityY = value; }
 };
 
 class Collidable : public virtual SpriteObject {
@@ -411,48 +413,68 @@ protected:
     bool hitOther;
     bool hitWallX;
     bool hitWallY;
+    bool hitWallXY;
 
 public:
-    Collidable(float collisionBuffer = 0.0f)
-        : collisionBuffer(collisionBuffer), hitOther(false), hitWallX(false), hitWallY(false) {}
+    Collidable(float collisionBuffer = 0.1f)
+        : collisionBuffer(collisionBuffer), hitOther(false), hitWallX(false), hitWallY(false), hitWallXY(false) {}
 
 
-    void UpdateHitFlags(float vX, float vY, std::vector<int> environmentMap, const std::list<SpriteObject*>& spriteObjects) {
-
-        // reset hit flags
+    void UpdateHitFlags(float dX, float dY, const std::vector<int>& environmentMap, const std::list<SpriteObject*>& spriteObjects) {
+        // Reset hit flags
         hitWallX = false;
         hitWallY = false;
+        hitWallXY = false;
         hitOther = false;
 
-        // Check collision with walls and adjust velocity if needed
         int oldX = static_cast<int>(x);
         int oldY = static_cast<int>(y);
 
-        // set appropriate collision buffer sign
-        float xBuff = vX > 0 ? collisionBuffer : -collisionBuffer;
-        float yBuff = vY > 0 ? collisionBuffer : -collisionBuffer;
+        // Set appropriate collision buffer sign
+        float xBuff = dX > 0 ? collisionBuffer : -collisionBuffer;
+        float yBuff = dY > 0 ? collisionBuffer : -collisionBuffer;
 
-        // find new xy coords if move made
-        float fNewX = x + vX + xBuff;
-        float fNewY = y + vY + yBuff;
+        // Find new xy coords if move made
+        float fNewX = x + dX + xBuff;
+        float fNewY = y + dY + yBuff;
 
-        // get new xy of map
-        int newX = static_cast<int>(x + vX + xBuff);
-        int newY = static_cast<int>(y + vY + yBuff);
+        // Get new xy of map
+        // adjust for taking a static_cast of small negative
+        if (fNewX < 0)
+            fNewX -= 1;
+        if (fNewY < 0)
+            fNewY -= 1;
+        // cast to find new x/y map tile
+        int newX = static_cast<int>(fNewX);
+        int newY = static_cast<int>(fNewY);
 
-        // Update position based on velocity if no wall - hitwall true
+        // Ensure the indices are within bounds before accessing the map
+        if (newX >= 0 && newX < MAP_WIDTH && newY >= 0 && newY < MAP_HEIGHT) {
+            int newXIndex = oldY * MAP_WIDTH + newX;
+            int newYIndex = newY * MAP_WIDTH + oldX;
+            int newXYIndex = newY * MAP_WIDTH + newX;
 
-        if (oldY * MAP_WIDTH + newX < environmentMap.size() || newY * MAP_WIDTH + oldX < environmentMap.size()) // with wallMap array
-        {
-            if (newX >= 0 && newX < MAP_WIDTH && environmentMap[oldY * MAP_WIDTH + newX] != 0)
+            if (newXIndex >= 0 && newXIndex < environmentMap.size() && environmentMap[newXIndex] != 0) {
                 hitWallX = true;
+            }
 
-            if (newY >= 0 && newY < MAP_HEIGHT && environmentMap[newY * MAP_WIDTH + oldX] != 0)
+            if (newYIndex >= 0 && newYIndex < environmentMap.size() && environmentMap[newYIndex] != 0) {
                 hitWallY = true;
+            }
+
+            if (newYIndex >= 0 && newYIndex < environmentMap.size() && environmentMap[newXYIndex] != 0) {
+                hitWallXY = true;
+            }
+        }
+        else
+        {
+            hitWallX = true;
+            hitWallY = true;
+            hitWallXY = true;
         }
 
-        for (const auto& sprite : spriteObjects)
-        {
+        // check against other collidable sprites
+        for (const auto& sprite : spriteObjects) {
             // Use dynamic cast to check if the sprite is a Collidable sprite
             Collidable* solidOther = dynamic_cast<Collidable*>(sprite);
 
@@ -463,12 +485,12 @@ public:
 
                 // Use dynamic cast to check if the sprite is a Destroyable (as will pass through dying and dead sprites)
                 DestroyableSprite* destroyable = dynamic_cast<DestroyableSprite*>(solidOther);
-                bool deadOrDying{ false };
+                bool deadOrDying = false;
                 if (destroyable) {
                     deadOrDying = destroyable->IsSpriteDying() || destroyable->IsSpriteDead();
                 }
                 // Check for collision if sprite moves the new velocity
-                if (deadOrDying == false && solidOther->GetDistanceFromOther(fNewX, fNewY) < (solidOther->GetCollisionBuffer() + collisionBuffer)) {
+                if (!deadOrDying && solidOther->GetDistanceFromOther(fNewX, fNewY) < (solidOther->GetCollisionBuffer() + collisionBuffer)) {
                     hitOther = true;
                     break; // If collision, break early, no need to check rest of list
                 }

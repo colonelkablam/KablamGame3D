@@ -44,7 +44,7 @@ void Enemy::UpdateMovement(float timeStep, const std::vector<int>& environmentMa
         return;
     }
 
-    // If not dying or dead, update movement and handle collisions
+    // If not dying or dead, update velocity and handle collisions
     MovableSprite::UpdateVelocity(timeStep); // Update the velocity of the sprite
 
     // Update the hit flags
@@ -62,7 +62,6 @@ void Enemy::UpdateMovement(float timeStep, const std::vector<int>& environmentMa
             y += velocityY;
         }
     }
-    
 }
 
 // virtual method from AISprite that needs defining
