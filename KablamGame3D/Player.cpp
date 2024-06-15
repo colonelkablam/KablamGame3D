@@ -64,75 +64,80 @@ bool Player::IsJumping()
     return jumping;
 }
 
-void Player::RotateRight(float elspsedTime)
+void Player::UpdatePlayer(float timeStep)
 {
-    facingAngle += rotationSpeed * elspsedTime;
+    timeElapsed += timeStep;
+}
+
+void Player::RotateRight(float timeStep)
+{
+    facingAngle += rotationSpeed * timeStep;
     if (facingAngle >= PI2)
             facingAngle -= PI2;
 }
 
-void Player::RotateLeft(float elspsedTime)
+void Player::RotateLeft(float timeStep)
 {
-    facingAngle -= rotationSpeed * elspsedTime;
+    facingAngle -= rotationSpeed * timeStep;
     if (facingAngle < 0)
         facingAngle += PI2;
 }
 
-void Player::LookUp(float elapsedTime)
+void Player::LookUp(float timeStep)
 {
     if (tilt > -TILT_MAX)
-        tilt -= tiltSpeed * elapsedTime;
+        tilt -= tiltSpeed * timeStep;
 }
 
-void Player::LookDown(float elapsedTime)
+void Player::LookDown(float timeStep)
 {
     if (tilt < TILT_MAX)
-        tilt += (tiltSpeed)*elapsedTime;
+        tilt += (tiltSpeed) * timeStep;
 }
 
-void Player::MoveForward(float elapsedTime)
+void Player::MoveForward(float timeStep)
 {	
     // calculate changes in x & y
     float pdx = cosf(facingAngle);
     float pdy = sinf(facingAngle);
 
-    TryMovement(pdx, pdy, elapsedTime);
+    TryMovement(pdx, pdy, timeStep);
 }
 
-void Player::MoveBackward(float elapsedTime)
+void Player::MoveBackward(float timeStep)
 {
     // calculate changes in x & y
     float pdx = -cosf(facingAngle);
     float pdy = -sinf(facingAngle);
 
-    TryMovement(pdx, pdy, elapsedTime);
+    TryMovement(pdx, pdy, timeStep);
 
 }
 
-void Player::MoveRight(float elapsedTime)
+void Player::MoveRight(float timeStep)
 {
     // calculate changes in x & y
     float pdx = cosf(facingAngle + PI / 2);
     float pdy = sinf(facingAngle + PI / 2);
 
-    TryMovement(pdx, pdy, elapsedTime);
+    TryMovement(pdx, pdy, timeStep);
 }
 
-void Player::MoveLeft(float elapsedTime)
+void Player::MoveLeft(float timeStep)
 {
     // calculate changes in x & y
     float pdx = cosf(facingAngle - PI / 2);
     float pdy = sinf(facingAngle - PI / 2);
 
-    TryMovement(pdx, pdy, elapsedTime);
+    TryMovement(pdx, pdy, timeStep);
 }
 
 // helper function
-void Player::TryMovement(float pdx, float pdy, float fElapsedTime)
+void Player::TryMovement(float pdx, float pdy, float timeStep)
 {
     // apply movement to player x y
-    float newX = xPos + pdx * speed * fElapsedTime;
-    float newY = yPos + pdy * speed * fElapsedTime;
+    float newX = xPos + pdx * speed * timeStep;
+    float newY = yPos + pdy * speed * timeStep;
 
     // get appropriate buffer
     float xBuffer = pdx > 0 ? collisionBuffer : -collisionBuffer;
@@ -179,13 +184,13 @@ void Player::StartJump()
     }
 }
 
-void Player::Jumping(float elapsedTime)
+void Player::Jumping(float timeStep)
 {
     // jump mechanics
     if (jumping)
     {
-        upVelocity += GRAVITY * elapsedTime;
-        height += upVelocity * elapsedTime;
+        upVelocity += GRAVITY * timeStep;
+        height += upVelocity * timeStep;
 
         if (height <= heightDefault)
         {
@@ -201,6 +206,11 @@ int Player::GetScore()
     return score;
 }
 
+void Player::SetScore(int amount)
+{
+    score = amount;
+}
+
 void Player::IncreaseScore(int points)
 {
     score += points;
@@ -211,7 +221,32 @@ float Player::GetHealth()
     return health;
 }
 
+void Player::IncreaseHealth(float amount)
+{
+    health += amount;
+}
+
+void Player::DecreaseHealth(float amount)
+{
+    health -= amount;
+}
+
 int Player::GetAmmo()
 {
     return ammoAmount;
+}
+
+void Player::IncreaseAmmo(int amount)
+{
+    ammoAmount += amount;
+}
+
+void Player::DecreaseAmmo(int amount)
+{
+    ammoAmount -= amount;
+}
+
+float Player::GetTime()
+{
+    return timeElapsed;
 }

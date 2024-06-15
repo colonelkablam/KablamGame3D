@@ -501,6 +501,7 @@ void KablamGame3D::HandleKeyPress()
 
 bool KablamGame3D::ApplyMovementAndActions(const float fElapsedTime)
 {
+	player->UpdatePlayer(fElapsedTime);
 
 	//Handle Rotation
 	if (actionStates.rotateLeftSmall) // handle small turns when pressed
@@ -558,7 +559,7 @@ bool KablamGame3D::ApplyMovementAndActions(const float fElapsedTime)
 	if (actionStates.fire)
 	{
 		listSpriteObjects.push_back(spriteFactories[99]->CreateSprite( player->GetX(), player->GetY(), (player->GetHeight() * 2) - 2.0f, player->GetAngle()));
-		//soundManager->PlaySoundByName(L"shootFireball");
+		player->DecreaseAmmo(1);
 
 	}
 
@@ -1319,26 +1320,48 @@ void KablamGame3D::DisplayMap(int xPos, int yPos, int scale) {
 
 void KablamGame3D::DisplayScore()
 {
-	textDisplay.DisplayString(*this, 5, 5, headerText, FG_DARK_BLUE, PIXEL_SOLID, 1);
-	textDisplay.DisplayString(*this, 5, nScreenHeight - 35, L"kills", FG_DARK_BLUE, PIXEL_SOLID, 1);
-	textDisplay.DisplayString(*this, nScreenWidth - 45, nScreenHeight - 35, L"health", FG_DARK_BLUE, PIXEL_SOLID, 1);
+	// display headings
+	textDisplay.DisplayString(*this, 5, 5, headerText, FG_DARK_BLUE, PIXEL_HALF, 1);
+	textDisplay.DisplayString(*this, 5, nScreenHeight - 35, L"ammo", FG_DARK_BLUE, PIXEL_HALF, 1);
+	textDisplay.DisplayString(*this, nScreenWidth - 45, nScreenHeight - 35, L"health", FG_DARK_BLUE, PIXEL_HALF, 1);
+	textDisplay.DisplayString(*this, nScreenWidth - 60, 5, L"time", FG_DARK_BLUE, PIXEL_HALF, 1);
+	textDisplay.DisplayString(*this, nScreenWidth - 60, 12, L"kills", FG_DARK_BLUE, PIXEL_HALF, 1);
+
 
 	std::wstring scoreText{ std::to_wstring(player->GetScore())};
+	// Pad with spaces to ensure right justification within a field width of 3 (e.g., "__0")
+	if (scoreText.length() < 3)
+	{
+		scoreText = std::wstring(3 - scoreText.length(), L' ') + scoreText;
+	}
 
+	std::wstring ammoText{ std::to_wstring(player->GetAmmo()) };
+	
 	// Convert playerHealth to a string with one decimal place and right-justify
-	std::wstringstream ss;
-	ss << std::fixed << std::setprecision(0) << player->GetHealth();
-	std::wstring healthText = ss.str();
-
+	std::wstringstream ssHealth;
+	ssHealth << std::fixed << std::setprecision(0) << player->GetHealth();
+	std::wstring healthText = ssHealth.str();
 	// Pad with spaces to ensure right justification within a field width of 4 (e.g., "__0.0")
 	if (healthText.length() < 4)
 	{
 		healthText = std::wstring(4 - healthText.length(), L' ') + healthText;
 	}
 
-	textDisplay.DisplayString(*this, 5, nScreenHeight - 25, scoreText, FG_DARK_GREEN, PIXEL_SOLID, 2, true);
-	textDisplay.DisplayString(*this, nScreenWidth - 95, nScreenHeight - 25, healthText, FG_DARK_CYAN, PIXEL_SOLID, 2, true);
+	// Convert timeText to a string with one decimal place and right-justify
+	std::wstringstream ssTime;
+	ssTime << std::fixed << std::setprecision(1) << player->GetTime();
+	std::wstring timeText = ssTime.str();
+	// Pad with spaces to ensure right justification within a field width of 4 (e.g., "__0.0")
+	if (timeText.length() < 4)
+	{
+		timeText = std::wstring(4 - timeText.length(), L' ') + timeText;
+	}
 
+	// display values
+	textDisplay.DisplayString(*this, 5, nScreenHeight - 25, ammoText, FG_DARK_GREEN, PIXEL_SOLID, 2, true);
+	textDisplay.DisplayString(*this, nScreenWidth - 95, nScreenHeight - 25, healthText, FG_DARK_CYAN, PIXEL_SOLID, 2, true);
+	textDisplay.DisplayString(*this, nScreenWidth - 25, 5, timeText, FG_DARK_RED, PIXEL_HALF, 1);
+	textDisplay.DisplayString(*this, nScreenWidth - 19, 12, scoreText, FG_DARK_RED, PIXEL_HALF, 1);
 }
 
 short KablamGame3D::GetGlyphShadeByDistance(float distance)

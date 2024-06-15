@@ -54,6 +54,10 @@ void Enemy::UpdateMovement(float timeStep, const std::vector<int>& environmentMa
     if (hitOther) {
         return;
     }
+    // currently if outside map only turn
+    if (outsideMap) {
+        return;
+    }
     else { // If hitting a wall, add x or y movement accordingly - allows for wall 'sliding'
         if (!hitWallX) {
             x += velocityX;
