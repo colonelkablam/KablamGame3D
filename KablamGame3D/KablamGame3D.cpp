@@ -292,7 +292,7 @@ bool KablamGame3D::OnGameUpdate(float fElapsedTime)
 				{
 					textureToRender = doorContainer.at(mapWallHitCoords);
 				}
-				else if (nWallType == 1)
+				else if (nWallType == 1 || nWallType == 2)
 				{
 					textureToRender = wallTextures.at(nWallType);
 

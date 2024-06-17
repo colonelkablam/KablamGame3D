@@ -12,7 +12,7 @@ private:
 	float tilt = 0.0f;
 	float rotationSpeed = 1.7f;
 	float tiltSpeed = 170.0f;
-	const float collisionBuffer = 0.2f;
+	const float collisionBuffer = 0.3f;
 
 	float xPos = 24.0f;
 	float yPos = 24.0f;
