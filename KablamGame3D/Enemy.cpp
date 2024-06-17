@@ -15,9 +15,9 @@ Enemy::Enemy(float initX, float initY, float initZ, Texture* initAliveSprite, Te
 void Enemy::UpdateSprite(float timeStep, float playerX, float playerY, float playerTilt, const std::vector<int>& environmentMap, std::list<SpriteObject*>& allSprites) {
     SpriteObject::UpdateTimeAndDistanceToPlayer(timeStep, playerX, playerY);
     RotatableAnimatable::UpdateRelativeAngleToPlayer();
-    //Enemy::UpdateAI(timeStep);
+    Enemy::UpdateAI(timeStep);
     AISprite::UpdateCanSpriteSeePlayer(environmentMap, playerX, playerY);
-    //Enemy::UpdateMovement(timeStep, environmentMap, allSprites);
+    Enemy::UpdateMovement(timeStep, environmentMap, allSprites);
     DestroyableSprite::UpdateIfHit(timeStep);
     Bobbable::Bobbing();
 }
