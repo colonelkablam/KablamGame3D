@@ -32,6 +32,7 @@ void Projectile::UpdateMovement(float timeStep, const std::vector<int>& environm
     Collidable::UpdateHitFlags(velocityX, velocityY, environmentMap, allSprites);
 
     // just need if newX and newY walltile is a hit as no 'sliding' for projectiles.
+    // not checking if outside map flag set so will go off into distance
     if (hitWallXY) {
         soundManager->PlaySoundByName(L"fireballHit", false, 1 - distToPlayer/32);
         DestroyableSprite::MakeDead();

@@ -27,6 +27,7 @@ private:
 	int score = 0;
 	float health = 100.0f;
 	int ammoAmount = 50;
+	float timeElapsed = 0.0f;
 
 	const std::vector<int>* environmentMap;
 
@@ -47,28 +48,39 @@ public:
 	float GetHeightDefault();
 	bool IsJumping();
 
-	void RotateRight(float elapsedTime);
-	void RotateLeft(float elapsedTime);
-	void LookUp(float elapsedTime);
-	void LookDown(float elapsedTime);
-	void MoveForward(float elapsedTime);
-	void MoveBackward(float elapsedTime);
-	void MoveRight(float elapsedTime);
-	void MoveLeft(float elapsedTime);
+	void UpdatePlayer(float timeStep);
+
+	void RotateRight(float timeStep);
+	void RotateLeft(float timeStep);
+	void LookUp(float timeStep);
+	void LookDown(float timeStep);
+	void MoveForward(float timeStep);
+	void MoveBackward(float timeStep);
+	void MoveRight(float timeStep);
+	void MoveLeft(float timeStep);
 
 	void StartJump();
-	void Jumping(float elapsedTime);
+	void Jumping(float timeStep);
 
 	int GetScore();
+	void SetScore(int amount = 0);
 	void IncreaseScore(int points);
+
 	float GetHealth();
+	void IncreaseHealth(float amount = 1.0f);
+	void DecreaseHealth(float amount = 1.0f);
+
 	int GetAmmo();
+	void IncreaseAmmo(int amount = 1);
+	void DecreaseAmmo(int amount = 1);
+
+	float GetTime();
 
 private:
-	void TryMovement(float pdx, float pdy, float fElapsedTime);
+	void TryMovement(float pdx, float pdy, float timeStep);
 
-	// manage player interaction with door
-	void OpenDoorInFrontOfPlayer();
+	// manage player interaction with door - done in game engine?
+	//void OpenDoorInFrontOfPlayer();
 
 };
 

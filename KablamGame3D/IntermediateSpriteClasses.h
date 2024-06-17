@@ -414,6 +414,7 @@ protected:
     bool hitWallX;
     bool hitWallY;
     bool hitWallXY;
+    bool outsideMap;
 
 public:
     Collidable(float collisionBuffer = 0.1f)
@@ -425,6 +426,7 @@ public:
         hitWallX = false;
         hitWallY = false;
         hitWallXY = false;
+        outsideMap = false;
         hitOther = false;
 
         int oldX = static_cast<int>(x);
@@ -468,9 +470,7 @@ public:
         }
         else
         {
-            hitWallX = true;
-            hitWallY = true;
-            hitWallXY = true;
+            outsideMap = true;
         }
 
         // check against other collidable sprites
